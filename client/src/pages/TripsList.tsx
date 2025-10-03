@@ -1,40 +1,53 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import ThemeToggle from "@/components/ThemeToggle";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+type Trip = {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  days?: number;
+  totalCost: number;
+};
 
 export default function TripsList() {
+  const [, setLocation] = useLocation();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   
-  //todo: remove mock functionality
-  const [trips, setTrips] = useState([
-    {
-      id: "1",
-      name: "Europe Backpacking Adventure",
-      startDate: "2024-06-15",
-      endDate: "2024-07-05",
-      days: 20,
-      totalCost: 3450,
+  const { data: trips = [], isLoading } = useQuery<Trip[]>({
+    queryKey: ["/api/trips"],
+  });
+
+  const createTripMutation = useMutation({
+    mutationFn: async (tripData: any) => {
+      const response = await apiRequest("POST", "/api/trips", tripData);
+      return await response.json();
     },
-    {
-      id: "2",
-      name: "Southeast Asia Trip",
-      days: 30,
-      totalCost: 2100,
+    onSuccess: (newTrip) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      setLocation(`/trip/${newTrip.id}`);
     },
-  ]);
+  });
 
   const handleCreateTrip = (trip: any) => {
-    const newTrip = {
-      id: Date.now().toString(),
-      ...trip,
-      totalCost: 0,
-    };
-    setTrips([...trips, newTrip]);
-    console.log("Created trip:", newTrip);
+    createTripMutation.mutate(trip);
+    setShowCreateDialog(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading trips...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,7 +105,7 @@ export default function TripsList() {
                 endDate={trip.endDate}
                 days={trip.days}
                 totalCost={trip.totalCost}
-                onClick={() => console.log("Navigate to trip:", trip.id)}
+                onClick={() => setLocation(`/trip/${trip.id}`)}
               />
             ))}
           </div>

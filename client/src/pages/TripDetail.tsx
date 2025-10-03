@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Plane, Train, Bus, Utensils, Home, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripHeader from "@/components/TripHeader";
@@ -7,6 +9,7 @@ import BudgetChart from "@/components/BudgetChart";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import ShareTripDialog from "@/components/ShareTripDialog";
 import ThemeToggle from "@/components/ThemeToggle";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const CATEGORIES = [
   {
@@ -47,55 +50,76 @@ const CATEGORIES = [
   },
 ];
 
+type Trip = {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  days?: number;
+  totalCost: number;
+  shareId?: string;
+};
+
+type Expense = {
+  id: string;
+  tripId: string;
+  category: string;
+  description: string;
+  cost: string;
+  url?: string;
+  date?: string;
+};
+
 export default function TripDetail() {
+  const [, params] = useRoute("/trip/:id");
+  const [, setLocation] = useLocation();
+  const tripId = params?.id;
+
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  //todo: remove mock functionality
-  const [expenses, setExpenses] = useState<any[]>([
-    {
-      id: "1",
-      category: "flights",
-      description: "Flight to Paris",
-      cost: 450,
-      url: "https://example.com",
-      date: "2024-06-15",
+  const { data: trip, isLoading: tripLoading } = useQuery<Trip>({
+    queryKey: ["/api/trips", tripId],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}`);
+      if (!response.ok) throw new Error("Failed to fetch trip");
+      return response.json();
     },
-    {
-      id: "2",
-      category: "flights",
-      description: "Return flight from Rome",
-      cost: 380,
-      date: "2024-07-05",
+    enabled: !!tripId,
+  });
+
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery<Expense[]>({
+    queryKey: ["/api/trips", tripId, "expenses"],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}/expenses`);
+      if (!response.ok) throw new Error("Failed to fetch expenses");
+      return response.json();
     },
-    {
-      id: "3",
-      category: "accommodation",
-      description: "Hotel in Paris (5 nights)",
-      cost: 600,
-      date: "2024-06-15",
+    enabled: !!tripId,
+  });
+
+  const createExpenseMutation = useMutation({
+    mutationFn: async (expenseData: any) => {
+      const response = await apiRequest("POST", "/api/expenses", { ...expenseData, tripId });
+      return await response.json();
     },
-    {
-      id: "4",
-      category: "intercity",
-      description: "Train Paris to Amsterdam",
-      cost: 120,
-      date: "2024-06-20",
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
     },
-    {
-      id: "5",
-      category: "food",
-      description: "Daily food budget",
-      cost: 600,
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: string) => {
+      const response = await apiRequest("DELETE", `/api/expenses/${expenseId}`);
+      return await response.json();
     },
-    {
-      id: "6",
-      category: "activities",
-      description: "Museum passes & tours",
-      cost: 300,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
     },
-  ]);
+  });
 
   const handleAddExpense = (category: string) => {
     setSelectedCategory(category);
@@ -103,13 +127,11 @@ export default function TripDetail() {
   };
 
   const handleSaveExpense = (expense: any) => {
-    const newExpense = {
-      id: Date.now().toString(),
-      category: selectedCategory,
-      ...expense,
-    };
-    setExpenses([...expenses, newExpense]);
-    console.log("Added expense:", newExpense);
+    createExpenseMutation.mutate({ ...expense, category: selectedCategory });
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    deleteExpenseMutation.mutate(expenseId);
   };
 
   const getExpensesByCategory = (categoryId: string) => {
@@ -123,13 +145,34 @@ export default function TripDetail() {
     );
   };
 
-  const totalCost = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-
   const chartData = CATEGORIES.map((cat) => ({
     name: cat.title,
     value: getCategoryTotal(cat.id),
     color: cat.color,
   })).filter((item) => item.value > 0);
+
+  if (tripLoading || expensesLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading trip...</div>
+      </div>
+    );
+  }
+
+  if (!trip) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Trip not found</h2>
+          <Button onClick={() => setLocation("/")} data-testid="button-back-home">
+            Back to Trips
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const shareUrl = `${window.location.origin}/share/${trip.shareId}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,7 +182,7 @@ export default function TripDetail() {
             <Button
               variant="ghost"
               className="gap-2"
-              onClick={() => console.log("Navigate back")}
+              onClick={() => setLocation("/")}
               data-testid="button-back"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -153,11 +196,11 @@ export default function TripDetail() {
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-12">
           <TripHeader
-            tripName="Europe Backpacking Adventure"
-            startDate="2024-06-15"
-            endDate="2024-07-05"
-            days={20}
-            totalCost={totalCost}
+            tripName={trip.name}
+            startDate={trip.startDate}
+            endDate={trip.endDate}
+            days={trip.days}
+            totalCost={trip.totalCost}
             onShare={() => setShowShareDialog(true)}
           />
         </div>
@@ -170,21 +213,30 @@ export default function TripDetail() {
                 title={category.title}
                 icon={category.icon}
                 categoryColor={category.color}
-                expenses={getExpensesByCategory(category.id)}
+                expenses={getExpensesByCategory(category.id).map(e => ({
+                  id: e.id,
+                  description: e.description,
+                  cost: parseFloat(e.cost),
+                  url: e.url,
+                  date: e.date,
+                }))}
                 total={getCategoryTotal(category.id)}
                 onAddExpense={() => handleAddExpense(category.id)}
                 onEditExpense={(id) => console.log("Edit expense:", id)}
-                onDeleteExpense={(id) => {
-                  setExpenses(expenses.filter((e) => e.id !== id));
-                  console.log("Delete expense:", id);
-                }}
+                onDeleteExpense={handleDeleteExpense}
               />
             ))}
           </div>
 
           <div className="lg:col-span-1">
             <div className="sticky top-6">
-              <BudgetChart data={chartData} />
+              {chartData.length > 0 ? (
+                <BudgetChart data={chartData} />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Add expenses to see budget breakdown
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -202,7 +254,7 @@ export default function TripDetail() {
       <ShareTripDialog
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
-        shareUrl={`${window.location.origin}/share/abc123`}
+        shareUrl={shareUrl}
       />
     </div>
   );
