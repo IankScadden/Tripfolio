@@ -50,7 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/trips/:id", async (req, res) => {
     try {
-      const trip = await storage.updateTrip(req.params.id, req.body);
+      const updates = insertTripSchema.partial().parse(req.body);
+      const trip = await storage.updateTrip(req.params.id, updates);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
       }
@@ -58,6 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
       res.json({ ...trip, totalCost: total });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid trip data", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update trip" });
     }
   });
@@ -98,12 +102,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/expenses/:id", async (req, res) => {
     try {
-      const expense = await storage.updateExpense(req.params.id, req.body);
+      const updates = insertExpenseSchema.partial().parse(req.body);
+      const expense = await storage.updateExpense(req.params.id, updates);
       if (!expense) {
         return res.status(404).json({ error: "Expense not found" });
       }
       res.json(expense);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid expense data", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update expense" });
     }
   });

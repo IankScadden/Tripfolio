@@ -10,7 +10,7 @@ interface AddExpenseDialogProps {
   categoryTitle: string;
   onAdd: (expense: {
     description: string;
-    cost: number;
+    cost: string;
     url?: string;
     date?: string;
   }) => void;
@@ -32,7 +32,7 @@ export default function AddExpenseDialog({
     if (description && cost) {
       onAdd({
         description,
-        cost: parseFloat(cost),
+        cost: cost,
         url: url || undefined,
         date: date || undefined,
       });
