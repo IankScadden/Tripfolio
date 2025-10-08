@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus } from "lucide-react";
+import { Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import ThemeToggle from "@/components/ThemeToggle";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
 
 type Trip = {
   id: string;
@@ -20,10 +22,24 @@ type Trip = {
 export default function TripsList() {
   const [, setLocation] = useLocation();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { toast } = useToast();
   
-  const { data: trips = [], isLoading } = useQuery<Trip[]>({
+  const { data: trips = [], isLoading, error } = useQuery<Trip[]>({
     queryKey: ["/api/trips"],
   });
+
+  useEffect(() => {
+    if (error && isUnauthorizedError(error as Error)) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+    }
+  }, [error, toast]);
 
   const createTripMutation = useMutation({
     mutationFn: async (tripData: any) => {
@@ -63,6 +79,14 @@ export default function TripsList() {
               >
                 <Plus className="h-4 w-4" />
                 New Trip
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.location.href = "/api/logout"}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4" />
               </Button>
               <ThemeToggle />
             </div>

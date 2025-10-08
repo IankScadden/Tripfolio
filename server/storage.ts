@@ -1,13 +1,22 @@
-import { type Trip, type InsertTrip, type Expense, type InsertExpense } from "@shared/schema";
+import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, trips, expenses, users } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  getAllTrips(): Promise<Trip[]>;
+  // User operations (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Trip operations
+  getAllTrips(userId: string): Promise<Trip[]>;
   getTrip(id: string): Promise<Trip | undefined>;
-  createTrip(trip: InsertTrip): Promise<Trip>;
+  getTripByShareId(shareId: string): Promise<Trip | undefined>;
+  createTrip(trip: InsertTrip, userId: string): Promise<Trip>;
   updateTrip(id: string, trip: Partial<InsertTrip>): Promise<Trip | undefined>;
   deleteTrip(id: string): Promise<boolean>;
   
+  // Expense operations
   getExpensesByTrip(tripId: string): Promise<Expense[]>;
   getExpense(id: string): Promise<Expense | undefined>;
   createExpense(expense: InsertExpense): Promise<Expense>;
@@ -15,69 +24,97 @@ export interface IStorage {
   deleteExpense(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private trips: Map<string, Trip>;
-  private expenses: Map<string, Expense>;
-
-  constructor() {
-    this.trips = new Map();
-    this.expenses = new Map();
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
-  async getAllTrips(): Promise<Trip[]> {
-    return Array.from(this.trips.values());
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // Trip operations
+  async getAllTrips(userId: string): Promise<Trip[]> {
+    return await db.select().from(trips).where(eq(trips.userId, userId));
   }
 
   async getTrip(id: string): Promise<Trip | undefined> {
-    return this.trips.get(id);
+    const [trip] = await db.select().from(trips).where(eq(trips.id, id));
+    return trip;
   }
 
-  async createTrip(insertTrip: InsertTrip): Promise<Trip> {
-    const id = randomUUID();
+  async getTripByShareId(shareId: string): Promise<Trip | undefined> {
+    const [trip] = await db.select().from(trips).where(eq(trips.shareId, shareId));
+    return trip;
+  }
+
+  async createTrip(insertTrip: InsertTrip, userId: string): Promise<Trip> {
     const shareId = randomUUID().substring(0, 8);
-    const trip: Trip = { ...insertTrip, id, shareId };
-    this.trips.set(id, trip);
+    const [trip] = await db
+      .insert(trips)
+      .values({ ...insertTrip, userId, shareId })
+      .returning();
     return trip;
   }
 
   async updateTrip(id: string, updates: Partial<InsertTrip>): Promise<Trip | undefined> {
-    const trip = this.trips.get(id);
-    if (!trip) return undefined;
-    const updated = { ...trip, ...updates };
-    this.trips.set(id, updated);
-    return updated;
+    const [trip] = await db
+      .update(trips)
+      .set(updates)
+      .where(eq(trips.id, id))
+      .returning();
+    return trip;
   }
 
   async deleteTrip(id: string): Promise<boolean> {
-    return this.trips.delete(id);
+    const result = await db.delete(trips).where(eq(trips.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
+  // Expense operations
   async getExpensesByTrip(tripId: string): Promise<Expense[]> {
-    return Array.from(this.expenses.values()).filter(e => e.tripId === tripId);
+    return await db.select().from(expenses).where(eq(expenses.tripId, tripId));
   }
 
   async getExpense(id: string): Promise<Expense | undefined> {
-    return this.expenses.get(id);
+    const [expense] = await db.select().from(expenses).where(eq(expenses.id, id));
+    return expense;
   }
 
   async createExpense(insertExpense: InsertExpense): Promise<Expense> {
-    const id = randomUUID();
-    const expense: Expense = { ...insertExpense, id };
-    this.expenses.set(id, expense);
+    const [expense] = await db
+      .insert(expenses)
+      .values(insertExpense)
+      .returning();
     return expense;
   }
 
   async updateExpense(id: string, updates: Partial<InsertExpense>): Promise<Expense | undefined> {
-    const expense = this.expenses.get(id);
-    if (!expense) return undefined;
-    const updated = { ...expense, ...updates };
-    this.expenses.set(id, updated);
-    return updated;
+    const [expense] = await db
+      .update(expenses)
+      .set(updates)
+      .where(eq(expenses.id, id))
+      .returning();
+    return expense;
   }
 
   async deleteExpense(id: string): Promise<boolean> {
-    return this.expenses.delete(id);
+    const result = await db.delete(expenses).where(eq(expenses.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

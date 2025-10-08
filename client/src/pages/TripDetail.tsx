@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Plane, Train, Bus, Utensils, Home, Ticket } from "lucide-react";
@@ -10,6 +10,8 @@ import AddExpenseDialog from "@/components/AddExpenseDialog";
 import ShareTripDialog from "@/components/ShareTripDialog";
 import ThemeToggle from "@/components/ThemeToggle";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
 
 const CATEGORIES = [
   {
@@ -74,12 +76,13 @@ export default function TripDetail() {
   const [, params] = useRoute("/trip/:id");
   const [, setLocation] = useLocation();
   const tripId = params?.id;
+  const { toast } = useToast();
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: trip, isLoading: tripLoading } = useQuery<Trip>({
+  const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
     queryFn: async () => {
       const response = await fetch(`/api/trips/${tripId}`);
@@ -89,7 +92,7 @@ export default function TripDetail() {
     enabled: !!tripId,
   });
 
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery<Expense[]>({
+  const { data: expenses = [], isLoading: expensesLoading, error: expensesError } = useQuery<Expense[]>({
     queryKey: ["/api/trips", tripId, "expenses"],
     queryFn: async () => {
       const response = await fetch(`/api/trips/${tripId}/expenses`);
@@ -99,6 +102,20 @@ export default function TripDetail() {
     enabled: !!tripId,
   });
 
+  useEffect(() => {
+    const error = tripError || expensesError;
+    if (error && isUnauthorizedError(error as Error)) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+    }
+  }, [tripError, expensesError, toast]);
+
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
       const response = await apiRequest("POST", "/api/expenses", { ...expenseData, tripId });
@@ -107,6 +124,25 @@ export default function TripDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] }); // Invalidate trips list
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add expense. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -118,6 +154,25 @@ export default function TripDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] }); // Invalidate trips list
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete expense. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
