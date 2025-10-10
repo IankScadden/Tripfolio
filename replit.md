@@ -34,11 +34,13 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Activities
 
 ## Recent Changes
+- 2024-10-10: Implemented new Home page design from user's Figma mockup (hero section, feature cards, CTAs)
+- 2024-10-10: Restructured routing: "/" for Home dashboard, "/my-trips" for trips list, "/explore" for community (placeholder)
+- 2024-10-10: Created shared Header component used across all authenticated pages
 - 2024-10-08: Added Replit Auth integration with user authentication
 - 2024-10-08: Migrated from in-memory storage to PostgreSQL database
 - 2024-10-08: Updated all routes to require authentication and filter by user
 - 2024-10-08: Added landing page for logged-out users
-- 2024-10-08: Added logout functionality to trip pages
 - 2024-10-03: Initial application setup with full frontend prototype
 - 2024-10-03: Implemented backend API routes for trips and expenses
 - 2024-10-03: Connected frontend to backend with real data fetching
@@ -51,7 +53,14 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - `GET /api/logout` - Log out user
 - `GET /api/auth/user` - Get current user (requires auth)
 
-### Trip Routes (all require authentication)
+### Page Routes
+- `/` - Home page (authenticated users) - Hero section with features and CTAs  
+- `/my-trips` - Trips list page - View and manage all trips
+- `/trip/:id` - Trip detail page - View and edit trip with expenses
+- `/explore` - Explore/community page (placeholder for future social features)
+- `/share/:shareId` - Public shared trip view (no auth required)
+
+### Trip API Routes (all require authentication)
 - `GET /api/trips` - Get all trips for current user
 - `GET /api/trips/:id` - Get trip by ID
 - `POST /api/trips` - Create new trip
@@ -67,10 +76,12 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 ### Public Routes
 - `GET /api/share/:shareId` - Get shared trip view (no auth required)
 
-## User Preferences
+## Design & User Preferences
+- Home page design based on user's Figma mockup with travel-themed hero image and feature cards
 - Design inspired by Airbnb (warm travel aesthetics) and Notion (clean data organization)
 - Primary color: Deep travel blue (210 85% 45%)
 - Category colors mapped to chart colors for visual consistency
+- Shared Header component across all authenticated pages with navigation links and theme toggle
 
 ## Future Vision
 - Public trip discovery/search by destination

@@ -3,12 +3,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Plane, Train, Bus, Utensils, Home, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Header from "@/components/Header";
 import TripHeader from "@/components/TripHeader";
 import CategorySection from "@/components/CategorySection";
 import BudgetChart from "@/components/BudgetChart";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import ShareTripDialog from "@/components/ShareTripDialog";
-import ThemeToggle from "@/components/ThemeToggle";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -231,24 +231,18 @@ export default function TripDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              className="gap-2"
-              onClick={() => setLocation("/")}
-              data-testid="button-back"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              My Trips
-            </Button>
-            <ThemeToggle />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <Header />
+      
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <Button
+          variant="ghost"
+          className="gap-2 mb-6"
+          onClick={() => setLocation("/my-trips")}
+          data-testid="button-back"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to My Trips
+        </Button>
         <div className="mb-12">
           <TripHeader
             tripName={trip.name}

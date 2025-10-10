@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, LogOut } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import CreateTripDialog from "@/components/CreateTripDialog";
-import ThemeToggle from "@/components/ThemeToggle";
+import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -67,39 +67,24 @@ export default function TripsList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">TripBudget</h1>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowCreateDialog(true)}
-                className="gap-2"
-                data-testid="button-new-trip"
-              >
-                <Plus className="h-4 w-4" />
-                New Trip
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.location.href = "/api/logout"}
-                data-testid="button-logout"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </div>
+      <Header />
 
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">My Trips</h2>
-          <p className="text-muted-foreground">
-            Plan and track your backpacking adventures
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">My Trips</h2>
+            <p className="text-muted-foreground">
+              Plan and track your backpacking adventures
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="gap-2"
+            data-testid="button-new-trip"
+          >
+            <Plus className="h-4 w-4" />
+            New Trip
+          </Button>
         </div>
 
         {trips.length === 0 ? (
