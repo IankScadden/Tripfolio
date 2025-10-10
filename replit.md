@@ -12,12 +12,13 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - **Authentication**: Replit Auth (OpenID Connect)
 
 ### Key Features
-1. **User Authentication**: Sign in with Replit Auth (supports Google, GitHub, email/password)
-2. **Trip Management**: Create, view, and organize multiple trip projects (user-specific)
-3. **Expense Tracking**: Add expenses in 6 categories with description, cost, optional URL links, and dates
-4. **Budget Visualization**: Interactive pie chart showing cost breakdown by category
-5. **Trip Sharing**: Generate shareable links for read-only trip views
-6. **Dark Mode**: Full light/dark theme support
+1. **Public Landing Page**: "Budget Your Dream Trip" page visible to all visitors
+2. **Smart Authentication**: Login only required when creating trips or exploring community
+3. **Trip Management**: Create, view, and organize multiple trip projects (user-specific)
+4. **Expense Tracking**: Add expenses in 6 categories with description, cost, optional URL links, and dates
+5. **Budget Visualization**: Interactive pie chart showing cost breakdown by category
+6. **Trip Sharing**: Generate shareable links for read-only trip views
+7. **Dark Mode**: Full light/dark theme support
 
 ### Data Model
 - **Users**: id (sub from OIDC), email, firstName, lastName, profileImageUrl
@@ -34,9 +35,11 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Activities
 
 ## Recent Changes
+- 2024-10-10: Updated landing flow - Home page now visible to all visitors, login only required for actions
+- 2024-10-10: Header conditionally shows "Sign In" or "Logout" based on authentication state
+- 2024-10-10: CTA buttons check authentication before navigating to protected pages
 - 2024-10-10: Implemented new Home page design from user's Figma mockup (hero section, feature cards, CTAs)
-- 2024-10-10: Restructured routing: "/" for Home dashboard, "/my-trips" for trips list, "/explore" for community (placeholder)
-- 2024-10-10: Created shared Header component used across all authenticated pages
+- 2024-10-10: Restructured routing: "/" for Home (public), "/my-trips" for trips list, "/explore" for community (placeholder)
 - 2024-10-08: Added Replit Auth integration with user authentication
 - 2024-10-08: Migrated from in-memory storage to PostgreSQL database
 - 2024-10-08: Updated all routes to require authentication and filter by user
@@ -54,10 +57,10 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - `GET /api/auth/user` - Get current user (requires auth)
 
 ### Page Routes
-- `/` - Home page (authenticated users) - Hero section with features and CTAs  
-- `/my-trips` - Trips list page - View and manage all trips
-- `/trip/:id` - Trip detail page - View and edit trip with expenses
-- `/explore` - Explore/community page (placeholder for future social features)
+- `/` - Home page (public) - Hero section with features and CTAs, visible to all visitors
+- `/my-trips` - Trips list page (auth required) - View and manage all trips
+- `/trip/:id` - Trip detail page (auth required) - View and edit trip with expenses
+- `/explore` - Explore/community page (placeholder) - Future social features
 - `/share/:shareId` - Public shared trip view (no auth required)
 
 ### Trip API Routes (all require authentication)
@@ -78,10 +81,11 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 
 ## Design & User Preferences
 - Home page design based on user's Figma mockup with travel-themed hero image and feature cards
+- Public-first approach: Beautiful landing page visible to all visitors, login only when needed
 - Design inspired by Airbnb (warm travel aesthetics) and Notion (clean data organization)
 - Primary color: Deep travel blue (210 85% 45%)
 - Category colors mapped to chart colors for visual consistency
-- Shared Header component across all authenticated pages with navigation links and theme toggle
+- Shared Header component with conditional rendering: "Sign In" for visitors, nav links for authenticated users
 
 ## Future Vision
 - Public trip discovery/search by destination
