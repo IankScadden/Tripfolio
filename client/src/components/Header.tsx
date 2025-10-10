@@ -22,7 +22,7 @@ export default function Header() {
                 <Link href="/my-trips" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
                   My Trips
                 </Link>
-                <Link href="/explore" className="hidden sm:inline text-sm font-medium hover:text-primary transition-colors" data-testid="link-explore">
+                <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                   Explore
                 </Link>
               </>
@@ -33,7 +33,7 @@ export default function Header() {
                 size="sm"
                 onClick={() => window.location.href = "/api/logout"}
                 data-testid="button-header-logout"
-                className="text-xs sm:text-sm"
+                className="text-xs sm:text-sm px-2 sm:px-3"
               >
                 Logout
               </Button>
@@ -43,7 +43,7 @@ export default function Header() {
                 size="sm"
                 onClick={() => window.location.href = "/api/login"}
                 data-testid="button-header-login"
-                className="text-xs sm:text-sm"
+                className="text-xs sm:text-sm px-2 sm:px-3"
               >
                 Sign In
               </Button>
