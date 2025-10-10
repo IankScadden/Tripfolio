@@ -2,10 +2,28 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, Users, Plus } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@assets/stock_images/beautiful_mountain_l_d965efef.jpg";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
+
+  const handleCreateTrip = () => {
+    if (!isAuthenticated) {
+      window.location.href = "/api/login";
+    } else {
+      setLocation("/my-trips");
+    }
+  };
+
+  const handleExplore = () => {
+    if (!isAuthenticated) {
+      window.location.href = "/api/login";
+    } else {
+      setLocation("/explore");
+    }
+  };
 
   const features = [
     {
@@ -48,7 +66,7 @@ export default function Home() {
           <div className="flex gap-4 justify-center flex-wrap">
             <Button
               size="lg"
-              onClick={() => setLocation("/my-trips")}
+              onClick={handleCreateTrip}
               className="gap-2"
               data-testid="button-create-new-trip"
             >
@@ -58,7 +76,7 @@ export default function Home() {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => setLocation("/explore")}
+              onClick={handleExplore}
               className="bg-white/10 text-white border-white hover:bg-white hover:text-foreground backdrop-blur-sm"
               data-testid="button-explore-community"
             >
@@ -94,7 +112,7 @@ export default function Home() {
           <div className="flex gap-4 justify-center flex-wrap">
             <Button
               size="lg"
-              onClick={() => setLocation("/my-trips")}
+              onClick={handleCreateTrip}
               data-testid="button-start-first-trip"
             >
               Start Your First Trip
@@ -102,7 +120,7 @@ export default function Home() {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => setLocation("/my-trips")}
+              onClick={handleCreateTrip}
               data-testid="button-view-my-trips"
             >
               View My Trips

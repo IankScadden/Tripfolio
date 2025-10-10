@@ -12,28 +12,12 @@ import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <Switch>
-      {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/my-trips" component={TripsList} />
-          <Route path="/trip/:id" component={TripDetail} />
-          <Route path="/explore" component={Explore} />
-        </>
-      )}
+      <Route path="/" component={Home} />
+      <Route path="/my-trips" component={TripsList} />
+      <Route path="/trip/:id" component={TripDetail} />
+      <Route path="/explore" component={Explore} />
       <Route component={NotFound} />
     </Switch>
   );
