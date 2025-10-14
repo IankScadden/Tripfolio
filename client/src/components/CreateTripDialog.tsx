@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,14 +25,26 @@ export default function CreateTripDialog({
   const [endDate, setEndDate] = useState("");
   const [days, setDays] = useState("");
 
+  // Auto-calculate days when both dates are set
+  useEffect(() => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end day
+      setDays(diffDays.toString());
+    }
+  }, [startDate, endDate]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name) {
+      const calculatedDays = days ? parseInt(days) : undefined;
       onCreate({
         name,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        days: days ? parseInt(days) : undefined,
+        days: calculatedDays,
       });
       setName("");
       setStartDate("");
@@ -83,7 +95,7 @@ export default function CreateTripDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="days">Or Total Days</Label>
+            <Label htmlFor="days">Total Days {startDate && endDate && "(auto-calculated)"}</Label>
             <Input
               id="days"
               type="number"
@@ -91,6 +103,7 @@ export default function CreateTripDialog({
               value={days}
               onChange={(e) => setDays(e.target.value)}
               data-testid="input-trip-days"
+              disabled={!!(startDate && endDate)}
             />
           </div>
           <div className="flex gap-3 pt-4">
