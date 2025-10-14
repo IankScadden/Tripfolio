@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
+import FoodBudgetDialog from "@/components/FoodBudgetDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +90,7 @@ export default function TripDetail() {
   const { toast } = useToast();
 
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showFoodBudgetDialog, setShowFoodBudgetDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -187,12 +189,33 @@ export default function TripDetail() {
   });
 
   const handleAddExpense = (category: string) => {
-    setSelectedCategory(category);
-    setShowAddDialog(true);
+    if (category === "food") {
+      setShowFoodBudgetDialog(true);
+    } else {
+      setSelectedCategory(category);
+      setShowAddDialog(true);
+    }
   };
 
   const handleSaveExpense = (expense: any) => {
     createExpenseMutation.mutate({ ...expense, category: selectedCategory });
+  };
+
+  const handleSaveFoodBudget = async (dailyBudget: number) => {
+    const totalCost = dailyBudget * (trip?.days || 1);
+    
+    // Delete existing food expenses first
+    const existingFoodExpenses = getExpensesByCategory("food");
+    for (const expense of existingFoodExpenses) {
+      await deleteExpenseMutation.mutateAsync(expense.id);
+    }
+    
+    // Create new food budget expense
+    createExpenseMutation.mutate({
+      description: "Food Budget",
+      cost: totalCost.toString(),
+      category: "food",
+    });
   };
 
   const handleDeleteExpense = (expenseId: string) => {
@@ -620,58 +643,36 @@ export default function TripDetail() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => handleAddExpense("food")}
+                onClick={() => setShowFoodBudgetDialog(true)}
                 data-testid="button-edit-food-budget"
               >
                 Edit Budget
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-6 mb-4">
-                <div className="bg-muted/30 rounded-lg p-4 text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Daily Budget</div>
-                  <div className="text-2xl font-bold" data-testid="text-daily-budget">
-                    ${dailyFoodBudget}
-                  </div>
-                </div>
-                <div className="bg-muted/30 rounded-lg p-4 text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Trip Days</div>
-                  <div className="text-2xl font-bold" data-testid="text-food-days">
-                    {trip.days || 0}
-                  </div>
-                </div>
-                <div className="bg-muted/30 rounded-lg p-4 text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Total Food Cost</div>
-                  <div className="text-2xl font-bold" data-testid="text-food-total">
-                    ${foodBudget.toFixed(0)}
-                  </div>
-                </div>
-              </div>
-              {getExpensesByCategory("food").length > 0 && (
-                <div className="space-y-2">
-                  {getExpensesByCategory("food").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+              {foodBudget > 0 ? (
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">Daily Budget</div>
+                    <div className="text-2xl font-bold" data-testid="text-daily-budget">
+                      ${dailyFoodBudget}
                     </div>
-                  ))}
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">Trip Days</div>
+                    <div className="text-2xl font-bold" data-testid="text-food-days">
+                      {trip.days || 0}
+                    </div>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">Total Food Cost</div>
+                    <div className="text-2xl font-bold" data-testid="text-food-total">
+                      ${foodBudget.toFixed(0)}
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No food budget set</p>
               )}
             </CardContent>
           </Card>
@@ -685,6 +686,14 @@ export default function TripDetail() {
           CATEGORIES.find((c) => c.id === selectedCategory)?.title || ""
         }
         onAdd={handleSaveExpense}
+      />
+
+      <FoodBudgetDialog
+        open={showFoodBudgetDialog}
+        onOpenChange={setShowFoodBudgetDialog}
+        tripDays={trip?.days || 1}
+        currentDailyBudget={dailyFoodBudget}
+        onSave={handleSaveFoodBudget}
       />
     </div>
   );
