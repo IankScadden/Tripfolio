@@ -33,6 +33,7 @@ export const trips = pgTable("trips", {
   endDate: text("end_date"),
   days: integer("days"),
   shareId: varchar("share_id").unique(),
+  favorite: integer("favorite").default(0).notNull(),
 });
 
 export const expenses = pgTable("expenses", {

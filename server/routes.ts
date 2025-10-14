@@ -30,7 +30,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         trips.map(async (trip) => {
           const expenses = await storage.getExpensesByTrip(trip.id);
           const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-          return { ...trip, totalCost: total };
+          
+          // Calculate expense counts by category
+          const expenseCounts = {
+            flights: expenses.filter(e => e.category === 'flights').length,
+            accommodation: expenses.filter(e => e.category === 'accommodation').length,
+            activities: expenses.filter(e => e.category === 'activities').length,
+          };
+          
+          return { ...trip, totalCost: total, expenseCounts };
         })
       );
       res.json(tripsWithTotals);
@@ -117,6 +125,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete trip" });
+    }
+  });
+
+  app.patch("/api/trips/:id/favorite", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      // Toggle favorite
+      const newFavoriteValue = trip.favorite ? 0 : 1;
+      const updatedTrip = await storage.updateTrip(req.params.id, { favorite: newFavoriteValue });
+      if (!updatedTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      const expenses = await storage.getExpensesByTrip(updatedTrip.id);
+      const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+      res.json({ ...updatedTrip, totalCost: total });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update favorite" });
     }
   });
 
