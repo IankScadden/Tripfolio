@@ -5,6 +5,7 @@ import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Ex
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
+import AddExpenseDialog from "@/components/AddExpenseDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -371,12 +372,45 @@ export default function TripDetail() {
                 <Plane className="h-4 w-4" style={{ color: CATEGORIES[0].color }} />
                 Flights
               </CardTitle>
-              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-flights">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1" 
+                onClick={() => handleAddExpense("flights")}
+                data-testid="button-add-flights"
+              >
                 <span className="text-2xl leading-none">+</span> Add Flight
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">No flights added</p>
+              {getExpensesByCategory("flights").length > 0 ? (
+                <div className="space-y-2">
+                  {getExpensesByCategory("flights").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No flights added</p>
+              )}
             </CardContent>
           </Card>
 
@@ -387,12 +421,94 @@ export default function TripDetail() {
                 <Train className="h-4 w-4" style={{ color: CATEGORIES[1].color }} />
                 Main Transportation
               </CardTitle>
-              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-transportation">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1" 
+                onClick={() => handleAddExpense("intercity")}
+                data-testid="button-add-transportation"
+              >
                 <span className="text-2xl leading-none">+</span> Add Route
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">No transportation added</p>
+              {getExpensesByCategory("intercity").length > 0 ? (
+                <div className="space-y-2">
+                  {getExpensesByCategory("intercity").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No transportation added</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Local Transport */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Bus className="h-4 w-4" style={{ color: CATEGORIES[2].color }} />
+                Local Transport
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1" 
+                onClick={() => handleAddExpense("local")}
+                data-testid="button-add-local-transport"
+              >
+                <span className="text-2xl leading-none">+</span> Add Transport
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {getExpensesByCategory("local").length > 0 ? (
+                <div className="space-y-2">
+                  {getExpensesByCategory("local").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No local transport added</p>
+              )}
             </CardContent>
           </Card>
 
@@ -403,12 +519,45 @@ export default function TripDetail() {
                 <Hotel className="h-4 w-4" style={{ color: CATEGORIES[3].color }} />
                 Lodging
               </CardTitle>
-              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-lodging">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1" 
+                onClick={() => handleAddExpense("accommodation")}
+                data-testid="button-add-lodging"
+              >
                 <span className="text-2xl leading-none">+</span> Add Lodging
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">No lodging added</p>
+              {getExpensesByCategory("accommodation").length > 0 ? (
+                <div className="space-y-2">
+                  {getExpensesByCategory("accommodation").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No lodging added</p>
+              )}
             </CardContent>
           </Card>
 
@@ -419,12 +568,45 @@ export default function TripDetail() {
                 <Ticket className="h-4 w-4" style={{ color: CATEGORIES[5].color }} />
                 Activities & Attractions
               </CardTitle>
-              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-activities">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1" 
+                onClick={() => handleAddExpense("activities")}
+                data-testid="button-add-activities"
+              >
                 <span className="text-2xl leading-none">+</span> Add Activity
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">No activities added</p>
+              {getExpensesByCategory("activities").length > 0 ? (
+                <div className="space-y-2">
+                  {getExpensesByCategory("activities").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No activities added</p>
+              )}
             </CardContent>
           </Card>
 
@@ -435,12 +617,17 @@ export default function TripDetail() {
                 <Utensils className="h-4 w-4" style={{ color: CATEGORIES[4].color }} />
                 Food Budget
               </CardTitle>
-              <Button variant="ghost" size="sm" data-testid="button-edit-food-budget">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => handleAddExpense("food")}
+                data-testid="button-edit-food-budget"
+              >
                 Edit Budget
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-6 mb-4">
                 <div className="bg-muted/30 rounded-lg p-4 text-center">
                   <div className="text-sm text-muted-foreground mb-1">Daily Budget</div>
                   <div className="text-2xl font-bold" data-testid="text-daily-budget">
@@ -460,10 +647,45 @@ export default function TripDetail() {
                   </div>
                 </div>
               </div>
+              {getExpensesByCategory("food").length > 0 && (
+                <div className="space-y-2">
+                  {getExpensesByCategory("food").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <AddExpenseDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        categoryTitle={
+          CATEGORIES.find((c) => c.id === selectedCategory)?.title || ""
+        }
+        onAdd={handleSaveExpense}
+      />
     </div>
   );
 }
