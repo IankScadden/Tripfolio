@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Home, Ticket } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
-import TripHeader from "@/components/TripHeader";
-import CategorySection from "@/components/CategorySection";
-import BudgetChart from "@/components/BudgetChart";
-import AddExpenseDialog from "@/components/AddExpenseDialog";
-import ShareTripDialog from "@/components/ShareTripDialog";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -17,38 +14,50 @@ const CATEGORIES = [
   {
     id: "flights",
     title: "Flights",
-    icon: <Plane className="h-5 w-5" />,
-    color: "hsl(25, 85%, 55%)",
+    icon: Plane,
+    color: "hsl(200, 85%, 55%)",
+    addLabel: "Add Flight",
+    emptyLabel: "No flights added",
   },
   {
     id: "intercity",
-    title: "Intercity Transportation",
-    icon: <Train className="h-5 w-5" />,
-    color: "hsl(45, 90%, 50%)",
+    title: "Main Transportation",
+    icon: Train,
+    color: "hsl(30, 90%, 60%)",
+    addLabel: "Add Route",
+    emptyLabel: "No transportation added",
   },
   {
     id: "local",
-    title: "Local Transportation",
-    icon: <Bus className="h-5 w-5" />,
-    color: "hsl(45, 90%, 50%)",
+    title: "Local Transport",
+    icon: Bus,
+    color: "hsl(280, 70%, 65%)",
+    addLabel: "Add Transport",
+    emptyLabel: "No local transport added",
   },
   {
     id: "accommodation",
-    title: "Accommodation",
-    icon: <Home className="h-5 w-5" />,
-    color: "hsl(150, 60%, 45%)",
+    title: "Lodging",
+    icon: Hotel,
+    color: "hsl(150, 60%, 50%)",
+    addLabel: "Add Lodging",
+    emptyLabel: "No lodging added",
   },
   {
     id: "food",
     title: "Food",
-    icon: <Utensils className="h-5 w-5" />,
-    color: "hsl(0, 70%, 55%)",
+    icon: Utensils,
+    color: "hsl(330, 70%, 65%)",
+    addLabel: "Edit Budget",
+    emptyLabel: "No food budget set",
   },
   {
     id: "activities",
-    title: "Activities",
-    icon: <Ticket className="h-5 w-5" />,
-    color: "hsl(270, 60%, 55%)",
+    title: "Activities & Attractions",
+    icon: Ticket,
+    color: "hsl(50, 85%, 60%)",
+    addLabel: "Add Activity",
+    emptyLabel: "No activities added",
   },
 ];
 
@@ -227,84 +236,234 @@ export default function TripDetail() {
     );
   }
 
-  const shareUrl = `${window.location.origin}/share/${trip.shareId}`;
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const foodBudget = getCategoryTotal("food");
+  const dailyFoodBudget = trip.days && trip.days > 0 ? Math.round(foodBudget / trip.days) : 0;
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <Button
-          variant="ghost"
-          className="gap-2 mb-6"
-          onClick={() => setLocation("/my-trips")}
-          data-testid="button-back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to My Trips
-        </Button>
-        <div className="mb-12">
-          <TripHeader
-            tripName={trip.name}
-            startDate={trip.startDate}
-            endDate={trip.endDate}
-            days={trip.days}
-            totalCost={trip.totalCost}
-            onShare={() => setShowShareDialog(true)}
-          />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Back Button and Trip Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            className="gap-2"
+            onClick={() => setLocation("/my-trips")}
+            data-testid="button-back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            variant="default"
+            className="gap-2"
+            data-testid="button-expand-trip"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Expand Trip
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            {CATEGORIES.map((category) => (
-              <CategorySection
-                key={category.id}
-                title={category.title}
-                icon={category.icon}
-                categoryColor={category.color}
-                expenses={getExpensesByCategory(category.id).map(e => ({
-                  id: e.id,
-                  description: e.description,
-                  cost: parseFloat(e.cost),
-                  url: e.url,
-                  date: e.date,
-                }))}
-                total={getCategoryTotal(category.id)}
-                onAddExpense={() => handleAddExpense(category.id)}
-                onEditExpense={(id) => console.log("Edit expense:", id)}
-                onDeleteExpense={handleDeleteExpense}
-              />
-            ))}
+        {/* Trip Name and Info */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2" data-testid="text-trip-name">{trip.name}</h1>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <CalendarDays className="h-4 w-4" />
+              <span data-testid="text-trip-dates">
+                {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+              </span>
+            </div>
+            {trip.days && (
+              <div className="flex items-center gap-1">
+                <span data-testid="text-trip-days">{trip.days} days</span>
+              </div>
+            )}
           </div>
+        </div>
 
-          <div className="lg:col-span-1">
-            <div className="sticky top-6">
+        {/* Total Trip Cost Card */}
+        <Card className="mb-8 bg-muted/30">
+          <CardContent className="py-6 text-center">
+            <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
+            <div className="text-4xl font-bold" data-testid="text-total-cost">
+              ${trip.totalCost.toFixed(0)}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Budget Breakdown and Visual Breakdown */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Budget Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Budget Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {CATEGORIES.map((category) => {
+                const IconComponent = category.icon;
+                const total = getCategoryTotal(category.id);
+                return (
+                  <div key={category.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                      <span className="text-sm">{category.title}</span>
+                    </div>
+                    <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
+                      ${total.toFixed(0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          {/* Visual Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Visual Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
               {chartData.length > 0 ? (
-                <BudgetChart data={chartData} />
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => 
+                        percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''
+                      }
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Add expenses to see budget breakdown
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  No expenses added yet
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Category Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Flights */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Plane className="h-4 w-4" style={{ color: CATEGORIES[0].color }} />
+                Flights
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-flights">
+                <span className="text-2xl leading-none">+</span> Add Flight
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">No flights added</p>
+            </CardContent>
+          </Card>
+
+          {/* Main Transportation */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Train className="h-4 w-4" style={{ color: CATEGORIES[1].color }} />
+                Main Transportation
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-transportation">
+                <span className="text-2xl leading-none">+</span> Add Route
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">No transportation added</p>
+            </CardContent>
+          </Card>
+
+          {/* Lodging */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Hotel className="h-4 w-4" style={{ color: CATEGORIES[3].color }} />
+                Lodging
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-lodging">
+                <span className="text-2xl leading-none">+</span> Add Lodging
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">No lodging added</p>
+            </CardContent>
+          </Card>
+
+          {/* Activities & Attractions */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Ticket className="h-4 w-4" style={{ color: CATEGORIES[5].color }} />
+                Activities & Attractions
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="gap-1" data-testid="button-add-activities">
+                <span className="text-2xl leading-none">+</span> Add Activity
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">No activities added</p>
+            </CardContent>
+          </Card>
+
+          {/* Food Budget - Full width */}
+          <Card className="md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Utensils className="h-4 w-4" style={{ color: CATEGORIES[4].color }} />
+                Food Budget
+              </CardTitle>
+              <Button variant="ghost" size="sm" data-testid="button-edit-food-budget">
+                Edit Budget
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-6">
+                <div className="bg-muted/30 rounded-lg p-4 text-center">
+                  <div className="text-sm text-muted-foreground mb-1">Daily Budget</div>
+                  <div className="text-2xl font-bold" data-testid="text-daily-budget">
+                    ${dailyFoodBudget}
+                  </div>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-4 text-center">
+                  <div className="text-sm text-muted-foreground mb-1">Trip Days</div>
+                  <div className="text-2xl font-bold" data-testid="text-food-days">
+                    {trip.days || 0}
+                  </div>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-4 text-center">
+                  <div className="text-sm text-muted-foreground mb-1">Total Food Cost</div>
+                  <div className="text-2xl font-bold" data-testid="text-food-total">
+                    ${foodBudget.toFixed(0)}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      <AddExpenseDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        categoryTitle={
-          CATEGORIES.find((c) => c.id === selectedCategory)?.title || ""
-        }
-        onAdd={handleSaveExpense}
-      />
-
-      <ShareTripDialog
-        open={showShareDialog}
-        onOpenChange={setShowShareDialog}
-        shareUrl={shareUrl}
-      />
     </div>
   );
 }
