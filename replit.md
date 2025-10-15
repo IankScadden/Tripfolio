@@ -22,7 +22,7 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 
 ### Data Model
 - **Users**: id (sub from OIDC), email, firstName, lastName, profileImageUrl
-- **Trips**: id, userId, name, startDate, endDate, days, shareId
+- **Trips**: id, userId, name, startDate, endDate, days, shareId, favorite (integer: 0 or 1)
 - **Expenses**: id, tripId, category, description, cost, url, date
 - **Sessions**: sid, sess, expire (for Replit Auth)
 
@@ -35,6 +35,12 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Activities
 
 ## Recent Changes
+- 2024-10-15: Improved create trip flow - Home page "Create New Trip" button now opens dialog directly (no intermediate navigation)
+- 2024-10-15: Redesigned My Trips page with Figma designs - gradient hero section, trip cards with gradient headers
+- 2024-10-15: Added favorite trips feature - star button to favorite/unfavorite, favorites appear first in list
+- 2024-10-15: Added "Upcoming" badge for trips starting today or in the future
+- 2024-10-15: Added expense category counts to trip cards (flights, accommodation, activities)
+- 2024-10-15: Added PATCH /api/trips/:id/favorite endpoint for toggling favorites
 - 2024-10-10: Updated landing flow - Home page now visible to all visitors, login only required for actions
 - 2024-10-10: Header conditionally shows "Sign In" or "Logout" based on authentication state
 - 2024-10-10: CTA buttons check authentication before navigating to protected pages
@@ -64,10 +70,11 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - `/share/:shareId` - Public shared trip view (no auth required)
 
 ### Trip API Routes (all require authentication)
-- `GET /api/trips` - Get all trips for current user
+- `GET /api/trips` - Get all trips for current user (includes expense counts by category)
 - `GET /api/trips/:id` - Get trip by ID
 - `POST /api/trips` - Create new trip
 - `PATCH /api/trips/:id` - Update trip
+- `PATCH /api/trips/:id/favorite` - Toggle favorite status of a trip
 - `DELETE /api/trips/:id` - Delete trip
 
 ### Expense Routes (all require authentication)

@@ -1,19 +1,35 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, Users, Plus } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import CreateTripDialog from "@/components/CreateTripDialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import heroImage from "@assets/stock_images/beautiful_mountain_l_d965efef.jpg";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const createTripMutation = useMutation({
+    mutationFn: async (tripData: any) => {
+      const response = await apiRequest("POST", "/api/trips", tripData);
+      return await response.json();
+    },
+    onSuccess: (newTrip) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      setLocation(`/trip/${newTrip.id}`);
+    },
+  });
 
   const handleCreateTrip = () => {
     if (!isAuthenticated) {
       window.location.href = "/api/login";
     } else {
-      setLocation("/my-trips");
+      setShowCreateDialog(true);
     }
   };
 
@@ -23,6 +39,11 @@ export default function Home() {
     } else {
       setLocation("/explore");
     }
+  };
+
+  const handleCreateTripSubmit = (trip: any) => {
+    createTripMutation.mutate(trip);
+    setShowCreateDialog(false);
   };
 
   const features = [
@@ -128,6 +149,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <CreateTripDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onCreate={handleCreateTripSubmit}
+      />
     </div>
   );
 }
