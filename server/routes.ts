@@ -26,21 +26,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const trips = await storage.getAllTrips(userId);
-      const tripsWithTotals = await Promise.all(
-        trips.map(async (trip) => {
-          const expenses = await storage.getExpensesByTrip(trip.id);
-          const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-          
-          // Calculate expense counts by category
-          const expenseCounts = {
-            flights: expenses.filter(e => e.category === 'flights').length,
-            accommodation: expenses.filter(e => e.category === 'accommodation').length,
-            activities: expenses.filter(e => e.category === 'activities').length,
-          };
-          
-          return { ...trip, totalCost: total, expenseCounts };
-        })
-      );
+      
+      // Optimize: Get all expenses for all trips in a single query
+      const tripIds = trips.map(trip => trip.id);
+      const allExpenses = await storage.getExpensesByTripIds(tripIds);
+      
+      // Group expenses by trip ID
+      const expensesByTripId = allExpenses.reduce((acc, expense) => {
+        if (!acc[expense.tripId]) {
+          acc[expense.tripId] = [];
+        }
+        acc[expense.tripId].push(expense);
+        return acc;
+      }, {} as Record<string, typeof allExpenses>);
+      
+      // Calculate totals and counts for each trip
+      const tripsWithTotals = trips.map((trip) => {
+        const tripExpenses = expensesByTripId[trip.id] || [];
+        const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+        
+        const expenseCounts = {
+          flights: tripExpenses.filter(e => e.category === 'flights').length,
+          accommodation: tripExpenses.filter(e => e.category === 'accommodation').length,
+          activities: tripExpenses.filter(e => e.category === 'activities').length,
+        };
+        
+        return { ...trip, totalCost: total, expenseCounts };
+      });
+      
       res.json(tripsWithTotals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch trips" });

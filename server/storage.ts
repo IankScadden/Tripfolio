@@ -1,6 +1,6 @@
 import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, trips, expenses, users } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -18,6 +18,7 @@ export interface IStorage {
   
   // Expense operations
   getExpensesByTrip(tripId: string): Promise<Expense[]>;
+  getExpensesByTripIds(tripIds: string[]): Promise<Expense[]>;
   getExpense(id: string): Promise<Expense | undefined>;
   createExpense(expense: InsertExpense): Promise<Expense>;
   updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
@@ -92,6 +93,11 @@ export class DatabaseStorage implements IStorage {
   // Expense operations
   async getExpensesByTrip(tripId: string): Promise<Expense[]> {
     return await db.select().from(expenses).where(eq(expenses.tripId, tripId));
+  }
+
+  async getExpensesByTripIds(tripIds: string[]): Promise<Expense[]> {
+    if (tripIds.length === 0) return [];
+    return await db.select().from(expenses).where(inArray(expenses.tripId, tripIds));
   }
 
   async getExpense(id: string): Promise<Expense | undefined> {
