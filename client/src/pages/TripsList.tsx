@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, MapPin, Plane, Hotel, Ticket, Star, Calendar } from "lucide-react";
+import { Plus, MapPin, Plane, Hotel, Ticket, Star, Calendar, MoreVertical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -69,6 +75,20 @@ export default function TripsList() {
     },
   });
 
+  const deleteTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const response = await apiRequest("DELETE", `/api/trips/${tripId}`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      toast({
+        title: "Trip deleted",
+        description: "Your trip has been deleted successfully.",
+      });
+    },
+  });
+
   const handleCreateTrip = (trip: any) => {
     createTripMutation.mutate(trip);
     setShowCreateDialog(false);
@@ -77,6 +97,11 @@ export default function TripsList() {
   const handleToggleFavorite = (e: React.MouseEvent, tripId: string) => {
     e.stopPropagation();
     toggleFavoriteMutation.mutate(tripId);
+  };
+
+  const handleDeleteTrip = (e: React.MouseEvent, tripId: string) => {
+    e.stopPropagation();
+    deleteTripMutation.mutate(tripId);
   };
 
   const isUpcoming = (startDate?: string) => {
@@ -195,6 +220,29 @@ export default function TripsList() {
                         }`}
                       />
                     </button>
+
+                    {/* Menu Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-3 left-14 w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors z-10"
+                          data-testid={`button-menu-${trip.id}`}
+                        >
+                          <MoreVertical className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" data-testid={`menu-content-${trip.id}`}>
+                        <DropdownMenuItem
+                          onClick={(e) => handleDeleteTrip(e, trip.id)}
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          data-testid={`menu-delete-${trip.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Trip
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
                     {/* Upcoming Badge */}
                     {isUpcoming(trip.startDate) && (

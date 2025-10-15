@@ -35,8 +35,9 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Activities
 
 ## Recent Changes
+- 2024-10-15: Added three-dot menu to trip cards for deleting trips - menu positioned next to star button
 - 2024-10-15: Improved create trip flow - Home page "Create New Trip" button now opens dialog directly (no intermediate navigation)
-- 2024-10-15: Redesigned My Trips page with Figma designs - gradient hero section, trip cards with gradient headers
+- 2024-10-15: Redesigned My Trips page with Figma designs - gradient hero section, blue-focused color scheme
 - 2024-10-15: Added favorite trips feature - star button to favorite/unfavorite, favorites appear first in list
 - 2024-10-15: Added "Upcoming" badge for trips starting today or in the future
 - 2024-10-15: Added expense category counts to trip cards (flights, accommodation, activities)
