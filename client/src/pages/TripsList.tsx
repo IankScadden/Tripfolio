@@ -111,7 +111,7 @@ export default function TripsList() {
       <Header />
 
       {/* Gradient Hero Section */}
-      <div className="relative bg-gradient-to-r from-blue-500 via-purple-400 to-orange-300 overflow-hidden">
+      <div className="relative bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-400 overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJhIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0wIDQwTDQwIDBIMzBMMCAxMFptNDAgMEw0MCAzMEwzMCA0MHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNhKSIvPjwvc3ZnPg==')] opacity-30"></div>
         <div className="relative max-w-6xl mx-auto px-6 py-12">
           <div className="flex items-start justify-between">
@@ -158,7 +158,7 @@ export default function TripsList() {
               <Button 
                 onClick={() => setShowCreateDialog(true)}
                 size="lg"
-                className="gap-2 bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600"
+                className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600"
                 data-testid="button-create-first-trip"
               >
                 <Plus className="h-4 w-4" />
@@ -178,7 +178,7 @@ export default function TripsList() {
                   data-testid={`card-trip-${trip.id}`}
                 >
                   {/* Gradient Header */}
-                  <div className="relative h-32 bg-gradient-to-br from-blue-400 via-purple-300 to-orange-200">
+                  <div className="relative h-32 bg-gradient-to-br from-blue-500 via-blue-400 to-cyan-300">
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJiIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0wIDQwTDQwIDBIMzBMMCAxMFptNDAgMEw0MCAzMEwzMCA0MHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2IpIi8+PC9zdmc+')] opacity-40"></div>
                     
                     {/* Star Button */}
@@ -234,7 +234,7 @@ export default function TripsList() {
                         <span className="text-muted-foreground">{trip.expenseCounts?.flights || 0}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm">
-                        <Hotel className="h-4 w-4 text-purple-500" />
+                        <Hotel className="h-4 w-4 text-cyan-600" />
                         <span className="text-muted-foreground">{trip.expenseCounts?.accommodation || 0}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm">
