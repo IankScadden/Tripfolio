@@ -35,6 +35,13 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Activities
 
 ## Recent Changes
+- 2024-10-16: Added trip sharing feature - share button on trip cards generates public shareable links
+- 2024-10-16: Created SharedTrip public page at /share/:shareId for read-only trip views
+- 2024-10-16: Added POST /api/trips/:id/share endpoint to generate/retrieve shareId
+- 2024-10-16: Redesigned trip card actions - replaced three-dot menu with three visible buttons (star, share, delete)
+- 2024-10-16: Performance optimization - reduced trips list load time from 3-6s to ~1s (N+1 to 2 queries)
+- 2024-10-16: Improved shareId generation to use crypto.randomUUID for consistency and security
+- 2024-10-16: Added clipboard fallback for share functionality (shows link in toast if clipboard unavailable)
 - 2024-10-15: Added three-dot menu to trip cards for deleting trips - menu positioned next to star button
 - 2024-10-15: Improved create trip flow - Home page "Create New Trip" button now opens dialog directly (no intermediate navigation)
 - 2024-10-15: Redesigned My Trips page with Figma designs - gradient hero section, blue-focused color scheme
@@ -76,6 +83,7 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - `POST /api/trips` - Create new trip
 - `PATCH /api/trips/:id` - Update trip
 - `PATCH /api/trips/:id/favorite` - Toggle favorite status of a trip
+- `POST /api/trips/:id/share` - Generate/retrieve shareId for trip sharing
 - `DELETE /api/trips/:id` - Delete trip
 
 ### Expense Routes (all require authentication)

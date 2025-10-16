@@ -68,7 +68,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTrip(insertTrip: InsertTrip, userId: string): Promise<Trip> {
-    const shareId = randomUUID().substring(0, 8);
+    // Generate shareId using full UUID without hyphens (32 chars of hex for security)
+    const shareId = randomUUID().replace(/-/g, '');
     const [trip] = await db
       .insert(trips)
       .values({ ...insertTrip, userId, shareId })

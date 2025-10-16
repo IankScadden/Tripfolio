@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertTripSchema, insertExpenseSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { randomUUID } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -178,7 +179,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate shareId if it doesn't exist
       let shareId = trip.shareId;
       if (!shareId) {
-        shareId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        // Use randomUUID without hyphens for secure shareId generation (32 chars of hex)
+        shareId = randomUUID().replace(/-/g, '');
         const updatedTrip = await storage.updateTrip(req.params.id, { shareId });
         if (!updatedTrip) {
           return res.status(404).json({ error: "Trip not found" });

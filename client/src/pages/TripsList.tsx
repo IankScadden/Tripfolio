@@ -89,11 +89,20 @@ export default function TripsList() {
       const { shareId } = await response.json();
       const shareUrl = `${window.location.origin}/share/${shareId}`;
       
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Share link copied!",
-        description: "The trip share link has been copied to your clipboard.",
-      });
+      // Try clipboard API, fallback to showing the link if unavailable
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Share link copied!",
+          description: "The trip share link has been copied to your clipboard.",
+        });
+      } catch (clipboardError) {
+        // Fallback: show the link in the toast if clipboard is unavailable
+        toast({
+          title: "Share link ready",
+          description: shareUrl,
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
