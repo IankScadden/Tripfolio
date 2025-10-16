@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, MapPin, Plane, Hotel, Ticket, Star, Calendar, MoreVertical, Trash2, Share2 } from "lucide-react";
+import { Plus, MapPin, Plane, Hotel, Ticket, Star, Calendar, Trash2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -88,6 +82,26 @@ export default function TripsList() {
       });
     },
   });
+
+  const shareTrip = async (tripId: string) => {
+    try {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/share`, {});
+      const { shareId } = await response.json();
+      const shareUrl = `${window.location.origin}/share/${shareId}`;
+      
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Share link copied!",
+        description: "The trip share link has been copied to your clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate share link.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleCreateTrip = (trip: any) => {
     createTripMutation.mutate(trip);
@@ -221,28 +235,26 @@ export default function TripsList() {
                       />
                     </button>
 
-                    {/* Menu Dropdown */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-3 left-14 w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors z-10"
-                          data-testid={`button-menu-${trip.id}`}
-                        >
-                          <MoreVertical className="h-4 w-4 text-gray-600" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" data-testid={`menu-content-${trip.id}`}>
-                        <DropdownMenuItem
-                          onClick={(e) => handleDeleteTrip(e, trip.id)}
-                          className="text-destructive focus:text-destructive cursor-pointer"
-                          data-testid={`menu-delete-${trip.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Trip
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Share Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareTrip(trip.id);
+                      }}
+                      className="absolute top-3 left-14 w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors z-10"
+                      data-testid={`button-share-${trip.id}`}
+                    >
+                      <Share2 className="h-4 w-4 text-gray-600" />
+                    </button>
+
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => handleDeleteTrip(e, trip.id)}
+                      className="absolute top-3 left-[6.5rem] w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors z-10"
+                      data-testid={`button-delete-${trip.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-gray-600" />
+                    </button>
 
                     {/* Upcoming Badge */}
                     {isUpcoming(trip.startDate) && (
