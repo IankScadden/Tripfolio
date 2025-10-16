@@ -13,7 +13,7 @@ export interface IStorage {
   getTrip(id: string): Promise<Trip | undefined>;
   getTripByShareId(shareId: string): Promise<Trip | undefined>;
   createTrip(trip: InsertTrip, userId: string): Promise<Trip>;
-  updateTrip(id: string, trip: Partial<InsertTrip>): Promise<Trip | undefined>;
+  updateTrip(id: string, trip: Partial<InsertTrip> & { shareId?: string | null }): Promise<Trip | undefined>;
   deleteTrip(id: string): Promise<boolean>;
   
   // Expense operations
@@ -76,7 +76,7 @@ export class DatabaseStorage implements IStorage {
     return trip;
   }
 
-  async updateTrip(id: string, updates: Partial<InsertTrip>): Promise<Trip | undefined> {
+  async updateTrip(id: string, updates: Partial<InsertTrip> & { shareId?: string | null }): Promise<Trip | undefined> {
     const [trip] = await db
       .update(trips)
       .set(updates)

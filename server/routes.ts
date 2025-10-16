@@ -165,6 +165,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/trips/:id/share", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      // Generate shareId if it doesn't exist
+      let shareId = trip.shareId;
+      if (!shareId) {
+        shareId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const updatedTrip = await storage.updateTrip(req.params.id, { shareId });
+        if (!updatedTrip) {
+          return res.status(404).json({ error: "Trip not found" });
+        }
+      }
+      res.json({ shareId });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate share link" });
+    }
+  });
+
   // Expense routes - all require authentication
   app.get("/api/trips/:tripId/expenses", isAuthenticated, async (req: any, res) => {
     try {

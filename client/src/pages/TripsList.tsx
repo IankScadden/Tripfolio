@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, MapPin, Plane, Hotel, Ticket, Star, Calendar, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, MapPin, Plane, Hotel, Ticket, Star, Calendar, MoreVertical, Trash2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
