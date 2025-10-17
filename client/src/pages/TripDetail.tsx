@@ -480,29 +480,33 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => 
-                        percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''
+                      label={({ percent }) => 
+                        percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
                       }
-                      outerRadius={80}
+                      outerRadius={90}
                       fill="#8884d8"
                       dataKey="value"
+                      style={{ fontSize: '14px', fontWeight: 'bold' }}
                     >
                       {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Legend />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '12px' }}
+                      iconSize={10}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   No expenses added yet
                 </div>
               )}
