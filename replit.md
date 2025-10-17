@@ -38,6 +38,8 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Other Costs (miscellaneous expenses)
 
 ## Recent Changes
+- 2024-10-17: **Added Multi-Day Lodging Feature** - Users can book lodging for multiple consecutive days at once via "Add Lodging" button, which opens a dialog to specify check-in/check-out dates, total cost, and lodging name. The system automatically calculates nightly rate and creates accommodation expenses for each night, auto-populating lodging across the date range.
+- 2024-10-17: **Fixed Timezone Display Bugs** - Resolved date parsing issues in TripCalendar and DayDetail that caused dates to display one day earlier than actual by using local timezone parsing instead of UTC
 - 2024-10-17: **Added Edit Trip Feature** - Users can now edit trip duration and dates via pencil icon button next to trip info, which updates the day-by-day calendar layout accordingly
 - 2024-10-17: Updated My Trips banner with world map background image and blue-to-teal gradient (#4F75FF → #5B9FD8 → #4DD0E1)
 - 2024-10-17: **Fixed Category ID Mismatch Bugs** - DayDetail now uses correct category IDs: "local" (was "local_transport") and "intercity" (was "city_to_city_transport") to match TripDetail expectations
@@ -113,6 +115,7 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 ### Day Details Routes (all require authentication)
 - `GET /api/trips/:tripId/day-details/:dayNumber` - Get day detail for a specific day
 - `POST /api/trips/:tripId/day-details` - Save/update day detail (auto-syncs to expenses)
+- `POST /api/trips/:tripId/lodging/bulk` - Create multi-day lodging across date range (auto-calculates nightly rate)
 
 ### Public Routes
 - `GET /api/share/:shareId` - Get shared trip view (no auth required)

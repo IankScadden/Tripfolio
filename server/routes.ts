@@ -330,6 +330,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk lodging creation for multi-day stays
+  app.post("/api/trips/:tripId/lodging/bulk", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.tripId);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const { checkInDate, checkOutDate, lodgingName, totalCost, url, startDayNumber } = req.body;
+
+      // Validate required fields
+      if (!checkInDate || !checkOutDate || !lodgingName || !totalCost) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // For trips without startDate, startDayNumber is required
+      if (!trip.startDate && !startDayNumber) {
+        return res.status(400).json({ error: "startDayNumber is required for trips without a start date" });
+      }
+
+      // Parse dates in local timezone
+      const [checkInYear, checkInMonth, checkInDay] = checkInDate.split('-').map(Number);
+      const [checkOutYear, checkOutMonth, checkOutDay] = checkOutDate.split('-').map(Number);
+      const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
+      const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
+
+      // Calculate number of nights (check-out day is not included in stay)
+      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (nights <= 0) {
+        return res.status(400).json({ error: "Check-out date must be after check-in date" });
+      }
+
+      // Calculate nightly rate
+      const nightlyRate = (parseFloat(totalCost) / nights).toFixed(2);
+
+      // Calculate day numbers and dates for each night
+      const nightsData: Array<{ dayNumber: number; dateString: string }> = [];
+      
+      for (let i = 0; i < nights; i++) {
+        const currentDate = new Date(checkInYear, checkInMonth - 1, checkInDay + i);
+        
+        // Format date correctly using the Date object (handles month/year rollovers)
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1; // getMonth() is 0-indexed
+        const day = currentDate.getDate();
+        const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        // Calculate day number
+        let dayNumber: number;
+        if (trip.startDate) {
+          const [tripYear, tripMonth, tripDay] = trip.startDate.split('-').map(Number);
+          const tripStart = new Date(tripYear, tripMonth - 1, tripDay);
+          const daysDiff = Math.ceil((currentDate.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
+          dayNumber = daysDiff + 1; // Day 1 is the first day
+        } else {
+          // For trips without startDate, use the provided startDayNumber
+          dayNumber = parseInt(startDayNumber) + i;
+        }
+        
+        // Only include nights within the trip duration
+        if (dayNumber >= 1 && (!trip.days || dayNumber <= trip.days)) {
+          nightsData.push({ dayNumber, dateString });
+        }
+        // Skip nights that exceed trip duration
+      }
+
+      // Delete any existing accommodation expenses for these days
+      const existingExpenses = await storage.getExpensesByTrip(req.params.tripId);
+      const dayNumbersToDelete = nightsData.map(night => night.dayNumber);
+      const expensesToDelete = existingExpenses.filter(
+        e => e.category === 'accommodation' && e.dayNumber && dayNumbersToDelete.includes(e.dayNumber)
+      );
+      
+      for (const expense of expensesToDelete) {
+        await storage.deleteExpense(expense.id);
+      }
+
+      // Create accommodation expenses for each night
+      const createdExpenses = [];
+      for (const night of nightsData) {
+        const expense = await storage.createExpense({
+          tripId: req.params.tripId,
+          category: 'accommodation',
+          description: lodgingName,
+          cost: nightlyRate,
+          url: url || undefined,
+          date: night.dateString,
+          dayNumber: night.dayNumber,
+        });
+        createdExpenses.push(expense);
+      }
+
+      res.json({ 
+        success: true, 
+        nights, 
+        nightlyRate, 
+        expenses: createdExpenses 
+      });
+    } catch (error) {
+      console.error("Bulk lodging error:", error);
+      res.status(500).json({ error: "Failed to create bulk lodging" });
+    }
+  });
+
   // Public route for shared trips (no auth required)
   app.get("/api/share/:shareId", async (req, res) => {
     try {

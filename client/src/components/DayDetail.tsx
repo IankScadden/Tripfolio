@@ -58,6 +58,14 @@ export default function DayDetail({
   const [intercityCost, setIntercityCost] = useState("");
   const [intercityUrl, setIntercityUrl] = useState("");
   const [foodBudgetAdjustment, setFoodBudgetAdjustment] = useState("");
+  
+  // Multi-day lodging dialog state
+  const [showMultiDayLodging, setShowMultiDayLodging] = useState(false);
+  const [multiDayCheckIn, setMultiDayCheckIn] = useState("");
+  const [multiDayCheckOut, setMultiDayCheckOut] = useState("");
+  const [multiDayLodgingName, setMultiDayLodgingName] = useState("");
+  const [multiDayTotalCost, setMultiDayTotalCost] = useState("");
+  const [multiDayLodgingUrl, setMultiDayLodgingUrl] = useState("");
 
   // Fetch day detail data
   const { data: dayDetailData } = useQuery({
@@ -205,6 +213,52 @@ export default function DayDetail({
     },
   });
 
+  const bulkLodgingMutation = useMutation({
+    mutationFn: async (data: { checkInDate: string; checkOutDate: string; lodgingName: string; totalCost: string; url?: string; startDayNumber: number }) => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/lodging/bulk`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+    },
+  });
+
+  // Calculate nightly rate for multi-day lodging
+  const calculateNightlyRate = () => {
+    if (!multiDayCheckIn || !multiDayCheckOut || !multiDayTotalCost) return null;
+    const [checkInYear, checkInMonth, checkInDay] = multiDayCheckIn.split('-').map(Number);
+    const [checkOutYear, checkOutMonth, checkOutDay] = multiDayCheckOut.split('-').map(Number);
+    const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
+    const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    if (nights <= 0) return null;
+    return (parseFloat(multiDayTotalCost) / nights).toFixed(2);
+  };
+
+  const handleSaveMultiDayLodging = async () => {
+    if (!multiDayCheckIn || !multiDayCheckOut || !multiDayLodgingName || !multiDayTotalCost) {
+      return;
+    }
+    
+    await bulkLodgingMutation.mutateAsync({
+      checkInDate: multiDayCheckIn,
+      checkOutDate: multiDayCheckOut,
+      lodgingName: multiDayLodgingName,
+      totalCost: multiDayTotalCost,
+      url: multiDayLodgingUrl || undefined,
+      startDayNumber: dayNumber, // Pass current day number for trips without startDate
+    });
+
+    // Reset form and close dialog
+    setMultiDayCheckIn("");
+    setMultiDayCheckOut("");
+    setMultiDayLodgingName("");
+    setMultiDayTotalCost("");
+    setMultiDayLodgingUrl("");
+    setShowMultiDayLodging(false);
+  };
+
   const handleSave = async () => {
     // Save day detail
     await saveDayDetailMutation.mutateAsync({
@@ -327,6 +381,7 @@ export default function DayDetail({
   const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-day-detail">
         <DialogHeader>
@@ -379,43 +434,58 @@ export default function DayDetail({
 
           {/* Lodging */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Hotel className="h-5 w-5 text-green-600" />
-              <h3 className="font-semibold">Lodging</h3>
-            </div>
-            <div className="space-y-3 pl-7">
-              <div>
-                <Label>Name</Label>
-                <Input
-                  placeholder="Hotel/Hostel name"
-                  value={lodgingName}
-                  onChange={(e) => setLodgingName(e.target.value)}
-                  data-testid="input-lodging-name"
-                />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Hotel className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold">Lodging</h3>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Cost ($)</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={lodgingCost}
-                    onChange={(e) => setLodgingCost(e.target.value)}
-                    data-testid="input-lodging-cost"
-                  />
-                </div>
-                <div>
-                  <Label>Booking Link (Optional)</Label>
-                  <Input
-                    type="url"
-                    placeholder="https://..."
-                    value={lodgingUrl}
-                    onChange={(e) => setLodgingUrl(e.target.value)}
-                    data-testid="input-lodging-url"
-                  />
+              {!lodgingName && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMultiDayLodging(true)}
+                  data-testid="button-add-lodging"
+                >
+                  + Add Lodging
+                </Button>
+              )}
+            </div>
+            {lodgingName ? (
+              <div className="pl-7 space-y-2 p-3 border rounded-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">{lodgingName}</p>
+                    <p className="text-sm text-muted-foreground">${lodgingCost} per night</p>
+                    {lodgingUrl && (
+                      <a 
+                        href={lodgingUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-sm text-primary hover:underline"
+                        data-testid="link-lodging-url"
+                      >
+                        View booking
+                      </a>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => {
+                      setLodgingName("");
+                      setLodgingCost("");
+                      setLodgingUrl("");
+                    }}
+                    data-testid="button-remove-lodging"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <p className="pl-7 text-sm text-muted-foreground">No lodging added for this day</p>
+            )}
           </div>
 
           {/* Activities */}
@@ -644,5 +714,93 @@ export default function DayDetail({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Multi-Day Lodging Dialog */}
+    <Dialog open={showMultiDayLodging} onOpenChange={setShowMultiDayLodging}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Multi-Day Lodging</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Book lodging for multiple days at once
+          </p>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <Label>Lodging Name</Label>
+            <Input
+              placeholder="Hotel/Hostel name"
+              value={multiDayLodgingName}
+              onChange={(e) => setMultiDayLodgingName(e.target.value)}
+              data-testid="input-multiday-lodging-name"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Check-In Date</Label>
+              <Input
+                type="date"
+                value={multiDayCheckIn}
+                onChange={(e) => setMultiDayCheckIn(e.target.value)}
+                data-testid="input-multiday-checkin"
+              />
+            </div>
+            <div>
+              <Label>Check-Out Date</Label>
+              <Input
+                type="date"
+                value={multiDayCheckOut}
+                onChange={(e) => setMultiDayCheckOut(e.target.value)}
+                data-testid="input-multiday-checkout"
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Total Cost ($)</Label>
+            <Input
+              type="number"
+              placeholder="0"
+              value={multiDayTotalCost}
+              onChange={(e) => setMultiDayTotalCost(e.target.value)}
+              data-testid="input-multiday-total-cost"
+            />
+          </div>
+          {calculateNightlyRate() && (
+            <div className="bg-muted/30 rounded-lg p-3">
+              <p className="text-sm text-muted-foreground">Nightly Rate</p>
+              <p className="text-xl font-bold">${calculateNightlyRate()}</p>
+            </div>
+          )}
+          <div>
+            <Label>Booking Link (Optional)</Label>
+            <Input
+              type="url"
+              placeholder="https://..."
+              value={multiDayLodgingUrl}
+              onChange={(e) => setMultiDayLodgingUrl(e.target.value)}
+              data-testid="input-multiday-lodging-url"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => setShowMultiDayLodging(false)}
+            className="flex-1"
+            data-testid="button-cancel-multiday-lodging"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveMultiDayLodging}
+            className="flex-1"
+            disabled={bulkLodgingMutation.isPending || !multiDayCheckIn || !multiDayCheckOut || !multiDayLodgingName || !multiDayTotalCost}
+            data-testid="button-save-multiday-lodging"
+          >
+            {bulkLodgingMutation.isPending ? "Saving..." : "Save Lodging"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
