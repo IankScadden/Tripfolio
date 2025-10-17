@@ -55,7 +55,7 @@ export default function AddExpenseDialog({
             <Label htmlFor="description">Description</Label>
             <Input
               id="description"
-              placeholder="e.g., Flight to Paris"
+              placeholder="Enter description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
