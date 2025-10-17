@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import mapBackground from "@assets/stock_images/subtle_world_map_bac_72f6bec8.jpg";
 
 type Trip = {
   id: string;
@@ -158,18 +159,28 @@ export default function TripsList() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Gradient Hero Section */}
-      <div className="relative bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-400 overflow-hidden">
+      {/* Gradient Hero Section with Map Background */}
+      <div className="relative bg-gradient-to-r from-[#4F75FF] via-[#5B9FD8] to-[#4DD0E1] overflow-hidden">
+        {/* Map background overlay */}
+        <div 
+          className="absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: `url(${mapBackground})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        ></div>
+        {/* Subtle pattern overlay */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJhIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0wIDQwTDQwIDBIMzBMMCAxMFptNDAgMEw0MCAzMEwzMCA0MHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNhKSIvPjwvc3ZnPg==')] opacity-30"></div>
-        <div className="relative max-w-6xl mx-auto px-6 py-12">
-          <div className="flex items-start justify-between">
+        <div className="relative max-w-6xl mx-auto px-6 py-16">
+          <div className="flex items-start justify-between gap-4">
             <div className="text-white">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <MapPin className="h-5 w-5" />
-                <h1 className="text-lg font-medium">Your Travel Journey</h1>
+                <h1 className="text-base font-medium">Your Travel Journey</h1>
               </div>
-              <h2 className="text-2xl font-bold mb-1">My Trip Budgets</h2>
-              <p className="text-white/90">
+              <h2 className="text-4xl font-bold mb-2">My Trip Budgets</h2>
+              <p className="text-white/95 text-base">
                 {trips.length === 0
                   ? "Start planning your next adventure"
                   : `${trips.length} trip${trips.length === 1 ? "" : "s"} planned`}
@@ -178,8 +189,9 @@ export default function TripsList() {
             <Button
               onClick={() => setShowCreateDialog(true)}
               variant="secondary"
-              className="gap-2 bg-white hover:bg-white/90 text-primary shadow-md"
-              data-testid="button-create-new-trip"
+              size="lg"
+              className="gap-2 bg-white hover:bg-white/90 text-[#4F75FF] shadow-lg font-medium"
+              data-testid="button-create-trip"
             >
               <Plus className="h-4 w-4" />
               Create New Trip
@@ -193,8 +205,8 @@ export default function TripsList() {
           <Card className="p-16">
             <div className="text-center">
               <div className="mb-6 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <MapPin className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#4F75FF] to-[#4DD0E1] flex items-center justify-center">
+                  <MapPin className="h-10 w-10 text-white" />
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">
@@ -206,7 +218,7 @@ export default function TripsList() {
               <Button 
                 onClick={() => setShowCreateDialog(true)}
                 size="lg"
-                className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600"
+                className="gap-2 bg-gradient-to-r from-[#4F75FF] to-[#4DD0E1] hover:from-[#4568E8] hover:to-[#3BC2D4] text-white"
                 data-testid="button-create-first-trip"
               >
                 <Plus className="h-4 w-4" />
@@ -226,7 +238,7 @@ export default function TripsList() {
                   data-testid={`card-trip-${trip.id}`}
                 >
                   {/* Gradient Header */}
-                  <div className="relative h-32 bg-gradient-to-br from-blue-500 via-blue-300 to-cyan-300">
+                  <div className="relative h-32 bg-gradient-to-br from-[#4F75FF] via-[#5B9FD8] to-[#4DD0E1]">
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJiIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0wIDQwTDQwIDBIMzBMMCAxMFptNDAgMEw0MCAzMEwzMCA0MHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2IpIi8+PC9zdmc+')] opacity-40"></div>
                     
                     {/* Star Button */}
@@ -299,15 +311,15 @@ export default function TripsList() {
                     {/* Expense Category Counts */}
                     <div className="flex items-center gap-4 mb-4 pb-4 border-b">
                       <div className="flex items-center gap-1 text-sm">
-                        <Plane className="h-4 w-4 text-blue-500" />
+                        <Plane className="h-4 w-4 text-[#4F75FF]" />
                         <span className="text-muted-foreground">{trip.expenseCounts?.flights || 0}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm">
-                        <Hotel className="h-4 w-4 text-purple-500" />
+                        <Hotel className="h-4 w-4 text-[#5B9FD8]" />
                         <span className="text-muted-foreground">{trip.expenseCounts?.accommodation || 0}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm">
-                        <Ticket className="h-4 w-4 text-orange-500" />
+                        <Ticket className="h-4 w-4 text-[#4DD0E1]" />
                         <span className="text-muted-foreground">{trip.expenseCounts?.activities || 0}</span>
                       </div>
                     </div>
@@ -315,7 +327,7 @@ export default function TripsList() {
                     {/* Total Budget */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Total Budget</span>
-                      <span className="text-lg font-bold text-primary" data-testid={`text-total-cost-${trip.id}`}>
+                      <span className="text-lg font-bold text-[#4F75FF]" data-testid={`text-total-cost-${trip.id}`}>
                         ${trip.totalCost.toFixed(0)}
                       </span>
                     </div>
