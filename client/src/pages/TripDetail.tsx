@@ -437,12 +437,12 @@ export default function TripDetail() {
             </CardContent>
           </Card>
 
-          {/* Main Transportation */}
+          {/* City to City Transportation */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base font-medium flex items-center gap-2">
                 <Train className="h-4 w-4" style={{ color: CATEGORIES[1].color }} />
-                Main Transportation
+                City to City Transportation
               </CardTitle>
               <Button 
                 variant="ghost" 
@@ -486,12 +486,12 @@ export default function TripDetail() {
             </CardContent>
           </Card>
 
-          {/* Local Transport */}
+          {/* Local Transportation */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base font-medium flex items-center gap-2">
                 <Bus className="h-4 w-4" style={{ color: CATEGORIES[2].color }} />
-                Local Transport
+                Local Transportation
               </CardTitle>
               <Button 
                 variant="ghost" 
