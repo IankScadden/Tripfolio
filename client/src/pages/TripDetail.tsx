@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
@@ -13,6 +16,10 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertTripSchema } from "@shared/schema";
+import { z } from "zod";
 
 const CATEGORIES = [
   {
@@ -102,6 +109,7 @@ export default function TripDetail() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showFoodBudgetDialog, setShowFoodBudgetDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showEditTripDialog, setShowEditTripDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
@@ -195,6 +203,40 @@ export default function TripDetail() {
         toast({
           title: "Error",
           description: "Failed to delete expense. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const updateTripMutation = useMutation({
+    mutationFn: async (data: { name?: string; startDate?: string | null; endDate?: string | null; days?: number | null }) => {
+      const response = await apiRequest("PATCH", `/api/trips/${tripId}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      toast({
+        title: "Success",
+        description: "Trip updated successfully",
+      });
+      setShowEditTripDialog(false);
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update trip. Please try again.",
           variant: "destructive",
         });
       }
@@ -360,6 +402,15 @@ export default function TripDetail() {
                 <span data-testid="text-trip-days">{trip.days} days</span>
               </div>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setShowEditTripDialog(true)}
+              data-testid="button-edit-trip"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -817,6 +868,149 @@ export default function TripDetail() {
         onPrevious={handlePreviousDay}
         onNext={handleNextDay}
       />
+
+      <EditTripDialog
+        open={showEditTripDialog}
+        onOpenChange={setShowEditTripDialog}
+        trip={trip}
+        onSave={(data) => updateTripMutation.mutate(data)}
+        isPending={updateTripMutation.isPending}
+      />
     </div>
+  );
+}
+
+// Edit Trip Dialog Component
+const editTripFormSchema = z.object({
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  days: z.number().min(1).optional().nullable(),
+});
+
+type EditTripFormValues = z.infer<typeof editTripFormSchema>;
+
+function EditTripDialog({
+  open,
+  onOpenChange,
+  trip,
+  onSave,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trip: Trip | undefined;
+  onSave: (data: EditTripFormValues) => void;
+  isPending: boolean;
+}) {
+  const form = useForm<EditTripFormValues>({
+    resolver: zodResolver(editTripFormSchema),
+    defaultValues: {
+      startDate: trip?.startDate || null,
+      endDate: trip?.endDate || null,
+      days: trip?.days || null,
+    },
+  });
+
+  useEffect(() => {
+    if (trip && open) {
+      form.reset({
+        startDate: trip.startDate || null,
+        endDate: trip.endDate || null,
+        days: trip.days || null,
+      });
+    }
+  }, [trip, open, form]);
+
+  const handleSubmit = (data: EditTripFormValues) => {
+    onSave(data);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent data-testid="dialog-edit-trip">
+        <DialogHeader>
+          <DialogTitle>Edit Trip Details</DialogTitle>
+          <DialogDescription>
+            Update the duration and dates for your trip. This will affect the day-by-day calendar layout.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Date (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      data-testid="input-start-date"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="endDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>End Date (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      data-testid="input-end-date"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="days"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number of Days</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                      data-testid="input-days"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isPending}
+                data-testid="button-cancel-edit"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending} data-testid="button-save-edit">
+                {isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
