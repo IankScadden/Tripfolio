@@ -1,0 +1,417 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X } from "lucide-react";
+
+interface Activity {
+  id?: string;
+  name: string;
+  cost: string;
+  url?: string;
+}
+
+interface DayDetailProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tripId: string;
+  dayNumber: number;
+  date?: string;
+  totalDays: number;
+  dailyFoodBudget: number;
+  onSave: (data: any) => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  initialData?: any;
+}
+
+export default function DayDetail({
+  open,
+  onOpenChange,
+  tripId,
+  dayNumber,
+  date,
+  totalDays,
+  dailyFoodBudget,
+  onSave,
+  onPrevious,
+  onNext,
+  initialData,
+}: DayDetailProps) {
+  const [destination, setDestination] = useState("");
+  const [lodgingName, setLodgingName] = useState("");
+  const [lodgingCost, setLodgingCost] = useState("");
+  const [lodgingUrl, setLodgingUrl] = useState("");
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [localTransportNotes, setLocalTransportNotes] = useState("");
+  const [showIntercityTravel, setShowIntercityTravel] = useState(false);
+  const [stayingInSameCity, setStayingInSameCity] = useState(false);
+  const [intercityTransportType, setIntercityTransportType] = useState<string>("");
+  const [intercityName, setIntercityName] = useState("");
+  const [intercityCost, setIntercityCost] = useState("");
+  const [intercityUrl, setIntercityUrl] = useState("");
+  const [foodBudgetAdjustment, setFoodBudgetAdjustment] = useState("");
+
+  useEffect(() => {
+    if (initialData) {
+      setDestination(initialData.destination || "");
+      setLodgingName(initialData.lodgingName || "");
+      setLodgingCost(initialData.lodgingCost || "");
+      setLodgingUrl(initialData.lodgingUrl || "");
+      setActivities(initialData.activities || []);
+      setLocalTransportNotes(initialData.localTransportNotes || "");
+      setShowIntercityTravel(initialData.showIntercityTravel || false);
+      setStayingInSameCity(initialData.stayingInSameCity || false);
+      setIntercityTransportType(initialData.intercityTransportType || "");
+      setIntercityName(initialData.intercityName || "");
+      setIntercityCost(initialData.intercityCost || "");
+      setIntercityUrl(initialData.intercityUrl || "");
+      setFoodBudgetAdjustment(initialData.foodBudgetAdjustment || "");
+    }
+  }, [initialData]);
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  const addActivity = () => {
+    setActivities([...activities, { name: "", cost: "", url: "" }]);
+  };
+
+  const updateActivity = (index: number, field: keyof Activity, value: string) => {
+    const updated = [...activities];
+    updated[index] = { ...updated[index], [field]: value };
+    setActivities(updated);
+  };
+
+  const removeActivity = (index: number) => {
+    setActivities(activities.filter((_, i) => i !== index));
+  };
+
+  const handleStayingInSameCity = () => {
+    setStayingInSameCity(true);
+    setShowIntercityTravel(false);
+    setIntercityTransportType("");
+    setIntercityName("");
+    setIntercityCost("");
+    setIntercityUrl("");
+  };
+
+  const handleSave = () => {
+    onSave({
+      dayNumber,
+      destination,
+      lodgingName,
+      lodgingCost,
+      lodgingUrl,
+      activities,
+      localTransportNotes,
+      showIntercityTravel,
+      stayingInSameCity,
+      intercityTransportType,
+      intercityName,
+      intercityCost,
+      intercityUrl,
+      foodBudgetAdjustment,
+    });
+  };
+
+  const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-day-detail">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl">Day {dayNumber}</DialogTitle>
+              {date && <p className="text-sm text-muted-foreground mt-1">{formatDate(date)}</p>}
+            </div>
+            <div className="flex gap-2">
+              {onPrevious && dayNumber > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onPrevious}
+                  data-testid="button-previous-day"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+              )}
+              {onNext && dayNumber < totalDays && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onNext}
+                  data-testid="button-next-day"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          {/* Destination */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Destination</h3>
+            </div>
+            <Input
+              placeholder="City or location"
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              data-testid="input-destination"
+            />
+          </div>
+
+          {/* Lodging */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Hotel className="h-5 w-5 text-green-600" />
+              <h3 className="font-semibold">Lodging</h3>
+            </div>
+            <div className="space-y-3 pl-7">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  placeholder="Hotel/Hostel name"
+                  value={lodgingName}
+                  onChange={(e) => setLodgingName(e.target.value)}
+                  data-testid="input-lodging-name"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Cost ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={lodgingCost}
+                    onChange={(e) => setLodgingCost(e.target.value)}
+                    data-testid="input-lodging-cost"
+                  />
+                </div>
+                <div>
+                  <Label>Booking Link (Optional)</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://..."
+                    value={lodgingUrl}
+                    onChange={(e) => setLodgingUrl(e.target.value)}
+                    data-testid="input-lodging-url"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Activities */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ticket className="h-5 w-5 text-purple-600" />
+                <h3 className="font-semibold">Activities</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addActivity}
+                data-testid="button-add-activity"
+              >
+                + Add Activity
+              </Button>
+            </div>
+            <div className="space-y-3 pl-7">
+              {activities.map((activity, index) => (
+                <div key={index} className="space-y-2 p-3 border rounded-lg relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0"
+                    onClick={() => removeActivity(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <Input
+                    placeholder="Activity name"
+                    value={activity.name}
+                    onChange={(e) => updateActivity(index, "name", e.target.value)}
+                    data-testid={`input-activity-name-${index}`}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Cost ($)"
+                      value={activity.cost}
+                      onChange={(e) => updateActivity(index, "cost", e.target.value)}
+                      data-testid={`input-activity-cost-${index}`}
+                    />
+                    <Input
+                      type="url"
+                      placeholder="Link (optional)"
+                      value={activity.url || ""}
+                      onChange={(e) => updateActivity(index, "url", e.target.value)}
+                      data-testid={`input-activity-url-${index}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Local Transportation */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Bus className="h-5 w-5 text-purple-500" />
+              <h3 className="font-semibold">Local Transportation</h3>
+            </div>
+            <Textarea
+              placeholder="Add notes about local transportation (metro, bus, etc.)"
+              value={localTransportNotes}
+              onChange={(e) => setLocalTransportNotes(e.target.value)}
+              className="pl-7"
+              data-testid="input-local-transport"
+            />
+          </div>
+
+          {/* Travel to Next City */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Train className="h-5 w-5 text-orange-500" />
+                <h3 className="font-semibold">Travel to Next City</h3>
+              </div>
+              {!showIntercityTravel && !stayingInSameCity && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowIntercityTravel(true)}
+                  data-testid="button-add-intercity"
+                >
+                  + Add Travel
+                </Button>
+              )}
+            </div>
+            {showIntercityTravel && (
+              <div className="space-y-3 pl-7">
+                <div>
+                  <Label>Transport Type</Label>
+                  <Select value={intercityTransportType} onValueChange={setIntercityTransportType}>
+                    <SelectTrigger data-testid="select-intercity-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flight">
+                        <div className="flex items-center gap-2">
+                          <Plane className="h-4 w-4" />
+                          Flight
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="train">
+                        <div className="flex items-center gap-2">
+                          <Train className="h-4 w-4" />
+                          Train
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="bus">
+                        <div className="flex items-center gap-2">
+                          <Bus className="h-4 w-4" />
+                          Bus
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input
+                  placeholder="Route description"
+                  value={intercityName}
+                  onChange={(e) => setIntercityName(e.target.value)}
+                  data-testid="input-intercity-name"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    type="number"
+                    placeholder="Cost ($)"
+                    value={intercityCost}
+                    onChange={(e) => setIntercityCost(e.target.value)}
+                    data-testid="input-intercity-cost"
+                  />
+                  <Input
+                    type="url"
+                    placeholder="Booking link (optional)"
+                    value={intercityUrl}
+                    onChange={(e) => setIntercityUrl(e.target.value)}
+                    data-testid="input-intercity-url"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStayingInSameCity}
+                  data-testid="button-staying-same-city"
+                >
+                  Staying in Same City
+                </Button>
+              </div>
+            )}
+            {stayingInSameCity && (
+              <p className="text-sm text-muted-foreground pl-7">No intercity travel for this day</p>
+            )}
+          </div>
+
+          {/* Food */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Utensils className="h-5 w-5 text-pink-500" />
+              <h3 className="font-semibold">Food</h3>
+            </div>
+            <div className="pl-7 space-y-3">
+              <div className="bg-muted/30 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">Daily Food Budget</p>
+                <p className="text-2xl font-bold">${totalFoodBudget.toFixed(0)}</p>
+              </div>
+              <div>
+                <Label>Add Extra Budget for This Day ($)</Label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={foodBudgetAdjustment}
+                  onChange={(e) => setFoodBudgetAdjustment(e.target.value)}
+                  data-testid="input-food-adjustment"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="flex-1"
+            data-testid="button-back-to-calendar"
+          >
+            Back to Calendar
+          </Button>
+          <Button
+            onClick={handleSave}
+            className="flex-1"
+            data-testid="button-done"
+          >
+            Done
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

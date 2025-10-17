@@ -44,6 +44,18 @@ export const expenses = pgTable("expenses", {
   cost: decimal("cost", { precision: 10, scale: 2 }).notNull(),
   url: text("url"),
   date: text("date"),
+  dayNumber: integer("day_number"),
+});
+
+export const dayDetails = pgTable("day_details", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tripId: varchar("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  dayNumber: integer("day_number").notNull(),
+  destination: text("destination"),
+  localTransportNotes: text("local_transport_notes"),
+  foodBudgetAdjustment: decimal("food_budget_adjustment", { precision: 10, scale: 2 }).default("0"),
+  stayingInSameCity: integer("staying_in_same_city").default(0),
+  intercityTransportType: text("intercity_transport_type"),
 });
 
 export const insertTripSchema = createInsertSchema(trips).omit({
@@ -56,9 +68,15 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
 });
 
+export const insertDayDetailSchema = createInsertSchema(dayDetails).omit({
+  id: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof trips.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
+export type InsertDayDetail = z.infer<typeof insertDayDetailSchema>;
+export type DayDetail = typeof dayDetails.$inferSelect;

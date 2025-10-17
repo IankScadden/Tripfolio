@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
+import TripCalendar from "@/components/TripCalendar";
+import DayDetail from "@/components/DayDetail";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -101,6 +103,9 @@ export default function TripDetail() {
   const [showFoodBudgetDialog, setShowFoodBudgetDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showDayDetail, setShowDayDetail] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -230,6 +235,40 @@ export default function TripDetail() {
     deleteExpenseMutation.mutate(expenseId);
   };
 
+  const handleDayClick = (dayNumber: number, date?: string) => {
+    setSelectedDay({ dayNumber, date });
+    setShowCalendar(false);
+    setShowDayDetail(true);
+  };
+
+  const handleSaveDayDetail = async (data: any) => {
+    // Save day details and create expenses
+    // TODO: Implement API call to save day details
+    console.log("Saving day detail:", data);
+    setShowDayDetail(false);
+    setShowCalendar(true);
+  };
+
+  const handlePreviousDay = () => {
+    if (selectedDay && selectedDay.dayNumber > 1) {
+      const newDayNumber = selectedDay.dayNumber - 1;
+      const newDate = trip?.startDate 
+        ? new Date(new Date(trip.startDate).getTime() + (newDayNumber - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        : undefined;
+      setSelectedDay({ dayNumber: newDayNumber, date: newDate });
+    }
+  };
+
+  const handleNextDay = () => {
+    if (selectedDay && trip?.days && selectedDay.dayNumber < trip.days) {
+      const newDayNumber = selectedDay.dayNumber + 1;
+      const newDate = trip?.startDate 
+        ? new Date(new Date(trip.startDate).getTime() + (newDayNumber - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        : undefined;
+      setSelectedDay({ dayNumber: newDayNumber, date: newDate });
+    }
+  };
+
   const getExpensesByCategory = (categoryId: string) => {
     return expenses.filter((e) => e.category === categoryId);
   };
@@ -296,6 +335,7 @@ export default function TripDetail() {
           <Button
             variant="default"
             className="gap-2"
+            onClick={() => setShowCalendar(true)}
             data-testid="button-day-by-day-layout"
           >
             <ExternalLink className="h-4 w-4" />
@@ -751,6 +791,29 @@ export default function TripDetail() {
         tripDays={trip?.days || 1}
         currentDailyBudget={dailyFoodBudget}
         onSave={handleSaveFoodBudget}
+      />
+
+      <TripCalendar
+        open={showCalendar}
+        onOpenChange={setShowCalendar}
+        tripName={trip?.name || ""}
+        startDate={trip?.startDate}
+        endDate={trip?.endDate}
+        days={trip?.days}
+        onDayClick={handleDayClick}
+      />
+
+      <DayDetail
+        open={showDayDetail}
+        onOpenChange={setShowDayDetail}
+        tripId={tripId || ""}
+        dayNumber={selectedDay?.dayNumber || 1}
+        date={selectedDay?.date}
+        totalDays={trip?.days || 1}
+        dailyFoodBudget={dailyFoodBudget}
+        onSave={handleSaveDayDetail}
+        onPrevious={handlePreviousDay}
+        onNext={handleNextDay}
       />
     </div>
   );
