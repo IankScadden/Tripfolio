@@ -28,13 +28,15 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 
 ### Categories
 - Flights
-- Intercity Transportation (trains between cities)
+- City to City Transportation (trains between cities)
 - Local Transportation (buses, metro within cities)
 - Accommodation
 - Food
 - Activities
 
 ## Recent Changes
+- 2024-10-17: Updated transportation category labels: "Main Transportation" → "City to City Transportation", "Local Transport" → "Local Transportation"
+- 2024-10-17: Renamed "Expand Trip" button to "Day by Day Layout" on trip detail page
 - 2024-10-16: Added trip sharing feature - share button on trip cards generates public shareable links
 - 2024-10-16: Created SharedTrip public page at /share/:shareId for read-only trip views
 - 2024-10-16: Added POST /api/trips/:id/share endpoint to generate/retrieve shareId

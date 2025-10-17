@@ -13,13 +13,13 @@ const CATEGORIES = [
   },
   {
     id: "intercity",
-    title: "Main Transportation",
+    title: "City to City Transportation",
     icon: Train,
     color: "hsl(30, 90%, 60%)",
   },
   {
     id: "local",
-    title: "Local Transport",
+    title: "Local Transportation",
     icon: Bus,
     color: "hsl(280, 70%, 65%)",
   },
