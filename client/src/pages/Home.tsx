@@ -92,7 +92,7 @@ export default function Home() {
               data-testid="button-create-new-trip"
             >
               <Plus className="w-5 h-5" />
-              Create New Trip
+              Plan New Trip
             </Button>
             <Button
               size="lg"
