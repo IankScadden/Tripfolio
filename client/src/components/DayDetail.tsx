@@ -61,6 +61,7 @@ export default function DayDetail({
   
   // Multi-day lodging dialog state
   const [showMultiDayLodging, setShowMultiDayLodging] = useState(false);
+  const [isEditingMultiDayLodging, setIsEditingMultiDayLodging] = useState(false);
   const [multiDayCheckIn, setMultiDayCheckIn] = useState("");
   const [multiDayCheckOut, setMultiDayCheckOut] = useState("");
   const [multiDayLodgingName, setMultiDayLodgingName] = useState("");
@@ -78,17 +79,66 @@ export default function DayDetail({
     enabled: open && !!tripId && !!dayNumber,
   });
 
-  // Fetch expenses for this day
-  const { data: dayExpenses = [] } = useQuery({
-    queryKey: ["/api/trips", tripId, "expenses", "day", dayNumber],
-    queryFn: async () => {
-      const response = await fetch(`/api/trips/${tripId}/expenses`);
-      if (!response.ok) throw new Error("Failed to fetch expenses");
-      const allExpenses = await response.json();
-      return allExpenses.filter((e: any) => e.dayNumber === dayNumber);
-    },
-    enabled: open && !!tripId && !!dayNumber,
+  // Fetch ALL trip expenses to detect multi-day lodging
+  const { data: allTripExpenses = [] } = useQuery({
+    queryKey: ["/api/trips", tripId, "expenses"],
+    enabled: open && !!tripId,
   });
+
+  // Filter to get expenses for this specific day
+  const dayExpenses = allTripExpenses.filter((e: any) => e.dayNumber === dayNumber);
+
+  // Detect if current lodging is part of a multi-day booking
+  const detectMultiDayLodging = () => {
+    const currentLodging = dayExpenses.find((e: any) => e.category === "accommodation");
+    if (!currentLodging) return null;
+
+    const lodgingName = currentLodging.description;
+    const lodgingUrl = currentLodging.url;
+    const nightlyCost = parseFloat(currentLodging.cost);
+
+    // Find all consecutive days with the same lodging name
+    const allLodging = allTripExpenses
+      .filter((e: any) => e.category === "accommodation" && e.description === lodgingName)
+      .sort((a: any, b: any) => (a.dayNumber || 0) - (b.dayNumber || 0));
+
+    if (allLodging.length === 0) return null;
+
+    // Check if days are consecutive
+    let isConsecutive = true;
+    const firstDay = allLodging[0].dayNumber;
+    const lastDay = allLodging[allLodging.length - 1].dayNumber;
+    
+    for (let i = 0; i < allLodging.length; i++) {
+      if (allLodging[i].dayNumber !== firstDay + i) {
+        isConsecutive = false;
+        break;
+      }
+    }
+
+    if (!isConsecutive || allLodging.length === 1) return null;
+
+    // Calculate check-in and check-out dates
+    const checkInDate = allLodging[0].date;
+    // Check-out is the day after the last night
+    const lastNightDate = allLodging[allLodging.length - 1].date;
+    const [year, month, day] = lastNightDate.split('-').map(Number);
+    const checkOutDateObj = new Date(year, month - 1, day + 1);
+    const checkOutDate = `${checkOutDateObj.getFullYear()}-${String(checkOutDateObj.getMonth() + 1).padStart(2, '0')}-${String(checkOutDateObj.getDate()).padStart(2, '0')}`;
+
+    const totalCost = (nightlyCost * allLodging.length).toFixed(2);
+
+    return {
+      checkInDate,
+      checkOutDate,
+      lodgingName,
+      lodgingUrl,
+      totalCost,
+      nights: allLodging.length,
+    };
+  };
+
+  const multiDayLodgingInfo = detectMultiDayLodging();
 
   useEffect(() => {
     if (dayDetailData) {
@@ -251,6 +301,7 @@ export default function DayDetail({
     });
 
     // Reset form and close dialog
+    setIsEditingMultiDayLodging(false);
     setMultiDayCheckIn("");
     setMultiDayCheckOut("");
     setMultiDayLodgingName("");
@@ -443,7 +494,10 @@ export default function DayDetail({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowMultiDayLodging(true)}
+                  onClick={() => {
+                    setIsEditingMultiDayLodging(false);
+                    setShowMultiDayLodging(true);
+                  }}
                   data-testid="button-add-lodging"
                 >
                   + Add Lodging
@@ -456,6 +510,11 @@ export default function DayDetail({
                   <div className="flex-1">
                     <p className="font-medium">{lodgingName}</p>
                     <p className="text-sm text-muted-foreground">${lodgingCost} per night</p>
+                    {multiDayLodgingInfo && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Multi-day booking: {multiDayLodgingInfo.nights} nights (${multiDayLodgingInfo.totalCost} total)
+                      </p>
+                    )}
                     {lodgingUrl && (
                       <a 
                         href={lodgingUrl} 
@@ -468,19 +527,41 @@ export default function DayDetail({
                       </a>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => {
-                      setLodgingName("");
-                      setLodgingCost("");
-                      setLodgingUrl("");
-                    }}
-                    data-testid="button-remove-lodging"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    {multiDayLodgingInfo && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          // Pre-populate the edit form
+                          setIsEditingMultiDayLodging(true);
+                          setMultiDayCheckIn(multiDayLodgingInfo.checkInDate);
+                          setMultiDayCheckOut(multiDayLodgingInfo.checkOutDate);
+                          setMultiDayLodgingName(multiDayLodgingInfo.lodgingName);
+                          setMultiDayTotalCost(multiDayLodgingInfo.totalCost);
+                          setMultiDayLodgingUrl(multiDayLodgingInfo.lodgingUrl || "");
+                          setShowMultiDayLodging(true);
+                        }}
+                        data-testid="button-edit-multiday-lodging"
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => {
+                        setLodgingName("");
+                        setLodgingCost("");
+                        setLodgingUrl("");
+                      }}
+                      data-testid="button-remove-lodging"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -716,12 +797,23 @@ export default function DayDetail({
     </Dialog>
 
     {/* Multi-Day Lodging Dialog */}
-    <Dialog open={showMultiDayLodging} onOpenChange={setShowMultiDayLodging}>
+    <Dialog open={showMultiDayLodging} onOpenChange={(open) => {
+      setShowMultiDayLodging(open);
+      if (!open) {
+        // Reset form when closing
+        setIsEditingMultiDayLodging(false);
+        setMultiDayCheckIn("");
+        setMultiDayCheckOut("");
+        setMultiDayLodgingName("");
+        setMultiDayTotalCost("");
+        setMultiDayLodgingUrl("");
+      }
+    }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Multi-Day Lodging</DialogTitle>
+          <DialogTitle>{isEditingMultiDayLodging ? "Edit" : "Add"} Multi-Day Lodging</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Book lodging for multiple days at once
+            {isEditingMultiDayLodging ? "Update your multi-day lodging booking" : "Book lodging for multiple days at once"}
           </p>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -796,7 +888,7 @@ export default function DayDetail({
             disabled={bulkLodgingMutation.isPending || !multiDayCheckIn || !multiDayCheckOut || !multiDayLodgingName || !multiDayTotalCost}
             data-testid="button-save-multiday-lodging"
           >
-            {bulkLodgingMutation.isPending ? "Saving..." : "Save Lodging"}
+            {bulkLodgingMutation.isPending ? "Saving..." : (isEditingMultiDayLodging ? "Update Lodging" : "Save Lodging")}
           </Button>
         </div>
       </DialogContent>

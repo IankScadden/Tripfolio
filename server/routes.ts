@@ -401,11 +401,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Skip nights that exceed trip duration
       }
 
-      // Delete any existing accommodation expenses for these days
+      // Delete any existing accommodation expenses with the same lodging name
+      // This handles both initial creation and editing of multi-day bookings
       const existingExpenses = await storage.getExpensesByTrip(req.params.tripId);
-      const dayNumbersToDelete = nightsData.map(night => night.dayNumber);
       const expensesToDelete = existingExpenses.filter(
-        e => e.category === 'accommodation' && e.dayNumber && dayNumbersToDelete.includes(e.dayNumber)
+        e => e.category === 'accommodation' && e.description === lodgingName
       );
       
       for (const expense of expensesToDelete) {
