@@ -137,7 +137,7 @@ export default function SharedTrip() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center gap-2">
             <MapPin className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">TripBudget</h1>
+            <h1 className="text-xl font-bold">Tripfolio</h1>
           </div>
         </div>
       </header>

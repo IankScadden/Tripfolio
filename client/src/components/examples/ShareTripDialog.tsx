@@ -11,7 +11,7 @@ export default function ShareTripDialogExample() {
       <ShareTripDialog
         open={open}
         onOpenChange={setOpen}
-        shareUrl="https://tripbudget.com/share/abc123"
+        shareUrl="https://tripfolio.com/share/abc123"
       />
     </div>
   );
