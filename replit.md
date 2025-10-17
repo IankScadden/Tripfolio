@@ -38,6 +38,8 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Other Costs (miscellaneous expenses)
 
 ## Recent Changes
+- 2024-10-17: **Added Edit Trip Feature** - Users can now edit trip duration and dates via pencil icon button next to trip info, which updates the day-by-day calendar layout accordingly
+- 2024-10-17: Updated My Trips banner with world map background image and blue-to-teal gradient (#4F75FF → #5B9FD8 → #4DD0E1)
 - 2024-10-17: **Fixed Category ID Mismatch Bugs** - DayDetail now uses correct category IDs: "local" (was "local_transport") and "intercity" (was "city_to_city_transport") to match TripDetail expectations
 - 2024-10-17: **Implemented Day-by-Day Planning Feature** - Full itinerary planning system with TripCalendar and DayDetail modals
 - 2024-10-17: Added dayDetails table and dayNumber field to expenses for day-specific tracking
