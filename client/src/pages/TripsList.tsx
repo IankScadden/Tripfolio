@@ -10,7 +10,7 @@ import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import europeMap from "@assets/stock_images/map_of_europe_travel_c129aab2.jpg";
+import worldMapBanner from "@assets/stock_images/world_map_travel_pin_4de3b461.jpg";
 
 type Trip = {
   id: string;
@@ -161,18 +161,17 @@ export default function TripsList() {
 
       {/* Gradient Hero Section with Map Background */}
       <div className="relative bg-gradient-to-r from-[#4F75FF] via-[#5B9FD8] to-[#4DD0E1] overflow-hidden">
-        {/* Europe map background */}
+        {/* Full banner map background */}
         <div 
-          className="absolute inset-0 opacity-15"
+          className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: `url(${europeMap})`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'right center',
-            backgroundRepeat: 'no-repeat',
+            backgroundImage: `url(${worldMapBanner})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         ></div>
         {/* Gradient overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#4F75FF]/40 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4F75FF]/50 via-[#5B9FD8]/30 to-transparent"></div>
         <div className="relative max-w-6xl mx-auto px-6 py-16">
           <div className="flex items-start justify-between gap-4">
             <div className="text-white">
