@@ -210,7 +210,7 @@ export default function TripDetail() {
   });
 
   const updateTripMutation = useMutation({
-    mutationFn: async (data: { name?: string; startDate?: string | null; endDate?: string | null; days?: number | null }) => {
+    mutationFn: async (data: { name: string; startDate?: string | null; endDate?: string | null; days?: number | null }) => {
       const response = await apiRequest("PATCH", `/api/trips/${tripId}`, data);
       return await response.json();
     },
@@ -882,6 +882,7 @@ export default function TripDetail() {
 
 // Edit Trip Dialog Component
 const editTripFormSchema = z.object({
+  name: z.string().min(1, "Trip name is required"),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
   days: z.number().min(1).optional().nullable(),
@@ -905,6 +906,7 @@ function EditTripDialog({
   const form = useForm<EditTripFormValues>({
     resolver: zodResolver(editTripFormSchema),
     defaultValues: {
+      name: trip?.name || "",
       startDate: trip?.startDate || null,
       endDate: trip?.endDate || null,
       days: trip?.days || null,
@@ -914,6 +916,7 @@ function EditTripDialog({
   useEffect(() => {
     if (trip && open) {
       form.reset({
+        name: trip.name || "",
         startDate: trip.startDate || null,
         endDate: trip.endDate || null,
         days: trip.days || null,
@@ -936,6 +939,23 @@ function EditTripDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Trip Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., Europe 2025"
+                      {...field}
+                      data-testid="input-trip-name"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="startDate"
