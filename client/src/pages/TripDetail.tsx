@@ -214,9 +214,18 @@ export default function TripDetail() {
       const response = await apiRequest("PATCH", `/api/trips/${tripId}`, data);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+    onSuccess: async () => {
+      // Force fresh fetch by removing cached queries
+      queryClient.removeQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.removeQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.removeQueries({ queryKey: ["/api/trips"] });
+      
+      // Wait a moment for cache to clear
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Refetch trip data
+      await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId] });
+      
       toast({
         title: "Success",
         description: "Trip updated successfully",
