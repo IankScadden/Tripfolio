@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, MapPin } from "lucide-react";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, MapPin, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 
@@ -40,6 +40,12 @@ const CATEGORIES = [
     title: "Activities & Attractions",
     icon: Ticket,
     color: "hsl(50, 85%, 60%)",
+  },
+  {
+    id: "other",
+    title: "Other Costs",
+    icon: DollarSign,
+    color: "hsl(180, 60%, 55%)",
   },
 ];
 

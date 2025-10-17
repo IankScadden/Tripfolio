@@ -33,8 +33,10 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Accommodation
 - Food
 - Activities
+- Other Costs (miscellaneous expenses)
 
 ## Recent Changes
+- 2024-10-17: Added new "Other Costs" category for miscellaneous expenses with DollarSign icon
 - 2024-10-17: Updated transportation category labels: "Main Transportation" → "City to City Transportation", "Local Transport" → "Local Transportation"
 - 2024-10-17: Renamed "Expand Trip" button to "Day by Day Layout" on trip detail page
 - 2024-10-16: Added trip sharing feature - share button on trip cards generates public shareable links

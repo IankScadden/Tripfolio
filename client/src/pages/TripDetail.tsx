@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
@@ -60,6 +60,14 @@ const CATEGORIES = [
     color: "hsl(50, 85%, 60%)",
     addLabel: "Add Activity",
     emptyLabel: "No activities added",
+  },
+  {
+    id: "other",
+    title: "Other Costs",
+    icon: DollarSign,
+    color: "hsl(180, 60%, 55%)",
+    addLabel: "Add Cost",
+    emptyLabel: "No other costs added",
   },
 ];
 
@@ -629,6 +637,55 @@ export default function TripDetail() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No activities added</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Other Costs */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <DollarSign className="h-4 w-4" style={{ color: CATEGORIES[6].color }} />
+                Other Costs
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-1" 
+                onClick={() => handleAddExpense("other")}
+                data-testid="button-add-other"
+              >
+                <span className="text-2xl leading-none">+</span> Add Cost
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {getExpensesByCategory("other").length > 0 ? (
+                <div className="space-y-2">
+                  {getExpensesByCategory("other").map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{expense.description}</div>
+                        {expense.date && (
+                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-expense-${expense.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No other costs added</p>
               )}
             </CardContent>
           </Card>
