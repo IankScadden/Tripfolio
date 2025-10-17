@@ -142,21 +142,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertDayDetail(insertDayDetail: InsertDayDetail): Promise<DayDetail> {
-    const [dayDetail] = await db
-      .insert(dayDetails)
-      .values(insertDayDetail)
-      .onConflictDoUpdate({
-        target: [dayDetails.tripId, dayDetails.dayNumber],
-        set: {
+    // Try to get existing day detail
+    const existing = await this.getDayDetail(insertDayDetail.tripId, insertDayDetail.dayNumber);
+    
+    if (existing) {
+      // Update existing
+      const [updated] = await db
+        .update(dayDetails)
+        .set({
           destination: insertDayDetail.destination,
           localTransportNotes: insertDayDetail.localTransportNotes,
           foodBudgetAdjustment: insertDayDetail.foodBudgetAdjustment,
           stayingInSameCity: insertDayDetail.stayingInSameCity,
           intercityTransportType: insertDayDetail.intercityTransportType,
-        },
-      })
-      .returning();
-    return dayDetail;
+        })
+        .where(and(eq(dayDetails.tripId, insertDayDetail.tripId), eq(dayDetails.dayNumber, insertDayDetail.dayNumber)))
+        .returning();
+      return updated;
+    } else {
+      // Insert new
+      const [created] = await db
+        .insert(dayDetails)
+        .values(insertDayDetail)
+        .returning();
+      return created;
+    }
   }
 }
 
