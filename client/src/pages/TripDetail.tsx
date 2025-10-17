@@ -242,9 +242,11 @@ export default function TripDetail() {
   };
 
   const handleSaveDayDetail = async (data: any) => {
-    // Save day details and create expenses
-    // TODO: Implement API call to save day details
-    console.log("Saving day detail:", data);
+    // Clear cache and force fresh fetch
+    queryClient.removeQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+    queryClient.removeQueries({ queryKey: ["/api/trips", tripId] });
+    // Wait a moment for cache to clear
+    await new Promise(resolve => setTimeout(resolve, 100));
     setShowDayDetail(false);
     setShowCalendar(true);
   };

@@ -48,6 +48,8 @@ export default function DayDetail({
   const [lodgingCost, setLodgingCost] = useState("");
   const [lodgingUrl, setLodgingUrl] = useState("");
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [localTransportName, setLocalTransportName] = useState("");
+  const [localTransportCost, setLocalTransportCost] = useState("");
   const [localTransportNotes, setLocalTransportNotes] = useState("");
   const [showIntercityTravel, setShowIntercityTravel] = useState(false);
   const [stayingInSameCity, setStayingInSameCity] = useState(false);
@@ -110,8 +112,15 @@ export default function DayDetail({
         url: e.url || "",
       })));
 
+      // Load local transport
+      const localTransport = dayExpenses.find((e: any) => e.category === "local");
+      if (localTransport) {
+        setLocalTransportName(localTransport.description || "");
+        setLocalTransportCost(localTransport.cost || "");
+      }
+
       // Load intercity transport
-      const intercityExpense = dayExpenses.find((e: any) => e.category === "city_to_city_transport");
+      const intercityExpense = dayExpenses.find((e: any) => e.category === "intercity");
       if (intercityExpense) {
         setIntercityName(intercityExpense.description || "");
         setIntercityCost(intercityExpense.cost || "");
@@ -262,8 +271,31 @@ export default function DayDetail({
       }
     }
 
+    // Save/update local transportation
+    const existingLocalTransport = dayExpenses?.find((e: any) => e.category === "local");
+    if (localTransportName && localTransportCost) {
+      if (existingLocalTransport) {
+        await updateExpenseMutation.mutateAsync({
+          id: existingLocalTransport.id,
+          description: localTransportName,
+          cost: localTransportCost,
+          dayNumber,
+        });
+      } else {
+        await createExpenseMutation.mutateAsync({
+          tripId,
+          category: "local",
+          description: localTransportName,
+          cost: localTransportCost,
+          dayNumber,
+        });
+      }
+    } else if (existingLocalTransport) {
+      await deleteExpenseMutation.mutateAsync(existingLocalTransport.id);
+    }
+
     // Save/update intercity transport
-    const existingIntercity = dayExpenses?.find((e: any) => e.category === "city_to_city_transport");
+    const existingIntercity = dayExpenses?.find((e: any) => e.category === "intercity");
     if (intercityName && intercityCost && !stayingInSameCity) {
       if (existingIntercity) {
         await updateExpenseMutation.mutateAsync({
@@ -276,7 +308,7 @@ export default function DayDetail({
       } else {
         await createExpenseMutation.mutateAsync({
           tripId,
-          category: "city_to_city_transport",
+          category: "intercity",
           description: intercityName,
           cost: intercityCost,
           url: intercityUrl || undefined,
@@ -287,7 +319,7 @@ export default function DayDetail({
       await deleteExpenseMutation.mutateAsync(existingIntercity.id);
     }
 
-    onSave({ success: true });
+    await onSave({ success: true });
   };
 
   const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);
@@ -444,13 +476,27 @@ export default function DayDetail({
               <Bus className="h-5 w-5 text-purple-500" />
               <h3 className="font-semibold">Local Transportation</h3>
             </div>
-            <Textarea
-              placeholder="Add notes about local transportation (metro, bus, etc.)"
-              value={localTransportNotes}
-              onChange={(e) => setLocalTransportNotes(e.target.value)}
-              className="pl-7"
-              data-testid="input-local-transport"
-            />
+            <div className="pl-7 space-y-3">
+              <Input
+                placeholder="Name (e.g., Metro Pass, Taxi, etc.)"
+                value={localTransportName}
+                onChange={(e) => setLocalTransportName(e.target.value)}
+                data-testid="input-local-transport-name"
+              />
+              <Input
+                type="number"
+                placeholder="Cost ($)"
+                value={localTransportCost}
+                onChange={(e) => setLocalTransportCost(e.target.value)}
+                data-testid="input-local-transport-cost"
+              />
+              <Textarea
+                placeholder="Add notes about local transportation (metro, bus, etc.)"
+                value={localTransportNotes}
+                onChange={(e) => setLocalTransportNotes(e.target.value)}
+                data-testid="input-local-transport-notes"
+              />
+            </div>
           </div>
 
           {/* Travel to Next City */}
@@ -534,7 +580,20 @@ export default function DayDetail({
               </div>
             )}
             {stayingInSameCity && (
-              <p className="text-sm text-muted-foreground pl-7">No intercity travel for this day</p>
+              <div className="pl-7 flex items-center gap-3">
+                <p className="text-sm text-muted-foreground">No intercity travel for this day</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setStayingInSameCity(false);
+                    setShowIntercityTravel(true);
+                  }}
+                  data-testid="button-add-travel-back"
+                >
+                  + Add Travel
+                </Button>
+              </div>
             )}
           </div>
 
@@ -575,9 +634,10 @@ export default function DayDetail({
           <Button
             onClick={handleSave}
             className="flex-1"
-            data-testid="button-done"
+            disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
+            data-testid="button-save-day"
           >
-            Done
+            {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
           </Button>
         </div>
       </DialogContent>

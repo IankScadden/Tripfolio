@@ -38,6 +38,7 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Other Costs (miscellaneous expenses)
 
 ## Recent Changes
+- 2024-10-17: **Fixed Category ID Mismatch Bugs** - DayDetail now uses correct category IDs: "local" (was "local_transport") and "intercity" (was "city_to_city_transport") to match TripDetail expectations
 - 2024-10-17: **Implemented Day-by-Day Planning Feature** - Full itinerary planning system with TripCalendar and DayDetail modals
 - 2024-10-17: Added dayDetails table and dayNumber field to expenses for day-specific tracking
 - 2024-10-17: Created GET /api/trips/:tripId/day-details/:dayNumber and POST /api/trips/:tripId/day-details routes
