@@ -288,10 +288,10 @@ export default function TripDetail() {
           <Button
             variant="default"
             className="gap-2"
-            data-testid="button-expand-trip"
+            data-testid="button-day-by-day-layout"
           >
             <ExternalLink className="h-4 w-4" />
-            Expand Trip
+            Day by Day Layout
           </Button>
         </div>
 
