@@ -23,12 +23,13 @@ export default function TripCalendar({
 }: TripCalendarProps) {
   const getDaysArray = () => {
     if (startDate && days) {
-      const start = new Date(startDate);
+      // Parse date in local timezone to avoid timezone offset issues
+      const [year, month, day] = startDate.split('-').map(Number);
+      const start = new Date(year, month - 1, day); // month is 0-indexed
       const daysArray = [];
       
       for (let i = 0; i < days; i++) {
-        const currentDate = new Date(start);
-        currentDate.setDate(start.getDate() + i);
+        const currentDate = new Date(year, month - 1, day + i);
         daysArray.push({
           dayNumber: i + 1,
           date: currentDate,

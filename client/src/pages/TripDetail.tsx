@@ -305,9 +305,15 @@ export default function TripDetail() {
   const handlePreviousDay = () => {
     if (selectedDay && selectedDay.dayNumber > 1) {
       const newDayNumber = selectedDay.dayNumber - 1;
-      const newDate = trip?.startDate 
-        ? new Date(new Date(trip.startDate).getTime() + (newDayNumber - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        : undefined;
+      let newDate: string | undefined = undefined;
+      
+      if (trip?.startDate) {
+        // Parse date in local timezone to avoid timezone offset issues
+        const [year, month, day] = trip.startDate.split('-').map(Number);
+        const calculatedDate = new Date(year, month - 1, day + newDayNumber - 1);
+        newDate = calculatedDate.toISOString().split('T')[0];
+      }
+      
       setSelectedDay({ dayNumber: newDayNumber, date: newDate });
     }
   };
@@ -315,9 +321,15 @@ export default function TripDetail() {
   const handleNextDay = () => {
     if (selectedDay && trip?.days && selectedDay.dayNumber < trip.days) {
       const newDayNumber = selectedDay.dayNumber + 1;
-      const newDate = trip?.startDate 
-        ? new Date(new Date(trip.startDate).getTime() + (newDayNumber - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        : undefined;
+      let newDate: string | undefined = undefined;
+      
+      if (trip?.startDate) {
+        // Parse date in local timezone to avoid timezone offset issues
+        const [year, month, day] = trip.startDate.split('-').map(Number);
+        const calculatedDate = new Date(year, month - 1, day + newDayNumber - 1);
+        newDate = calculatedDate.toISOString().split('T')[0];
+      }
+      
       setSelectedDay({ dayNumber: newDayNumber, date: newDate });
     }
   };
