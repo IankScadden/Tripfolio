@@ -287,6 +287,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Day details routes
+  app.get("/api/trips/:tripId/day-details/:dayNumber", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.tripId);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const dayDetail = await storage.getDayDetail(req.params.tripId, parseInt(req.params.dayNumber));
+      res.json(dayDetail || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch day detail" });
+    }
+  });
+
+  app.post("/api/trips/:tripId/day-details", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.tripId);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const dayDetail = await storage.upsertDayDetail({
+        tripId: req.params.tripId,
+        dayNumber: req.body.dayNumber,
+        destination: req.body.destination,
+        localTransportNotes: req.body.localTransportNotes,
+        foodBudgetAdjustment: req.body.foodBudgetAdjustment,
+        stayingInSameCity: req.body.stayingInSameCity,
+        intercityTransportType: req.body.intercityTransportType,
+      });
+      res.json(dayDetail);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save day detail" });
+    }
+  });
+
   // Public route for shared trips (no auth required)
   app.get("/api/share/:shareId", async (req, res) => {
     try {

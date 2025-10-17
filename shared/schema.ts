@@ -56,7 +56,9 @@ export const dayDetails = pgTable("day_details", {
   foodBudgetAdjustment: decimal("food_budget_adjustment", { precision: 10, scale: 2 }).default("0"),
   stayingInSameCity: integer("staying_in_same_city").default(0),
   intercityTransportType: text("intercity_transport_type"),
-});
+}, (table) => ({
+  uniqueTripDay: index("unique_trip_day_idx").on(table.tripId, table.dayNumber),
+}));
 
 export const insertTripSchema = createInsertSchema(trips).omit({
   id: true,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Activity {
   id?: string;
@@ -55,23 +57,68 @@ export default function DayDetail({
   const [intercityUrl, setIntercityUrl] = useState("");
   const [foodBudgetAdjustment, setFoodBudgetAdjustment] = useState("");
 
+  // Fetch day detail data
+  const { data: dayDetailData } = useQuery({
+    queryKey: ["/api/trips", tripId, "day-details", dayNumber],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}/day-details/${dayNumber}`);
+      if (!response.ok) throw new Error("Failed to fetch day detail");
+      return response.json();
+    },
+    enabled: open && !!tripId && !!dayNumber,
+  });
+
+  // Fetch expenses for this day
+  const { data: dayExpenses = [] } = useQuery({
+    queryKey: ["/api/trips", tripId, "expenses", "day", dayNumber],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}/expenses`);
+      if (!response.ok) throw new Error("Failed to fetch expenses");
+      const allExpenses = await response.json();
+      return allExpenses.filter((e: any) => e.dayNumber === dayNumber);
+    },
+    enabled: open && !!tripId && !!dayNumber,
+  });
+
   useEffect(() => {
-    if (initialData) {
-      setDestination(initialData.destination || "");
-      setLodgingName(initialData.lodgingName || "");
-      setLodgingCost(initialData.lodgingCost || "");
-      setLodgingUrl(initialData.lodgingUrl || "");
-      setActivities(initialData.activities || []);
-      setLocalTransportNotes(initialData.localTransportNotes || "");
-      setShowIntercityTravel(initialData.showIntercityTravel || false);
-      setStayingInSameCity(initialData.stayingInSameCity || false);
-      setIntercityTransportType(initialData.intercityTransportType || "");
-      setIntercityName(initialData.intercityName || "");
-      setIntercityCost(initialData.intercityCost || "");
-      setIntercityUrl(initialData.intercityUrl || "");
-      setFoodBudgetAdjustment(initialData.foodBudgetAdjustment || "");
+    if (dayDetailData) {
+      setDestination(dayDetailData.destination || "");
+      setLocalTransportNotes(dayDetailData.localTransportNotes || "");
+      setFoodBudgetAdjustment(dayDetailData.foodBudgetAdjustment || "");
+      setStayingInSameCity(dayDetailData.stayingInSameCity === 1);
+      setIntercityTransportType(dayDetailData.intercityTransportType || "");
+      setShowIntercityTravel(!!dayDetailData.intercityTransportType && !dayDetailData.stayingInSameCity);
     }
-  }, [initialData]);
+  }, [dayDetailData]);
+
+  useEffect(() => {
+    if (dayExpenses && dayExpenses.length > 0) {
+      // Load lodging
+      const lodging = dayExpenses.find((e: any) => e.category === "accommodation");
+      if (lodging) {
+        setLodgingName(lodging.description || "");
+        setLodgingCost(lodging.cost || "");
+        setLodgingUrl(lodging.url || "");
+      }
+
+      // Load activities
+      const activityExpenses = dayExpenses.filter((e: any) => e.category === "activities");
+      setActivities(activityExpenses.map((e: any) => ({
+        id: e.id,
+        name: e.description,
+        cost: e.cost,
+        url: e.url || "",
+      })));
+
+      // Load intercity transport
+      const intercityExpense = dayExpenses.find((e: any) => e.category === "city_to_city_transport");
+      if (intercityExpense) {
+        setIntercityName(intercityExpense.description || "");
+        setIntercityCost(intercityExpense.cost || "");
+        setIntercityUrl(intercityExpense.url || "");
+      }
+    }
+  }, [dayExpenses]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
@@ -102,23 +149,145 @@ export default function DayDetail({
     setIntercityUrl("");
   };
 
-  const handleSave = () => {
-    onSave({
+  const saveDayDetailMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/day-details`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "day-details", dayNumber] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+    },
+  });
+
+  const createExpenseMutation = useMutation({
+    mutationFn: async (expenseData: any) => {
+      const response = await apiRequest("POST", "/api/expenses", expenseData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+    },
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const response = await apiRequest("PATCH", `/api/expenses/${id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/expenses/${id}`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+    },
+  });
+
+  const handleSave = async () => {
+    // Save day detail
+    await saveDayDetailMutation.mutateAsync({
+      tripId,
       dayNumber,
       destination,
-      lodgingName,
-      lodgingCost,
-      lodgingUrl,
-      activities,
       localTransportNotes,
-      showIntercityTravel,
-      stayingInSameCity,
-      intercityTransportType,
-      intercityName,
-      intercityCost,
-      intercityUrl,
-      foodBudgetAdjustment,
+      foodBudgetAdjustment: foodBudgetAdjustment || "0",
+      stayingInSameCity: stayingInSameCity ? 1 : 0,
+      intercityTransportType: stayingInSameCity ? null : intercityTransportType,
     });
+
+    // Save/update lodging expense
+    const existingLodging = dayExpenses?.find((e: any) => e.category === "accommodation");
+    if (lodgingName && lodgingCost) {
+      if (existingLodging) {
+        await updateExpenseMutation.mutateAsync({
+          id: existingLodging.id,
+          description: lodgingName,
+          cost: lodgingCost,
+          url: lodgingUrl || undefined,
+          dayNumber,
+        });
+      } else {
+        await createExpenseMutation.mutateAsync({
+          tripId,
+          category: "accommodation",
+          description: lodgingName,
+          cost: lodgingCost,
+          url: lodgingUrl || undefined,
+          dayNumber,
+        });
+      }
+    } else if (existingLodging) {
+      await deleteExpenseMutation.mutateAsync(existingLodging.id);
+    }
+
+    // Save/update activities
+    const existingActivities = dayExpenses?.filter((e: any) => e.category === "activities") || [];
+    for (const activity of activities) {
+      if (activity.name && activity.cost) {
+        if (activity.id) {
+          await updateExpenseMutation.mutateAsync({
+            id: activity.id,
+            description: activity.name,
+            cost: activity.cost,
+            url: activity.url || undefined,
+            dayNumber,
+          });
+        } else {
+          await createExpenseMutation.mutateAsync({
+            tripId,
+            category: "activities",
+            description: activity.name,
+            cost: activity.cost,
+            url: activity.url || undefined,
+            dayNumber,
+          });
+        }
+      }
+    }
+    // Delete removed activities
+    for (const existing of existingActivities) {
+      if (!activities.find(a => a.id === existing.id)) {
+        await deleteExpenseMutation.mutateAsync(existing.id);
+      }
+    }
+
+    // Save/update intercity transport
+    const existingIntercity = dayExpenses?.find((e: any) => e.category === "city_to_city_transport");
+    if (intercityName && intercityCost && !stayingInSameCity) {
+      if (existingIntercity) {
+        await updateExpenseMutation.mutateAsync({
+          id: existingIntercity.id,
+          description: intercityName,
+          cost: intercityCost,
+          url: intercityUrl || undefined,
+          dayNumber,
+        });
+      } else {
+        await createExpenseMutation.mutateAsync({
+          tripId,
+          category: "city_to_city_transport",
+          description: intercityName,
+          cost: intercityCost,
+          url: intercityUrl || undefined,
+          dayNumber,
+        });
+      }
+    } else if (existingIntercity) {
+      await deleteExpenseMutation.mutateAsync(existingIntercity.id);
+    }
+
+    onSave({ success: true });
   };
 
   const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);

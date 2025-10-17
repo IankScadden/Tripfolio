@@ -1,6 +1,6 @@
-import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, trips, expenses, users } from "@shared/schema";
+import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, trips, expenses, users, dayDetails } from "@shared/schema";
 import { db } from "./db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -23,6 +23,10 @@ export interface IStorage {
   createExpense(expense: InsertExpense): Promise<Expense>;
   updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
   deleteExpense(id: string): Promise<boolean>;
+  
+  // Day detail operations
+  getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined>;
+  upsertDayDetail(dayDetail: InsertDayDetail): Promise<DayDetail>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -126,6 +130,33 @@ export class DatabaseStorage implements IStorage {
   async deleteExpense(id: string): Promise<boolean> {
     const result = await db.delete(expenses).where(eq(expenses.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Day detail operations
+  async getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined> {
+    const [dayDetail] = await db
+      .select()
+      .from(dayDetails)
+      .where(and(eq(dayDetails.tripId, tripId), eq(dayDetails.dayNumber, dayNumber)));
+    return dayDetail;
+  }
+
+  async upsertDayDetail(insertDayDetail: InsertDayDetail): Promise<DayDetail> {
+    const [dayDetail] = await db
+      .insert(dayDetails)
+      .values(insertDayDetail)
+      .onConflictDoUpdate({
+        target: [dayDetails.tripId, dayDetails.dayNumber],
+        set: {
+          destination: insertDayDetail.destination,
+          localTransportNotes: insertDayDetail.localTransportNotes,
+          foodBudgetAdjustment: insertDayDetail.foodBudgetAdjustment,
+          stayingInSameCity: insertDayDetail.stayingInSameCity,
+          intercityTransportType: insertDayDetail.intercityTransportType,
+        },
+      })
+      .returning();
+    return dayDetail;
   }
 }
 
