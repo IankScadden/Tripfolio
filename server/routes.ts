@@ -342,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const { checkInDate, checkOutDate, lodgingName, totalCost, url, startDayNumber } = req.body;
+      const { checkInDate, checkOutDate, lodgingName, totalCost, url, startDayNumber, dayNumbersToDelete } = req.body;
 
       // Validate required fields
       if (!checkInDate || !checkOutDate || !lodgingName || !totalCost) {
@@ -401,12 +401,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Skip nights that exceed trip duration
       }
 
-      // Delete any existing accommodation expenses with the same lodging name
-      // This handles both initial creation and editing of multi-day bookings
+      // Delete existing accommodation expenses
+      // When editing (dayNumbersToDelete provided), only delete the specific booking range
+      // When creating new, delete any overlapping days with the same lodging name
       const existingExpenses = await storage.getExpensesByTrip(req.params.tripId);
-      const expensesToDelete = existingExpenses.filter(
-        e => e.category === 'accommodation' && e.description === lodgingName
-      );
+      let expensesToDelete;
+      
+      if (dayNumbersToDelete && dayNumbersToDelete.length > 0) {
+        // Editing: Delete only the specific days from the original booking
+        expensesToDelete = existingExpenses.filter(
+          e => e.category === 'accommodation' && 
+               e.description === lodgingName && 
+               e.dayNumber && 
+               dayNumbersToDelete.includes(e.dayNumber)
+        );
+      } else {
+        // Creating new: Delete any accommodation with the SAME NAME on the new range days
+        const newRangeDayNumbers = nightsData.map(night => night.dayNumber);
+        expensesToDelete = existingExpenses.filter(
+          e => e.category === 'accommodation' && 
+               e.description === lodgingName && 
+               e.dayNumber && 
+               newRangeDayNumbers.includes(e.dayNumber)
+        );
+      }
       
       for (const expense of expensesToDelete) {
         await storage.deleteExpense(expense.id);

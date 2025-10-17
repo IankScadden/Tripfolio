@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -85,11 +85,14 @@ export default function DayDetail({
     enabled: open && !!tripId,
   });
 
-  // Filter to get expenses for this specific day
-  const dayExpenses = allTripExpenses.filter((e: any) => e.dayNumber === dayNumber);
+  // Filter to get expenses for this specific day (memoized to prevent infinite loops)
+  const dayExpenses = useMemo(
+    () => allTripExpenses.filter((e: any) => e.dayNumber === dayNumber),
+    [allTripExpenses, dayNumber]
+  );
 
-  // Detect if current lodging is part of a multi-day booking
-  const detectMultiDayLodging = () => {
+  // Detect if current lodging is part of a multi-day booking (memoized to prevent infinite loops)
+  const multiDayLodgingInfo = useMemo(() => {
     const currentLodging = dayExpenses.find((e: any) => e.category === "accommodation");
     if (!currentLodging) return null;
 
@@ -97,36 +100,53 @@ export default function DayDetail({
     const lodgingUrl = currentLodging.url;
     const nightlyCost = parseFloat(currentLodging.cost);
 
-    // Find all consecutive days with the same lodging name
+    // Find all lodging with the same name, sorted by day number
     const allLodging = allTripExpenses
       .filter((e: any) => e.category === "accommodation" && e.description === lodgingName)
       .sort((a: any, b: any) => (a.dayNumber || 0) - (b.dayNumber || 0));
 
     if (allLodging.length === 0) return null;
 
-    // Check if days are consecutive
-    let isConsecutive = true;
-    const firstDay = allLodging[0].dayNumber;
-    const lastDay = allLodging[allLodging.length - 1].dayNumber;
+    // Find the CONSECUTIVE block that contains the current day
+    // This handles cases where the same hotel is booked multiple times
+    let consecutiveBlock: any[] = [];
+    let currentBlock: any[] = [];
     
     for (let i = 0; i < allLodging.length; i++) {
-      if (allLodging[i].dayNumber !== firstDay + i) {
-        isConsecutive = false;
-        break;
+      const expense = allLodging[i];
+      
+      // Start a new block if this is the first expense or if there's a gap
+      if (currentBlock.length === 0 || expense.dayNumber === currentBlock[currentBlock.length - 1].dayNumber + 1) {
+        currentBlock.push(expense);
+      } else {
+        // Gap found, save the current block if it contains the current day
+        if (currentBlock.some(e => e.dayNumber === dayNumber)) {
+          consecutiveBlock = currentBlock;
+          break;
+        }
+        // Start a new block
+        currentBlock = [expense];
       }
     }
+    
+    // Check if the last block contains the current day
+    if (consecutiveBlock.length === 0 && currentBlock.some(e => e.dayNumber === dayNumber)) {
+      consecutiveBlock = currentBlock;
+    }
 
-    if (!isConsecutive || allLodging.length === 1) return null;
+    // Must have at least 2 consecutive nights to show edit option
+    if (consecutiveBlock.length < 2) return null;
 
     // Calculate check-in and check-out dates
-    const checkInDate = allLodging[0].date;
+    const checkInDate = consecutiveBlock[0].date;
     // Check-out is the day after the last night
-    const lastNightDate = allLodging[allLodging.length - 1].date;
+    const lastNightDate = consecutiveBlock[consecutiveBlock.length - 1].date;
     const [year, month, day] = lastNightDate.split('-').map(Number);
     const checkOutDateObj = new Date(year, month - 1, day + 1);
     const checkOutDate = `${checkOutDateObj.getFullYear()}-${String(checkOutDateObj.getMonth() + 1).padStart(2, '0')}-${String(checkOutDateObj.getDate()).padStart(2, '0')}`;
 
-    const totalCost = (nightlyCost * allLodging.length).toFixed(2);
+    const totalCost = (nightlyCost * consecutiveBlock.length).toFixed(2);
+    const dayNumbersInBlock = consecutiveBlock.map(e => e.dayNumber);
 
     return {
       checkInDate,
@@ -134,11 +154,10 @@ export default function DayDetail({
       lodgingName,
       lodgingUrl,
       totalCost,
-      nights: allLodging.length,
+      nights: consecutiveBlock.length,
+      dayNumbers: dayNumbersInBlock, // Include day numbers to delete when editing
     };
-  };
-
-  const multiDayLodgingInfo = detectMultiDayLodging();
+  }, [dayExpenses, allTripExpenses, dayNumber]);
 
   useEffect(() => {
     if (dayDetailData) {
@@ -264,13 +283,14 @@ export default function DayDetail({
   });
 
   const bulkLodgingMutation = useMutation({
-    mutationFn: async (data: { checkInDate: string; checkOutDate: string; lodgingName: string; totalCost: string; url?: string; startDayNumber: number }) => {
+    mutationFn: async (data: { checkInDate: string; checkOutDate: string; lodgingName: string; totalCost: string; url?: string; startDayNumber: number; dayNumbersToDelete?: number[] }) => {
       const response = await apiRequest("POST", `/api/trips/${tripId}/lodging/bulk`, data);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+    onSuccess: async () => {
+      // Force immediate refetch to ensure UI updates with latest data
+      await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId] });
     },
   });
 
@@ -291,6 +311,11 @@ export default function DayDetail({
       return;
     }
     
+    // When editing, pass the day numbers to delete from the original booking
+    const dayNumbersToDelete = isEditingMultiDayLodging && multiDayLodgingInfo?.dayNumbers 
+      ? multiDayLodgingInfo.dayNumbers 
+      : undefined;
+    
     await bulkLodgingMutation.mutateAsync({
       checkInDate: multiDayCheckIn,
       checkOutDate: multiDayCheckOut,
@@ -298,6 +323,7 @@ export default function DayDetail({
       totalCost: multiDayTotalCost,
       url: multiDayLodgingUrl || undefined,
       startDayNumber: dayNumber, // Pass current day number for trips without startDate
+      dayNumbersToDelete, // Pass specific days to delete when editing
     });
 
     // Reset form and close dialog
