@@ -18,12 +18,14 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 4. **Expense Tracking**: Add expenses in 6 categories with description, cost, optional URL links, and dates
 5. **Budget Visualization**: Interactive pie chart showing cost breakdown by category
 6. **Trip Sharing**: Generate shareable links for read-only trip views
-7. **Dark Mode**: Full light/dark theme support
+7. **Day-by-Day Planning**: Detailed daily itinerary planning with automatic expense sync
+8. **Dark Mode**: Full light/dark theme support
 
 ### Data Model
 - **Users**: id (sub from OIDC), email, firstName, lastName, profileImageUrl
 - **Trips**: id, userId, name, startDate, endDate, days, shareId, favorite (integer: 0 or 1)
-- **Expenses**: id, tripId, category, description, cost, url, date
+- **Expenses**: id, tripId, category, description, cost, url, date, dayNumber (links expense to specific day)
+- **DayDetails**: id, tripId, dayNumber, destination, localTransportNotes, foodBudgetAdjustment, stayingInSameCity, intercityTransportType
 - **Sessions**: sid, sess, expire (for Replit Auth)
 
 ### Categories
@@ -36,6 +38,15 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - Other Costs (miscellaneous expenses)
 
 ## Recent Changes
+- 2024-10-17: **Implemented Day-by-Day Planning Feature** - Full itinerary planning system with TripCalendar and DayDetail modals
+- 2024-10-17: Added dayDetails table and dayNumber field to expenses for day-specific tracking
+- 2024-10-17: Created GET /api/trips/:tripId/day-details/:dayNumber and POST /api/trips/:tripId/day-details routes
+- 2024-10-17: Day detail sections (lodging, activities, intercity transport) auto-create expenses linked to specific days
+- 2024-10-17: Calendar supports both date-based trips (shows actual dates) and day-count trips (shows "Day 1, 2, 3...")
+- 2024-10-17: Added navigation between days in day detail modal (Previous/Next buttons)
+- 2024-10-17: Local transportation is notes-only in day-by-day view (no expense created)
+- 2024-10-17: Food budget adjustment per day adds to the daily food budget calculation
+- 2024-10-17: "Staying in same city" button hides intercity transport section and clears related data
 - 2024-10-17: Added new "Other Costs" category for miscellaneous expenses with DollarSign icon
 - 2024-10-17: Updated transportation category labels: "Main Transportation" → "City to City Transportation", "Local Transport" → "Local Transportation"
 - 2024-10-17: Renamed "Expand Trip" button to "Day by Day Layout" on trip detail page
@@ -95,6 +106,10 @@ A web application for planning and tracking backpacking trip budgets. Users can 
 - `POST /api/expenses` - Create expense
 - `PATCH /api/expenses/:id` - Update expense
 - `DELETE /api/expenses/:id` - Delete expense
+
+### Day Details Routes (all require authentication)
+- `GET /api/trips/:tripId/day-details/:dayNumber` - Get day detail for a specific day
+- `POST /api/trips/:tripId/day-details` - Save/update day detail (auto-syncs to expenses)
 
 ### Public Routes
 - `GET /api/share/:shareId` - Get shared trip view (no auth required)
