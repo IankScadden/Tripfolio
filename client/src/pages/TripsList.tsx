@@ -10,7 +10,7 @@ import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import mapBackground from "@assets/stock_images/subtle_world_map_bac_72f6bec8.jpg";
+import europeMap from "@assets/stock_images/map_of_europe_travel_c129aab2.jpg";
 
 type Trip = {
   id: string;
@@ -161,17 +161,18 @@ export default function TripsList() {
 
       {/* Gradient Hero Section with Map Background */}
       <div className="relative bg-gradient-to-r from-[#4F75FF] via-[#5B9FD8] to-[#4DD0E1] overflow-hidden">
-        {/* Map background overlay */}
+        {/* Europe map background */}
         <div 
-          className="absolute inset-0 opacity-20 mix-blend-overlay"
+          className="absolute inset-0 opacity-15"
           style={{
-            backgroundImage: `url(${mapBackground})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundImage: `url(${europeMap})`,
+            backgroundSize: 'contain',
+            backgroundPosition: 'right center',
+            backgroundRepeat: 'no-repeat',
           }}
         ></div>
-        {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJhIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0wIDQwTDQwIDBIMzBMMCAxMFptNDAgMEw0MCAzMEwzMCA0MHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNhKSIvPjwvc3ZnPg==')] opacity-30"></div>
+        {/* Gradient overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4F75FF]/40 via-transparent to-transparent"></div>
         <div className="relative max-w-6xl mx-auto px-6 py-16">
           <div className="flex items-start justify-between gap-4">
             <div className="text-white">
