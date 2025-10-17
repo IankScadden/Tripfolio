@@ -25,15 +25,16 @@ export default function TripCalendar({
     if (startDate && days) {
       // Parse date in local timezone to avoid timezone offset issues
       const [year, month, day] = startDate.split('-').map(Number);
-      const start = new Date(year, month - 1, day); // month is 0-indexed
       const daysArray = [];
       
       for (let i = 0; i < days; i++) {
         const currentDate = new Date(year, month - 1, day + i);
+        // Format date string manually to avoid timezone issues with toISOString()
+        const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day + i).padStart(2, '0')}`;
         daysArray.push({
           dayNumber: i + 1,
           date: currentDate,
-          dateString: currentDate.toISOString().split('T')[0],
+          dateString: dateString,
         });
       }
       return daysArray;
