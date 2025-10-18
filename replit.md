@@ -1,4 +1,4 @@
-# Tripfolio - Backpacking Budget Planner
+# TripSavvy - Backpacking Budget Planner
 
 ## Overview
 A web application for planning and tracking backpacking trip budgets. Users can create trips, add itemized expenses across multiple categories (flights, transportation, accommodation, food, activities), visualize their spending with charts, and share their trip budgets with friends.
