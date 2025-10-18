@@ -360,6 +360,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await response.json();
       
+      console.log('\n=== LOCATION SEARCH for:', query);
+      console.log('Raw results count:', data.length);
+      data.slice(0, 5).forEach((item: any, i: number) => {
+        console.log(`[${i}] ${item.display_name}`);
+        console.log(`    class: ${item.class}, type: ${item.type}, importance: ${item.importance}`);
+      });
+      
       // Process and sort results
       const processedData = data
         .filter((item: any) => {
