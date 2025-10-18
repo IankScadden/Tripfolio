@@ -263,19 +263,6 @@ export default function DayDetail({
     },
   });
 
-  // Save current day data before navigating or closing
-  const saveDayData = async () => {
-    // Save day details and wait for completion
-    return apiRequest("POST", `/api/trips/${tripId}/day-details`, {
-      dayNumber,
-      destination,
-      localTransportNotes,
-      foodBudgetAdjustment,
-      stayingInSameCity: stayingInSameCity ? 1 : 0,
-      intercityTransportType,
-    });
-  };
-
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
       const response = await apiRequest("POST", "/api/expenses", expenseData);
@@ -500,8 +487,7 @@ export default function DayDetail({
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    await saveDayData();
-                    queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "day-details"] });
+                    await handleSave();
                     onPrevious();
                   }}
                   data-testid="button-previous-day"
@@ -515,8 +501,7 @@ export default function DayDetail({
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    await saveDayData();
-                    queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "day-details"] });
+                    await handleSave();
                     onNext();
                   }}
                   data-testid="button-next-day"
