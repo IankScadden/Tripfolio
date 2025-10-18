@@ -355,17 +355,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await response.json();
       
-      // Simplify display names: show only city, region, country (first 3 parts)
-      const simplifiedData = data.map((item: any) => {
-        const parts = item.display_name.split(',').map((p: string) => p.trim());
-        const simplified = parts.slice(0, 3).join(', ');
-        return {
-          ...item,
-          display_name: simplified || item.display_name
-        };
-      });
+      // Simplify and prioritize results
+      const processedData = data
+        .map((item: any) => {
+          const parts = item.display_name.split(',').map((p: string) => p.trim());
+          
+          // Extract country (usually last part)
+          const country = parts[parts.length - 1];
+          
+          // Create simplified name based on type
+          let simplified = '';
+          if (item.type === 'city' || item.type === 'town' || item.type === 'village') {
+            // For cities/towns: show "City, Country"
+            simplified = parts.length >= 2 ? `${parts[0]}, ${country}` : parts.join(', ');
+          } else {
+            // For other types: show first 2-3 parts
+            simplified = parts.slice(0, Math.min(3, parts.length)).join(', ');
+          }
+          
+          // Calculate priority score
+          let priority = 0;
+          
+          // Prioritize cities/towns over neighborhoods and addresses
+          if (item.type === 'city') priority += 100;
+          if (item.type === 'town') priority += 80;
+          if (item.type === 'village') priority += 60;
+          if (item.type === 'island') priority += 90;
+          
+          // Prioritize major countries/regions for travel
+          const travelCountries = ['Greece', 'Italy', 'Spain', 'France', 'United Kingdom', 'Germany', 
+                                   'Portugal', 'Netherlands', 'Japan', 'Thailand', 'Vietnam', 'Indonesia',
+                                   'Australia', 'New Zealand', 'United States', 'Canada', 'Mexico', 'Brazil'];
+          if (travelCountries.some(c => country.includes(c))) priority += 50;
+          
+          // Deprioritize very specific addresses
+          if (item.type === 'house' || item.type === 'address') priority -= 100;
+          
+          return {
+            ...item,
+            display_name: simplified || item.display_name,
+            priority
+          };
+        })
+        // Sort by priority (highest first)
+        .sort((a: any, b: any) => b.priority - a.priority)
+        // Remove priority from response
+        .map(({ priority, ...item }: any) => item);
       
-      res.json(simplifiedData);
+      res.json(processedData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch location suggestions" });
     }
