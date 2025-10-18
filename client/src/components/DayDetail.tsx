@@ -263,27 +263,18 @@ export default function DayDetail({
     },
   });
 
-  // Auto-save day details when fields change (debounced)
-  useEffect(() => {
-    // Don't auto-save on initial load or if dialog is closed
-    if (!open) return;
-
-    const timeoutId = setTimeout(() => {
-      // Only save if there's actual data to save
-      if (destination || localTransportNotes || foodBudgetAdjustment || stayingInSameCity || intercityTransportType) {
-        saveDayDetailMutation.mutate({
-          dayNumber,
-          destination,
-          localTransportNotes,
-          foodBudgetAdjustment,
-          stayingInSameCity: stayingInSameCity ? 1 : 0,
-          intercityTransportType,
-        });
-      }
-    }, 1000); // Debounce by 1 second
-
-    return () => clearTimeout(timeoutId);
-  }, [destination, localTransportNotes, foodBudgetAdjustment, stayingInSameCity, intercityTransportType, open]); // Removed dayNumber from dependencies to prevent saving when switching days
+  // Save current day data before navigating or closing
+  const saveDayData = () => {
+    // Save day details
+    saveDayDetailMutation.mutate({
+      dayNumber,
+      destination,
+      localTransportNotes,
+      foodBudgetAdjustment,
+      stayingInSameCity: stayingInSameCity ? 1 : 0,
+      intercityTransportType,
+    });
+  };
 
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
