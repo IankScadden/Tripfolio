@@ -47,8 +47,16 @@ export default function LocationAutocomplete({
 
     setIsLoading(true);
     try {
+      // Add timestamp to bypass browser cache
+      const timestamp = Date.now();
       const response = await fetch(
-        `/api/location/autocomplete?q=${encodeURIComponent(query)}`
+        `/api/location/autocomplete?q=${encodeURIComponent(query)}&_t=${timestamp}`,
+        {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        }
       );
       
       if (!response.ok) {
