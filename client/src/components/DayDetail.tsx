@@ -537,17 +537,19 @@ export default function DayDetail({
     setShowConfirmClose(false);
   };
 
-  const handlePreviousClick = async () => {
-    // Auto-save before navigating
-    await handleSave();
+  const handlePreviousClick = () => {
+    // Save in background without waiting
+    handleSave();
+    // Navigate immediately
     if (onPrevious) {
       onPrevious();
     }
   };
 
-  const handleNextClick = async () => {
-    // Auto-save before navigating
-    await handleSave();
+  const handleNextClick = () => {
+    // Save in background without waiting
+    handleSave();
+    // Navigate immediately
     if (onNext) {
       onNext();
     }
@@ -571,7 +573,6 @@ export default function DayDetail({
                   variant="outline"
                   size="sm"
                   onClick={handlePreviousClick}
-                  disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
                   data-testid="button-previous-day"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
@@ -583,7 +584,6 @@ export default function DayDetail({
                   variant="outline"
                   size="sm"
                   onClick={handleNextClick}
-                  disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
                   data-testid="button-next-day"
                 >
                   Next
