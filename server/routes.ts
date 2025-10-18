@@ -319,6 +319,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tripId: req.params.tripId,
         dayNumber: req.body.dayNumber,
         destination: req.body.destination,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude,
         localTransportNotes: req.body.localTransportNotes,
         foodBudgetAdjustment: req.body.foodBudgetAdjustment,
         stayingInSameCity: req.body.stayingInSameCity,
@@ -327,6 +329,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(dayDetail);
     } catch (error) {
       res.status(500).json({ error: "Failed to save day detail" });
+    }
+  });
+
+  // Location autocomplete proxy (keeps API key secure)
+  app.get("/api/location/autocomplete", isAuthenticated, async (req: any, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.length < 3) {
+        return res.json([]);
+      }
+
+      const apiKey = process.env.LOCATIONIQ_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "LocationIQ API key not configured" });
+      }
+
+      const response = await fetch(
+        `https://api.locationiq.com/v1/autocomplete.php?key=${apiKey}&q=${encodeURIComponent(query)}&limit=5&format=json&dedupe=1`
+      );
+
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch location suggestions" });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch location suggestions" });
     }
   });
 
