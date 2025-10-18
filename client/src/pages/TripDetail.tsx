@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -114,6 +115,7 @@ export default function TripDetail() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -173,6 +175,40 @@ export default function TripDetail() {
         toast({
           title: "Error",
           description: "Failed to add expense. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: async ({ expenseId, data }: { expenseId: string; data: any }) => {
+      const response = await apiRequest("PATCH", `/api/expenses/${expenseId}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      toast({
+        title: "Success",
+        description: "Expense updated successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update expense. Please try again.",
           variant: "destructive",
         });
       }
@@ -262,7 +298,23 @@ export default function TripDetail() {
   };
 
   const handleSaveExpense = (expense: any) => {
-    createExpenseMutation.mutate({ ...expense, category: selectedCategory });
+    if (editingExpense) {
+      // Update existing expense
+      updateExpenseMutation.mutate({
+        expenseId: editingExpense.id,
+        data: expense,
+      });
+      setEditingExpense(null);
+    } else {
+      // Create new expense
+      createExpenseMutation.mutate({ ...expense, category: selectedCategory });
+    }
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setSelectedCategory(expense.category);
+    setShowAddDialog(true);
   };
 
   const handleSaveFoodBudget = async (dailyBudget: number) => {
@@ -546,15 +598,33 @@ export default function TripDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-expense-menu-${expense.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditExpense(expense)}
+                              data-testid={`menu-edit-expense-${expense.id}`}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-destructive"
+                              data-testid={`menu-delete-expense-${expense.id}`}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -595,15 +665,33 @@ export default function TripDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-expense-menu-${expense.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditExpense(expense)}
+                              data-testid={`menu-edit-expense-${expense.id}`}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-destructive"
+                              data-testid={`menu-delete-expense-${expense.id}`}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -644,15 +732,33 @@ export default function TripDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-expense-menu-${expense.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditExpense(expense)}
+                              data-testid={`menu-edit-expense-${expense.id}`}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-destructive"
+                              data-testid={`menu-delete-expense-${expense.id}`}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -693,15 +799,33 @@ export default function TripDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-expense-menu-${expense.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditExpense(expense)}
+                              data-testid={`menu-edit-expense-${expense.id}`}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-destructive"
+                              data-testid={`menu-delete-expense-${expense.id}`}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -742,15 +866,33 @@ export default function TripDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-expense-menu-${expense.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditExpense(expense)}
+                              data-testid={`menu-edit-expense-${expense.id}`}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-destructive"
+                              data-testid={`menu-delete-expense-${expense.id}`}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -791,15 +933,33 @@ export default function TripDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-expense-${expense.id}`}
-                        >
-                          Delete
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-expense-menu-${expense.id}`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditExpense(expense)}
+                              data-testid={`menu-edit-expense-${expense.id}`}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-destructive"
+                              data-testid={`menu-delete-expense-${expense.id}`}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -858,11 +1018,23 @@ export default function TripDetail() {
 
       <AddExpenseDialog
         open={showAddDialog}
-        onOpenChange={setShowAddDialog}
+        onOpenChange={(open) => {
+          setShowAddDialog(open);
+          if (!open) {
+            setEditingExpense(null);
+          }
+        }}
         categoryTitle={
           CATEGORIES.find((c) => c.id === selectedCategory)?.title || ""
         }
         onAdd={handleSaveExpense}
+        initialData={editingExpense ? {
+          description: editingExpense.description,
+          cost: editingExpense.cost,
+          url: editingExpense.url,
+          date: editingExpense.date,
+        } : undefined}
+        mode={editingExpense ? "edit" : "add"}
       />
 
       <FoodBudgetDialog

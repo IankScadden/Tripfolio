@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,13 @@ interface AddExpenseDialogProps {
     url?: string;
     date?: string;
   }) => void;
+  initialData?: {
+    description: string;
+    cost: string;
+    url?: string;
+    date?: string;
+  };
+  mode?: "add" | "edit";
 }
 
 export default function AddExpenseDialog({
@@ -21,11 +28,27 @@ export default function AddExpenseDialog({
   onOpenChange,
   categoryTitle,
   onAdd,
+  initialData,
+  mode = "add",
 }: AddExpenseDialogProps) {
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState("");
   const [url, setUrl] = useState("");
   const [date, setDate] = useState("");
+
+  useEffect(() => {
+    if (initialData && mode === "edit") {
+      setDescription(initialData.description || "");
+      setCost(initialData.cost || "");
+      setUrl(initialData.url || "");
+      setDate(initialData.date || "");
+    } else if (!open) {
+      setDescription("");
+      setCost("");
+      setUrl("");
+      setDate("");
+    }
+  }, [initialData, mode, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +59,12 @@ export default function AddExpenseDialog({
         url: url || undefined,
         date: date || undefined,
       });
-      setDescription("");
-      setCost("");
-      setUrl("");
-      setDate("");
+      if (mode === "add") {
+        setDescription("");
+        setCost("");
+        setUrl("");
+        setDate("");
+      }
       onOpenChange(false);
     }
   };
@@ -48,7 +73,7 @@ export default function AddExpenseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="dialog-add-expense">
         <DialogHeader>
-          <DialogTitle>Add {categoryTitle} Expense</DialogTitle>
+          <DialogTitle>{mode === "edit" ? "Edit" : "Add"} {categoryTitle} Expense</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -107,7 +132,7 @@ export default function AddExpenseDialog({
               Cancel
             </Button>
             <Button type="submit" className="flex-1" data-testid="button-save-expense">
-              Add Expense
+              {mode === "edit" ? "Save Changes" : "Add Expense"}
             </Button>
           </div>
         </form>
