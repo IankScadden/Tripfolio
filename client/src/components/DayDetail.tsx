@@ -168,7 +168,7 @@ export default function DayDetail({
     setStayingInSameCity(dayDetailData?.stayingInSameCity === 1);
     setIntercityTransportType(dayDetailData?.intercityTransportType || "");
     setShowIntercityTravel(!!dayDetailData?.intercityTransportType && !dayDetailData?.stayingInSameCity);
-  }, [dayDetailData]);
+  }, [dayDetailData, dayNumber]);
 
   useEffect(() => {
     // Load lodging
