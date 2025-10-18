@@ -51,6 +51,7 @@ export default function DayDetail({
   const [localTransportName, setLocalTransportName] = useState("");
   const [localTransportCost, setLocalTransportCost] = useState("");
   const [localTransportNotes, setLocalTransportNotes] = useState("");
+  const [showLocalTransportForm, setShowLocalTransportForm] = useState(false);
   const [showIntercityTravel, setShowIntercityTravel] = useState(false);
   const [stayingInSameCity, setStayingInSameCity] = useState(false);
   const [intercityTransportType, setIntercityTransportType] = useState<string>("");
@@ -198,10 +199,12 @@ export default function DayDetail({
     if (localTransport) {
       setLocalTransportName(localTransport.description || "");
       setLocalTransportCost(localTransport.cost || "");
+      setShowLocalTransportForm(true);
     } else {
       // Clear local transport if none exists for this day
       setLocalTransportName("");
       setLocalTransportCost("");
+      setShowLocalTransportForm(false);
     }
 
     // Load intercity transport
@@ -672,31 +675,65 @@ export default function DayDetail({
 
           {/* Local Transportation */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Bus className="h-5 w-5 text-purple-500" />
-              <h3 className="font-semibold">Local Transportation</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bus className="h-5 w-5 text-purple-500" />
+                <h3 className="font-semibold">Local Transportation</h3>
+              </div>
+              {!showLocalTransportForm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowLocalTransportForm(true)}
+                  data-testid="button-add-local-transport"
+                >
+                  + Add Transportation
+                </Button>
+              )}
             </div>
-            <div className="pl-7 space-y-3">
-              <Input
-                placeholder="Name (e.g., Metro Pass, Taxi, etc.)"
-                value={localTransportName}
-                onChange={(e) => setLocalTransportName(e.target.value)}
-                data-testid="input-local-transport-name"
-              />
-              <Input
-                type="number"
-                placeholder="Cost ($)"
-                value={localTransportCost}
-                onChange={(e) => setLocalTransportCost(e.target.value)}
-                data-testid="input-local-transport-cost"
-              />
-              <Textarea
-                placeholder="Add notes about local transportation (metro, bus, etc.)"
-                value={localTransportNotes}
-                onChange={(e) => setLocalTransportNotes(e.target.value)}
-                data-testid="input-local-transport-notes"
-              />
-            </div>
+            {showLocalTransportForm ? (
+              <div className="pl-7 space-y-2 p-3 border rounded-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-3">
+                    <Input
+                      placeholder="Name (e.g., Metro Pass, Taxi, etc.)"
+                      value={localTransportName}
+                      onChange={(e) => setLocalTransportName(e.target.value)}
+                      data-testid="input-local-transport-name"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Cost ($)"
+                      value={localTransportCost}
+                      onChange={(e) => setLocalTransportCost(e.target.value)}
+                      data-testid="input-local-transport-cost"
+                    />
+                    <Textarea
+                      placeholder="Add notes about local transportation (metro, bus, etc.)"
+                      value={localTransportNotes}
+                      onChange={(e) => setLocalTransportNotes(e.target.value)}
+                      data-testid="input-local-transport-notes"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 ml-2"
+                    onClick={() => {
+                      setLocalTransportName("");
+                      setLocalTransportCost("");
+                      setLocalTransportNotes("");
+                      setShowLocalTransportForm(false);
+                    }}
+                    data-testid="button-remove-local-transport"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="pl-7 text-sm text-muted-foreground">No local transportation added for this day</p>
+            )}
           </div>
 
           {/* Travel to Next City */}
