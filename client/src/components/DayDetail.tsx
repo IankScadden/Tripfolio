@@ -537,6 +537,22 @@ export default function DayDetail({
     setShowConfirmClose(false);
   };
 
+  const handlePreviousClick = async () => {
+    // Auto-save before navigating
+    await handleSave();
+    if (onPrevious) {
+      onPrevious();
+    }
+  };
+
+  const handleNextClick = async () => {
+    // Auto-save before navigating
+    await handleSave();
+    if (onNext) {
+      onNext();
+    }
+  };
+
   const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);
 
   return (
@@ -554,7 +570,8 @@ export default function DayDetail({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onPrevious}
+                  onClick={handlePreviousClick}
+                  disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
                   data-testid="button-previous-day"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
@@ -565,7 +582,8 @@ export default function DayDetail({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onNext}
+                  onClick={handleNextClick}
+                  disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
                   data-testid="button-next-day"
                 >
                   Next
