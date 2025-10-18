@@ -52,6 +52,8 @@ export const dayDetails = pgTable("day_details", {
   tripId: varchar("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
   dayNumber: integer("day_number").notNull(),
   destination: text("destination"),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
   localTransportNotes: text("local_transport_notes"),
   foodBudgetAdjustment: decimal("food_budget_adjustment", { precision: 10, scale: 2 }).default("0"),
   stayingInSameCity: integer("staying_in_same_city").default(0),
