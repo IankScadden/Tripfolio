@@ -264,9 +264,9 @@ export default function DayDetail({
   });
 
   // Save current day data before navigating or closing
-  const saveDayData = () => {
-    // Save day details
-    saveDayDetailMutation.mutate({
+  const saveDayData = async () => {
+    // Save day details and wait for completion
+    return apiRequest("POST", `/api/trips/${tripId}/day-details`, {
       dayNumber,
       destination,
       localTransportNotes,
@@ -499,7 +499,11 @@ export default function DayDetail({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onPrevious}
+                  onClick={async () => {
+                    await saveDayData();
+                    queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "day-details"] });
+                    onPrevious();
+                  }}
                   data-testid="button-previous-day"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
@@ -510,7 +514,11 @@ export default function DayDetail({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onNext}
+                  onClick={async () => {
+                    await saveDayData();
+                    queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "day-details"] });
+                    onNext();
+                  }}
                   data-testid="button-next-day"
                 >
                   Next
