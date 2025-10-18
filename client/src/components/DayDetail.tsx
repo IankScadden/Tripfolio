@@ -83,7 +83,7 @@ export default function DayDetail({
   });
 
   // Fetch ALL trip expenses to detect multi-day lodging
-  const { data: allTripExpenses = [] } = useQuery({
+  const { data: allTripExpenses = [] } = useQuery<any[]>({
     queryKey: ["/api/trips", tripId, "expenses"],
     enabled: open && !!tripId,
   });
@@ -483,52 +483,13 @@ export default function DayDetail({
               <DialogTitle className="text-xl">Day {dayNumber}</DialogTitle>
               {date && <p className="text-sm text-muted-foreground mt-1">{formatDate(date)}</p>}
             </div>
-            <div className="flex gap-2">
-              {onPrevious && dayNumber > 1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    toast({
-                      title: "Saving...",
-                      description: "Saving day details and expenses",
-                    });
-                    await handleSave();
-                    toast({
-                      title: "Saved",
-                      description: "Day details saved successfully",
-                    });
-                    onPrevious();
-                  }}
-                  data-testid="button-previous-day"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-              )}
-              {onNext && dayNumber < totalDays && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    toast({
-                      title: "Saving...",
-                      description: "Saving day details and expenses",
-                    });
-                    await handleSave();
-                    toast({
-                      title: "Saved",
-                      description: "Day details saved successfully",
-                    });
-                    onNext();
-                  }}
-                  data-testid="button-next-day"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
-            </div>
+            <Button
+              onClick={handleSave}
+              disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
+              data-testid="button-save-day"
+            >
+              {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
+            </Button>
           </div>
         </DialogHeader>
 
@@ -880,25 +841,6 @@ export default function DayDetail({
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="flex gap-3 pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="flex-1"
-            data-testid="button-back-to-calendar"
-          >
-            Back to Calendar
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="flex-1"
-            disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
-            data-testid="button-save-day"
-          >
-            {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
