@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Activity {
   id?: string;
@@ -43,6 +44,7 @@ export default function DayDetail({
   onNext,
   initialData,
 }: DayDetailProps) {
+  const { toast } = useToast();
   const [destination, setDestination] = useState("");
   const [lodgingName, setLodgingName] = useState("");
   const [lodgingCost, setLodgingCost] = useState("");
@@ -487,7 +489,15 @@ export default function DayDetail({
                   variant="outline"
                   size="sm"
                   onClick={async () => {
+                    toast({
+                      title: "Saving...",
+                      description: "Saving day details and expenses",
+                    });
                     await handleSave();
+                    toast({
+                      title: "Saved",
+                      description: "Day details saved successfully",
+                    });
                     onPrevious();
                   }}
                   data-testid="button-previous-day"
@@ -501,7 +511,15 @@ export default function DayDetail({
                   variant="outline"
                   size="sm"
                   onClick={async () => {
+                    toast({
+                      title: "Saving...",
+                      description: "Saving day details and expenses",
+                    });
                     await handleSave();
+                    toast({
+                      title: "Saved",
+                      description: "Day details saved successfully",
+                    });
                     onNext();
                   }}
                   data-testid="button-next-day"
