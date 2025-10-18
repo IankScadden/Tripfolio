@@ -522,6 +522,15 @@ export default function DayDetail({
                   size="sm"
                   onClick={() => {
                     setIsEditingMultiDayLodging(false);
+                    // Default check-in to current day's date
+                    if (date) {
+                      setMultiDayCheckIn(date);
+                      // Default check-out to 2 days later (for 2 nights)
+                      const [year, month, day] = date.split('-').map(Number);
+                      const checkOutDate = new Date(year, month - 1, day + 2);
+                      const checkOutStr = `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(checkOutDate.getDate()).padStart(2, '0')}`;
+                      setMultiDayCheckOut(checkOutStr);
+                    }
                     setShowMultiDayLodging(true);
                   }}
                   data-testid="button-add-lodging"

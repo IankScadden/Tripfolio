@@ -29,8 +29,11 @@ export default function TripCalendar({
       
       for (let i = 0; i < days; i++) {
         const currentDate = new Date(year, month - 1, day + i);
-        // Format date string manually to avoid timezone issues with toISOString()
-        const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day + i).padStart(2, '0')}`;
+        // Format date string using the Date object to handle month/year rollovers properly
+        const dateYear = currentDate.getFullYear();
+        const dateMonth = currentDate.getMonth() + 1; // getMonth() is 0-indexed
+        const dateDay = currentDate.getDate();
+        const dateString = `${dateYear}-${String(dateMonth).padStart(2, '0')}-${String(dateDay).padStart(2, '0')}`;
         daysArray.push({
           dayNumber: i + 1,
           date: currentDate,
