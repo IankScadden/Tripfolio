@@ -171,38 +171,50 @@ export default function DayDetail({
   }, [dayDetailData]);
 
   useEffect(() => {
-    if (dayExpenses && dayExpenses.length > 0) {
-      // Load lodging
-      const lodging = dayExpenses.find((e: any) => e.category === "accommodation");
-      if (lodging) {
-        setLodgingName(lodging.description || "");
-        setLodgingCost(lodging.cost || "");
-        setLodgingUrl(lodging.url || "");
-      }
+    // Load lodging
+    const lodging = dayExpenses.find((e: any) => e.category === "accommodation");
+    if (lodging) {
+      setLodgingName(lodging.description || "");
+      setLodgingCost(lodging.cost || "");
+      setLodgingUrl(lodging.url || "");
+    } else {
+      // Clear lodging if no accommodation expense exists for this day
+      setLodgingName("");
+      setLodgingCost("");
+      setLodgingUrl("");
+    }
 
-      // Load activities
-      const activityExpenses = dayExpenses.filter((e: any) => e.category === "activities");
-      setActivities(activityExpenses.map((e: any) => ({
-        id: e.id,
-        name: e.description,
-        cost: e.cost,
-        url: e.url || "",
-      })));
+    // Load activities
+    const activityExpenses = dayExpenses.filter((e: any) => e.category === "activities");
+    setActivities(activityExpenses.map((e: any) => ({
+      id: e.id,
+      name: e.description,
+      cost: e.cost,
+      url: e.url || "",
+    })));
 
-      // Load local transport
-      const localTransport = dayExpenses.find((e: any) => e.category === "local");
-      if (localTransport) {
-        setLocalTransportName(localTransport.description || "");
-        setLocalTransportCost(localTransport.cost || "");
-      }
+    // Load local transport
+    const localTransport = dayExpenses.find((e: any) => e.category === "local");
+    if (localTransport) {
+      setLocalTransportName(localTransport.description || "");
+      setLocalTransportCost(localTransport.cost || "");
+    } else {
+      // Clear local transport if none exists for this day
+      setLocalTransportName("");
+      setLocalTransportCost("");
+    }
 
-      // Load intercity transport
-      const intercityExpense = dayExpenses.find((e: any) => e.category === "intercity");
-      if (intercityExpense) {
-        setIntercityName(intercityExpense.description || "");
-        setIntercityCost(intercityExpense.cost || "");
-        setIntercityUrl(intercityExpense.url || "");
-      }
+    // Load intercity transport
+    const intercityExpense = dayExpenses.find((e: any) => e.category === "intercity");
+    if (intercityExpense) {
+      setIntercityName(intercityExpense.description || "");
+      setIntercityCost(intercityExpense.cost || "");
+      setIntercityUrl(intercityExpense.url || "");
+    } else {
+      // Clear intercity transport if none exists for this day
+      setIntercityName("");
+      setIntercityCost("");
+      setIntercityUrl("");
     }
   }, [dayExpenses]);
 
