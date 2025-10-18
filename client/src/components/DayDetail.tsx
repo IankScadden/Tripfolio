@@ -476,7 +476,7 @@ export default function DayDetail({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-day-detail">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden" data-testid="dialog-day-detail">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
