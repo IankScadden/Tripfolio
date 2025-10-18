@@ -346,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const response = await fetch(
-        `https://api.locationiq.com/v1/autocomplete.php?key=${apiKey}&q=${encodeURIComponent(query)}&limit=5&format=json&dedupe=1`
+        `https://api.locationiq.com/v1/autocomplete.php?key=${apiKey}&q=${encodeURIComponent(query)}&limit=5&format=json&dedupe=1&accept-language=en&normalizeaddress=1`
       );
 
       if (!response.ok) {
@@ -354,7 +354,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      res.json(data);
+      
+      // Simplify display names: show only city, region, country (first 3 parts)
+      const simplifiedData = data.map((item: any) => {
+        const parts = item.display_name.split(',').map((p: string) => p.trim());
+        const simplified = parts.slice(0, 3).join(', ');
+        return {
+          ...item,
+          display_name: simplified || item.display_name
+        };
+      });
+      
+      res.json(simplifiedData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch location suggestions" });
     }
