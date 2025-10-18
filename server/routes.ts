@@ -355,6 +355,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await response.json();
       
+      // Debug logging
+      console.log('\n=== RAW API RESPONSE for query:', query);
+      data.slice(0, 3).forEach((item: any, i: number) => {
+        console.log(`[${i}] ${item.display_name}`);
+        console.log(`    type: ${item.type}, class: ${item.class}, importance: ${item.importance}`);
+        console.log(`    country: ${item.address?.country}`);
+      });
+      
       // Filter, simplify and prioritize results
       const processedData = data
         .filter((item: any) => {
