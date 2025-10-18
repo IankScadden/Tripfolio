@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import LocationAutocomplete from "@/components/LocationAutocomplete";
 
 interface Activity {
   id?: string;
@@ -47,8 +46,6 @@ export default function DayDetail({
 }: DayDetailProps) {
   const { toast } = useToast();
   const [destination, setDestination] = useState("");
-  const [latitude, setLatitude] = useState<string>("");
-  const [longitude, setLongitude] = useState<string>("");
   const [lodgingName, setLodgingName] = useState("");
   const [lodgingCost, setLodgingCost] = useState("");
   const [lodgingUrl, setLodgingUrl] = useState("");
@@ -168,8 +165,6 @@ export default function DayDetail({
   useEffect(() => {
     // Always set values, clearing them if no data exists for this day
     setDestination(dayDetailData?.destination || "");
-    setLatitude(dayDetailData?.latitude || "");
-    setLongitude(dayDetailData?.longitude || "");
     setLocalTransportNotes(dayDetailData?.localTransportNotes || "");
     setFoodBudgetAdjustment(dayDetailData?.foodBudgetAdjustment || "");
     setStayingInSameCity(dayDetailData?.stayingInSameCity === 1);
@@ -363,8 +358,8 @@ export default function DayDetail({
       tripId,
       dayNumber,
       destination,
-      latitude: latitude || null,
-      longitude: longitude || null,
+      latitude: null,
+      longitude: null,
       localTransportNotes,
       foodBudgetAdjustment: foodBudgetAdjustment || "0",
       stayingInSameCity: stayingInSameCity ? 1 : 0,
@@ -507,16 +502,12 @@ export default function DayDetail({
               <MapPin className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Destination</h3>
             </div>
-            <LocationAutocomplete
+            <Input
+              type="text"
+              placeholder="e.g., Barcelona, Spain"
               value={destination}
-              onChange={(location, lat, lon) => {
-                setDestination(location);
-                // Clear coordinates if null, or set them if provided
-                setLatitude(lat || "");
-                setLongitude(lon || "");
-              }}
-              placeholder="City or location"
-              testId="input-destination"
+              onChange={(e) => setDestination(e.target.value)}
+              data-testid="input-destination"
             />
           </div>
 
