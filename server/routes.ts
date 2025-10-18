@@ -346,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const response = await fetch(
-        `https://api.locationiq.com/v1/autocomplete.php?key=${apiKey}&q=${encodeURIComponent(query)}&limit=5&format=json&dedupe=1&accept-language=en&normalizeaddress=1`
+        `https://api.locationiq.com/v1/autocomplete.php?key=${apiKey}&q=${encodeURIComponent(query)}&limit=10&format=json&dedupe=1&accept-language=en&normalizeaddress=1&normalizecity=1&addressdetails=1`
       );
 
       if (!response.ok) {
@@ -355,52 +355,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await response.json();
       
-      // Simplify and prioritize results
+      // Filter, simplify and prioritize results
       const processedData = data
+        .filter((item: any) => {
+          // Filter out hotels, resorts, and specific addresses
+          if (item.class === 'tourism' && ['hotel', 'resort', 'apartment'].includes(item.type)) {
+            return false;
+          }
+          if (item.type === 'house' || item.type === 'building') {
+            return false;
+          }
+          // Must have a country
+          if (!item.address?.country) {
+            return false;
+          }
+          return true;
+        })
         .map((item: any) => {
           const parts = item.display_name.split(',').map((p: string) => p.trim());
+          const country = item.address?.country || parts[parts.length - 1];
           
-          // Extract country (usually last part)
-          const country = parts[parts.length - 1];
-          
-          // Create simplified name based on type
+          // Create simplified name: "City, Country" for major places
           let simplified = '';
-          if (item.type === 'city' || item.type === 'town' || item.type === 'village') {
-            // For cities/towns: show "City, Country"
-            simplified = parts.length >= 2 ? `${parts[0]}, ${country}` : parts.join(', ');
+          if (item.type === 'city' || item.type === 'town' || item.type === 'administrative' || item.type === 'island') {
+            simplified = `${parts[0]}, ${country}`;
+          } else if (item.type === 'village' || item.type === 'municipality') {
+            simplified = parts.length >= 2 ? `${parts[0]}, ${parts[1]}, ${country}` : `${parts[0]}, ${country}`;
           } else {
-            // For other types: show first 2-3 parts
-            simplified = parts.slice(0, Math.min(3, parts.length)).join(', ');
+            // For other types: show first 2 parts + country
+            simplified = parts.slice(0, 2).concat([country]).join(', ');
           }
           
-          // Calculate priority score
-          let priority = 0;
+          // Calculate priority score using LocationIQ's importance + type bonuses
+          const importance = parseFloat(item.importance || 0);
+          let score = importance * 100; // Base score from API (major cities: 40-70)
           
-          // Prioritize cities/towns over neighborhoods and addresses
-          if (item.type === 'city') priority += 100;
-          if (item.type === 'town') priority += 80;
-          if (item.type === 'village') priority += 60;
-          if (item.type === 'island') priority += 90;
+          // Boost cities and islands (main travel destinations)
+          if (item.type === 'city') score += 50;
+          if (item.type === 'island') score += 45;
+          if (item.type === 'town') score += 30;
+          if (item.type === 'administrative') score += 25;
+          if (item.type === 'village') score += 15;
           
-          // Prioritize major countries/regions for travel
-          const travelCountries = ['Greece', 'Italy', 'Spain', 'France', 'United Kingdom', 'Germany', 
-                                   'Portugal', 'Netherlands', 'Japan', 'Thailand', 'Vietnam', 'Indonesia',
-                                   'Australia', 'New Zealand', 'United States', 'Canada', 'Mexico', 'Brazil'];
-          if (travelCountries.some(c => country.includes(c))) priority += 50;
-          
-          // Deprioritize very specific addresses
-          if (item.type === 'house' || item.type === 'address') priority -= 100;
+          // Slight penalty for very detailed administrative divisions
+          if (item.type === 'municipality' || item.type === 'county') score -= 5;
           
           return {
             ...item,
-            display_name: simplified || item.display_name,
-            priority
+            display_name: simplified,
+            score
           };
         })
-        // Sort by priority (highest first)
-        .sort((a: any, b: any) => b.priority - a.priority)
-        // Remove priority from response
-        .map(({ priority, ...item }: any) => item);
+        // Sort by score (highest first)
+        .sort((a: any, b: any) => b.score - a.score)
+        // Take top 5
+        .slice(0, 5)
+        // Remove score from response
+        .map(({ score, ...item }: any) => item);
       
       res.json(processedData);
     } catch (error) {
