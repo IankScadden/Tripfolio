@@ -485,13 +485,37 @@ export default function DayDetail({
               <DialogTitle className="text-xl">Day {dayNumber}</DialogTitle>
               {date && <p className="text-sm text-muted-foreground mt-1">{formatDate(date)}</p>}
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
-              data-testid="button-save-day"
-            >
-              {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {onPrevious && dayNumber > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onPrevious}
+                  data-testid="button-previous-day"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+              )}
+              {onNext && dayNumber < totalDays && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onNext}
+                  data-testid="button-next-day"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              )}
+              <Button
+                onClick={handleSave}
+                disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
+                data-testid="button-save-day"
+              >
+                {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
