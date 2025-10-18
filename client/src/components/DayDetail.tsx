@@ -161,14 +161,13 @@ export default function DayDetail({
   }, [dayExpenses, allTripExpenses, dayNumber]);
 
   useEffect(() => {
-    if (dayDetailData) {
-      setDestination(dayDetailData.destination || "");
-      setLocalTransportNotes(dayDetailData.localTransportNotes || "");
-      setFoodBudgetAdjustment(dayDetailData.foodBudgetAdjustment || "");
-      setStayingInSameCity(dayDetailData.stayingInSameCity === 1);
-      setIntercityTransportType(dayDetailData.intercityTransportType || "");
-      setShowIntercityTravel(!!dayDetailData.intercityTransportType && !dayDetailData.stayingInSameCity);
-    }
+    // Always set values, clearing them if no data exists for this day
+    setDestination(dayDetailData?.destination || "");
+    setLocalTransportNotes(dayDetailData?.localTransportNotes || "");
+    setFoodBudgetAdjustment(dayDetailData?.foodBudgetAdjustment || "");
+    setStayingInSameCity(dayDetailData?.stayingInSameCity === 1);
+    setIntercityTransportType(dayDetailData?.intercityTransportType || "");
+    setShowIntercityTravel(!!dayDetailData?.intercityTransportType && !dayDetailData?.stayingInSameCity);
   }, [dayDetailData]);
 
   useEffect(() => {
