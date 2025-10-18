@@ -334,6 +334,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Location autocomplete proxy (keeps API key secure)
   app.get("/api/location/autocomplete", isAuthenticated, async (req: any, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    
     try {
       const query = req.query.q as string;
       if (!query || query.length < 2) {
@@ -347,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use search endpoint for better city/place results
       const response = await fetch(
-        `https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${encodeURIComponent(query)}&format=json&limit=10&addressdetails=1&accept-language=en&dedupe=1&featuretype=city,settlement`
+        `https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${encodeURIComponent(query)}&format=json&limit=15&addressdetails=1&accept-language=en&dedupe=0`
       );
 
       if (!response.ok) {
@@ -356,62 +360,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await response.json();
       
-      // Filter, simplify and prioritize results
+      // Process and sort results
       const processedData = data
         .filter((item: any) => {
-          // Filter out specific addresses and non-places
-          if (item.class === 'tourism' || item.class === 'amenity' || item.class === 'building') {
-            return false;
-          }
-          // Only keep places (cities, towns, islands, etc.)
-          if (item.class !== 'place' && item.class !== 'boundary') {
-            return false;
-          }
-          return true;
+          // Only keep actual places, not buildings/amenities/roads
+          const validClasses = ['place', 'boundary', 'natural'];
+          return validClasses.includes(item.class);
         })
         .map((item: any) => {
-          // Get country from address details
           const country = item.address?.country || '';
+          const state = item.address?.state || '';
           
-          // Create simple "City, Country" format
-          let cityName = item.address?.city || item.address?.town || item.address?.village || 
-                         item.address?.municipality || item.display_name.split(',')[0].trim();
+          // Extract city name
+          const cityName = item.address?.city || item.address?.town || item.address?.village || 
+                          item.address?.island || item.address?.municipality || 
+                          item.display_name.split(',')[0].trim();
           
-          const simplified = country ? `${cityName}, ${country}` : cityName;
+          // For US results, include state
+          let simplified = '';
+          if (country === 'United States' && state) {
+            simplified = `${cityName}, ${state}, ${country}`;
+          } else if (country) {
+            simplified = `${cityName}, ${country}`;
+          } else {
+            simplified = cityName;
+          }
           
-          // Calculate score based on importance and place type
+          // Score based on importance (LocationIQ's built-in ranking)
           const importance = parseFloat(item.importance || 0);
-          let score = importance * 1000; // Amplify importance score
-          
-          // Boost actual cities
-          if (item.type === 'city') score += 100;
-          if (item.type === 'administrative') score += 80;
-          if (item.type === 'town') score += 60;
-          if (item.type === 'island') score += 90;
           
           return {
             place_id: item.place_id,
-            osm_id: item.osm_id,
-            osm_type: item.osm_type,
             lat: item.lat,
             lon: item.lon,
             display_name: simplified,
-            type: item.type,
-            importance: item.importance,
-            score
+            importance
           };
         })
-        // Sort by score (highest first)
-        .sort((a: any, b: any) => b.score - a.score)
-        // Take top 5 unique results
+        // Sort by importance (highest first)
+        .sort((a: any, b: any) => b.importance - a.importance)
+        // Remove duplicates by display_name
+        .filter((item: any, index: number, self: any[]) => 
+          index === self.findIndex(t => t.display_name === item.display_name)
+        )
+        // Take top 5
         .slice(0, 5)
-        // Remove score from response
-        .map(({ score, ...item }: any) => item);
+        // Remove importance score
+        .map(({ importance, ...item }: any) => item);
       
-      res.json(processedData);
+      return res.json(processedData);
     } catch (error) {
       console.error('Location search error:', error);
-      res.status(500).json({ error: "Failed to fetch location suggestions" });
+      return res.status(500).json({ error: "Failed to fetch location suggestions" });
     }
   });
 
