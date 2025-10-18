@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,11 +70,6 @@ export default function DayDetail({
   const [multiDayLodgingName, setMultiDayLodgingName] = useState("");
   const [multiDayTotalCost, setMultiDayTotalCost] = useState("");
   const [multiDayLodgingUrl, setMultiDayLodgingUrl] = useState("");
-  
-  // Track if form has unsaved changes
-  const [isDirty, setIsDirty] = useState(false);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const [initialFormState, setInitialFormState] = useState<any>(null);
 
   // Fetch day detail data
   const { data: dayDetailData } = useQuery({
@@ -227,43 +221,6 @@ export default function DayDetail({
       setIntercityUrl("");
     }
   }, [dayExpenses]);
-
-  // Capture initial form state when dialog opens
-  useEffect(() => {
-    if (open && dayDetailData !== undefined && dayExpenses.length >= 0) {
-      const initial = {
-        destination: dayDetailData?.destination || "",
-        lodgingName,
-        lodgingCost,
-        activities: activities.map(a => ({ ...a })),
-        localTransportNotes: dayDetailData?.localTransportNotes || "",
-        foodBudgetAdjustment: dayDetailData?.foodBudgetAdjustment || "",
-        stayingInSameCity: dayDetailData?.stayingInSameCity === 1,
-        intercityTransportType: dayDetailData?.intercityTransportType || "",
-      };
-      setInitialFormState(initial);
-      setIsDirty(false);
-    }
-  }, [open, dayDetailData, dayExpenses]);
-
-  // Track if form has changed
-  useEffect(() => {
-    if (!initialFormState || !open) return;
-
-    const currentState = {
-      destination,
-      lodgingName,
-      lodgingCost,
-      activities: activities.map(a => ({ ...a })),
-      localTransportNotes,
-      foodBudgetAdjustment,
-      stayingInSameCity,
-      intercityTransportType,
-    };
-
-    const hasChanged = JSON.stringify(currentState) !== JSON.stringify(initialFormState);
-    setIsDirty(hasChanged);
-  }, [destination, lodgingName, lodgingCost, activities, localTransportNotes, foodBudgetAdjustment, stayingInSameCity, intercityTransportType, initialFormState, open]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
@@ -514,52 +471,13 @@ export default function DayDetail({
     }
 
     await onSave({ success: true });
-    setIsDirty(false); // Mark as clean after successful save
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    if (!open && isDirty) {
-      // User is trying to close with unsaved changes
-      setShowConfirmClose(true);
-    } else {
-      // No unsaved changes, close normally
-      onOpenChange(open);
-    }
-  };
-
-  const handleConfirmClose = () => {
-    setShowConfirmClose(false);
-    setIsDirty(false);
-    onOpenChange(false);
-  };
-
-  const handleCancelClose = () => {
-    setShowConfirmClose(false);
-  };
-
-  const handlePreviousClick = () => {
-    // Save in background without waiting
-    handleSave();
-    // Navigate immediately
-    if (onPrevious) {
-      onPrevious();
-    }
-  };
-
-  const handleNextClick = () => {
-    // Save in background without waiting
-    handleSave();
-    // Navigate immediately
-    if (onNext) {
-      onNext();
-    }
   };
 
   const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);
 
   return (
     <>
-    <Dialog open={open} onOpenChange={handleDialogClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden" data-testid="dialog-day-detail">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -567,37 +485,13 @@ export default function DayDetail({
               <DialogTitle className="text-xl">Day {dayNumber}</DialogTitle>
               {date && <p className="text-sm text-muted-foreground mt-1">{formatDate(date)}</p>}
             </div>
-            <div className="flex items-center gap-2">
-              {onPrevious && dayNumber > 1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousClick}
-                  data-testid="button-previous-day"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-              )}
-              {onNext && dayNumber < totalDays && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextClick}
-                  data-testid="button-next-day"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
-              <Button
-                onClick={handleSave}
-                disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
-                data-testid="button-save-day"
-              >
-                {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Save"}
-              </Button>
-            </div>
+            <Button
+              onClick={handleSave}
+              disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
+              data-testid="button-save-day"
+            >
+              {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
+            </Button>
           </div>
         </DialogHeader>
 
@@ -1051,33 +945,6 @@ export default function DayDetail({
         </div>
       </DialogContent>
     </Dialog>
-
-    {/* Confirmation dialog for unsaved changes */}
-    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-          <AlertDialogDescription>
-            You have unsaved changes. Do you want to save before closing?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleConfirmClose} data-testid="button-discard-changes">
-            Don't Save
-          </AlertDialogCancel>
-          <AlertDialogCancel onClick={handleCancelClose} data-testid="button-cancel-close">
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={async () => {
-            await handleSave();
-            setShowConfirmClose(false);
-            onOpenChange(false);
-          }} data-testid="button-save-and-close">
-            Save
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
