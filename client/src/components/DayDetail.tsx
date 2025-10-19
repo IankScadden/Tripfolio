@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,8 +53,17 @@ export default function DayDetail({
   const [activities, setActivities] = useState<Activity[]>([]);
   const [foodBudgetAdjustment, setFoodBudgetAdjustment] = useState("");
   
-  // Unified transportation state
+  // Transportation state - supports multiple entries
+  const [transportation, setTransportation] = useState<{
+    id?: string;
+    type: string;
+    name: string;
+    cost: string;
+    url?: string;
+    notes?: string;
+  }[]>([]);
   const [showTransportationForm, setShowTransportationForm] = useState(false);
+  const [editingTransportId, setEditingTransportId] = useState<string | null>(null);
   const [transportationType, setTransportationType] = useState<string>("");  // "flights", "intercity", "local"
   const [transportName, setTransportName] = useState("");
   const [transportCost, setTransportCost] = useState("");
@@ -189,41 +199,36 @@ export default function DayDetail({
       url: e.url || "",
     })));
 
-    // Load unified transportation - check flights, intercity, and local
-    const flightExpense = dayExpenses.find((e: any) => e.category === "flights");
-    const intercityExpense = dayExpenses.find((e: any) => e.category === "intercity");
-    const localTransport = dayExpenses.find((e: any) => e.category === "local");
+    // Load transportation - get all transportation expenses (flights, intercity, local)
+    const transportExpenses = dayExpenses.filter((e: any) => 
+      e.category === "flights" || e.category === "intercity" || e.category === "local"
+    );
     
-    // Determine which type of transportation exists (prioritize flight > intercity > local)
-    const transportExpense = flightExpense || intercityExpense || localTransport;
+    const transportItems = transportExpenses.map((e: any) => ({
+      id: e.id,
+      type: e.category,
+      name: e.description || "",
+      cost: e.cost ? String(e.cost) : "",
+      url: e.url || "",
+      notes: e.category === "local" ? (dayDetailData?.localTransportNotes || "") : "",
+    }));
     
-    // Check for legacy local transportation notes (from before unified UI)
-    const hasLegacyNotes = !transportExpense && dayDetailData?.localTransportNotes;
+    // Check for legacy local transportation notes (from before unified UI, when notes existed without expense)
+    const hasLegacyNotes = transportItems.length === 0 && dayDetailData?.localTransportNotes;
     
-    if (transportExpense) {
-      setTransportationType(transportExpense.category);
-      setTransportName(transportExpense.description || "");
-      setTransportCost(transportExpense.cost ? String(transportExpense.cost) : "");
-      setTransportUrl(transportExpense.url || "");
-      setTransportNotes(dayDetailData?.localTransportNotes || ""); // Notes only for local
-      setShowTransportationForm(true);
-    } else if (hasLegacyNotes) {
-      // Preserve legacy local transport notes (no expense, just notes)
-      setTransportationType("local");
-      setTransportName("");
-      setTransportCost("");
-      setTransportUrl("");
-      setTransportNotes(dayDetailData.localTransportNotes);
-      setShowTransportationForm(true);
-    } else {
-      // Clear transportation if none exists
-      setTransportationType("");
-      setTransportName("");
-      setTransportCost("");
-      setTransportUrl("");
-      setTransportNotes("");
-      setShowTransportationForm(false);
+    if (hasLegacyNotes) {
+      // Add legacy notes as a local transportation item
+      transportItems.push({
+        id: undefined,
+        type: "local",
+        name: "",
+        cost: "",
+        url: "",
+        notes: dayDetailData.localTransportNotes,
+      });
     }
+    
+    setTransportation(transportItems);
   }, [dayExpenses, dayDetailData]);
 
   const formatDate = (dateStr?: string) => {
@@ -248,13 +253,36 @@ export default function DayDetail({
     setActivities(activities.filter((_, i) => i !== index));
   };
 
-  const clearTransportation = () => {
-    setShowTransportationForm(false);
+  const clearTransportationForm = () => {
+    setEditingTransportId(null);
     setTransportationType("");
     setTransportName("");
     setTransportCost("");
     setTransportUrl("");
     setTransportNotes("");
+  };
+
+  const handleAddTransportation = () => {
+    clearTransportationForm();
+    setShowTransportationForm(true);
+  };
+
+  const handleEditTransportation = (item: any) => {
+    setEditingTransportId(item.id || null);
+    setTransportationType(item.type);
+    setTransportName(item.name);
+    setTransportCost(item.cost);
+    setTransportUrl(item.url || "");
+    setTransportNotes(item.notes || "");
+    setShowTransportationForm(true);
+  };
+
+  const handleDeleteTransportation = async (item: any) => {
+    if (item.id) {
+      await deleteExpenseMutation.mutateAsync(item.id);
+    }
+    // Remove from local state
+    setTransportation(transportation.filter(t => t.id !== item.id));
   };
 
   const saveDayDetailMutation = useMutation({
@@ -357,6 +385,17 @@ export default function DayDetail({
   };
 
   const handleSave = async () => {
+    // CRITICAL: Snapshot state before any mutations to prevent query invalidation from clearing arrays
+    const transportationSnapshot = [...transportation];
+    const activitiesSnapshot = [...activities];
+    
+    // Collect all local transport notes from the transportation array
+    const localTransportNotes = transportationSnapshot
+      .filter(t => t.type === "local")
+      .map(t => t.notes || "")
+      .filter(n => n.trim() !== "")
+      .join("\n");
+    
     // Save day detail
     await saveDayDetailMutation.mutateAsync({
       tripId,
@@ -364,7 +403,7 @@ export default function DayDetail({
       destination,
       latitude: null,
       longitude: null,
-      localTransportNotes: transportationType === "local" ? transportNotes : "",
+      localTransportNotes,
       foodBudgetAdjustment: foodBudgetAdjustment || "0",
       stayingInSameCity: 0,
       intercityTransportType: null,
@@ -395,9 +434,9 @@ export default function DayDetail({
       await deleteExpenseMutation.mutateAsync(existingLodging.id);
     }
 
-    // Save/update activities
+    // Save/update activities (use snapshot to prevent state reset from query invalidation)
     const existingActivities = dayExpenses?.filter((e: any) => e.category === "activities") || [];
-    for (const activity of activities) {
+    for (const activity of activitiesSnapshot) {
       if (activity.name && activity.cost) {
         if (activity.id) {
           await updateExpenseMutation.mutateAsync({
@@ -421,31 +460,44 @@ export default function DayDetail({
     }
     // Delete removed activities
     for (const existing of existingActivities) {
-      if (!activities.find(a => a.id === existing.id)) {
+      if (!activitiesSnapshot.find(a => a.id === existing.id)) {
         await deleteExpenseMutation.mutateAsync(existing.id);
       }
     }
 
-    // Save/update unified transportation - delete all old transport types first, then create new one
-    const existingFlight = dayExpenses?.find((e: any) => e.category === "flights");
-    const existingIntercity = dayExpenses?.find((e: any) => e.category === "intercity");
-    const existingLocalTransport = dayExpenses?.find((e: any) => e.category === "local");
+    // Save/update transportation (use snapshot to prevent state reset from query invalidation)
+    const existingTransportation = dayExpenses?.filter((e: any) => 
+      e.category === "flights" || e.category === "intercity" || e.category === "local"
+    ) || [];
     
-    // Delete all existing transportation expenses
-    if (existingFlight) await deleteExpenseMutation.mutateAsync(existingFlight.id);
-    if (existingIntercity) await deleteExpenseMutation.mutateAsync(existingIntercity.id);
-    if (existingLocalTransport) await deleteExpenseMutation.mutateAsync(existingLocalTransport.id);
+    for (const transport of transportationSnapshot) {
+      if (transport.name && transport.cost) {
+        if (transport.id) {
+          await updateExpenseMutation.mutateAsync({
+            id: transport.id,
+            description: transport.name,
+            cost: transport.cost,
+            url: transport.url || undefined,
+            dayNumber,
+          });
+        } else {
+          await createExpenseMutation.mutateAsync({
+            tripId,
+            category: transport.type,
+            description: transport.name,
+            cost: transport.cost,
+            url: transport.url || undefined,
+            dayNumber,
+          });
+        }
+      }
+    }
     
-    // Create new transportation expense if provided
-    if (transportationType && transportName && transportCost) {
-      await createExpenseMutation.mutateAsync({
-        tripId,
-        category: transportationType,
-        description: transportName,
-        cost: transportCost,
-        url: transportUrl || undefined,
-        dayNumber,
-      });
+    // Delete removed transportation
+    for (const existing of existingTransportation) {
+      if (!transportationSnapshot.find(t => t.id === existing.id)) {
+        await deleteExpenseMutation.mutateAsync(existing.id);
+      }
     }
 
     await onSave({ success: true });
@@ -638,111 +690,188 @@ export default function DayDetail({
             </div>
           </div>
 
-          {/* Transportation (unified) */}
+          {/* Transportation */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bus className="h-5 w-5 text-purple-500" />
                 <h3 className="font-semibold">Transportation</h3>
               </div>
-              {!showTransportationForm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowTransportationForm(true)}
-                  data-testid="button-add-transportation"
-                >
-                  + Add Transportation
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAddTransportation}
+                data-testid="button-add-transportation"
+              >
+                + Add Transportation
+              </Button>
             </div>
-            {showTransportationForm ? (
-              <div className="pl-7 space-y-3 p-3 border rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <Label>Transportation Type</Label>
-                      <Select value={transportationType} onValueChange={setTransportationType}>
-                        <SelectTrigger data-testid="select-transportation-type">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="flights">
-                            <div className="flex items-center gap-2">
-                              <Plane className="h-4 w-4" />
-                              Flight
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="intercity">
-                            <div className="flex items-center gap-2">
-                              <Train className="h-4 w-4" />
-                              City to City Transportation
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="local">
-                            <div className="flex items-center gap-2">
-                              <Bus className="h-4 w-4" />
-                              Local Transportation
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {transportationType && (
-                      <>
-                        <Input
-                          placeholder={
-                            transportationType === "flights" ? "Flight description (e.g., NYC to Paris)" :
-                            transportationType === "intercity" ? "Route description (e.g., Barcelona to Madrid)" :
-                            "Name (e.g., Metro Pass, Taxi)"
-                          }
-                          value={transportName}
-                          onChange={(e) => setTransportName(e.target.value)}
-                          data-testid="input-transport-name"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                          <Input
-                            type="number"
-                            placeholder="Cost ($)"
-                            value={transportCost}
-                            onChange={(e) => setTransportCost(e.target.value)}
-                            data-testid="input-transport-cost"
-                          />
-                          {transportationType !== "local" && (
-                            <Input
-                              type="url"
-                              placeholder="Booking link (optional)"
-                              value={transportUrl}
-                              onChange={(e) => setTransportUrl(e.target.value)}
-                              data-testid="input-transport-url"
-                            />
-                          )}
+            <div className="space-y-3 pl-7">
+              {/* List of added transportation */}
+              {transportation.map((item, index) => {
+                const icon = item.type === "flights" ? Plane : item.type === "intercity" ? Train : Bus;
+                const Icon = icon;
+                return (
+                  <div key={item.id || index} className="p-3 border rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">
+                            {item.type === "flights" ? "Flight" : item.type === "intercity" ? "City to City" : "Local"}
+                          </span>
                         </div>
-                        {transportationType === "local" && (
-                          <Textarea
-                            placeholder="Add notes about local transportation (metro, bus, etc.)"
-                            value={transportNotes}
-                            onChange={(e) => setTransportNotes(e.target.value)}
-                            data-testid="input-transport-notes"
+                        {item.name && <p className="font-semibold">{item.name}</p>}
+                        <p className="text-sm text-muted-foreground">${item.cost}</p>
+                        {item.url && (
+                          <a 
+                            href={item.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-sm text-primary hover:underline"
+                          >
+                            View booking
+                          </a>
+                        )}
+                        {item.notes && (
+                          <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{item.notes}</p>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditTransportation(item)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteTransportation(item)} className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Add/Edit Form */}
+              {showTransportationForm && (
+                <div className="p-3 border rounded-lg space-y-3">
+                  <div>
+                    <Label>Transportation Type</Label>
+                    <Select value={transportationType} onValueChange={setTransportationType}>
+                      <SelectTrigger data-testid="select-transportation-type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="flights">
+                          <div className="flex items-center gap-2">
+                            <Plane className="h-4 w-4" />
+                            Flight
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="intercity">
+                          <div className="flex items-center gap-2">
+                            <Train className="h-4 w-4" />
+                            City to City Transportation
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="local">
+                          <div className="flex items-center gap-2">
+                            <Bus className="h-4 w-4" />
+                            Local Transportation
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {transportationType && (
+                    <>
+                      <Input
+                        placeholder={
+                          transportationType === "flights" ? "Flight description (e.g., NYC to Paris)" :
+                          transportationType === "intercity" ? "Route description (e.g., Barcelona to Madrid)" :
+                          "Name (e.g., Metro Pass, Taxi)"
+                        }
+                        value={transportName}
+                        onChange={(e) => setTransportName(e.target.value)}
+                        data-testid="input-transportation-name"
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          type="number"
+                          placeholder="Cost ($)"
+                          value={transportCost}
+                          onChange={(e) => setTransportCost(e.target.value)}
+                          data-testid="input-transportation-cost"
+                        />
+                        {transportationType !== "local" && (
+                          <Input
+                            type="url"
+                            placeholder="Booking link (optional)"
+                            value={transportUrl}
+                            onChange={(e) => setTransportUrl(e.target.value)}
+                            data-testid="input-transportation-url"
                           />
                         )}
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 ml-2"
-                    onClick={clearTransportation}
-                    data-testid="button-remove-transportation"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                      </div>
+                      {transportationType === "local" && (
+                        <Textarea
+                          placeholder="Add notes about local transportation (metro, bus, etc.)"
+                          value={transportNotes}
+                          onChange={(e) => setTransportNotes(e.target.value)}
+                          data-testid="textarea-transportation-notes"
+                        />
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            clearTransportationForm();
+                            setShowTransportationForm(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (transportationType && transportName && transportCost) {
+                              if (editingTransportId) {
+                                // Update existing
+                                setTransportation(transportation.map(t => 
+                                  t.id === editingTransportId 
+                                    ? { ...t, type: transportationType, name: transportName, cost: transportCost, url: transportUrl, notes: transportNotes }
+                                    : t
+                                ));
+                              } else {
+                                // Add new
+                                setTransportation([...transportation, {
+                                  type: transportationType,
+                                  name: transportName,
+                                  cost: transportCost,
+                                  url: transportUrl,
+                                  notes: transportNotes,
+                                }]);
+                              }
+                              clearTransportationForm();
+                              setShowTransportationForm(false);
+                            }
+                          }}
+                          disabled={!transportationType || !transportName || !transportCost}
+                        >
+                          {editingTransportId ? "Update" : "Add"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <p className="pl-7 text-sm text-muted-foreground">No transportation added for this day</p>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Food */}
