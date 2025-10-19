@@ -27,6 +27,9 @@ export interface IStorage {
   // Day detail operations
   getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined>;
   upsertDayDetail(dayDetail: InsertDayDetail): Promise<DayDetail>;
+  
+  // Recalculate dayNumbers for expenses based on their dates when trip dates change
+  recalculateExpenseDayNumbers(tripId: string, newStartDate: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -166,6 +169,31 @@ export class DatabaseStorage implements IStorage {
         .values(insertDayDetail)
         .returning();
       return created;
+    }
+  }
+  
+  async recalculateExpenseDayNumbers(tripId: string, newStartDate: string): Promise<void> {
+    // Get all expenses for this trip that have a date set
+    const tripExpenses = await this.getExpensesByTrip(tripId);
+    const expensesWithDates = tripExpenses.filter(e => e.date);
+    
+    // Parse the new start date
+    const [startYear, startMonth, startDay] = newStartDate.split('-').map(Number);
+    const tripStart = new Date(startYear, startMonth - 1, startDay);
+    
+    // Recalculate dayNumber for each expense based on its date
+    for (const expense of expensesWithDates) {
+      if (expense.date) {
+        const [expYear, expMonth, expDay] = expense.date.split('-').map(Number);
+        const expenseDate = new Date(expYear, expMonth - 1, expDay);
+        
+        // Calculate days difference
+        const daysDiff = Math.ceil((expenseDate.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
+        const newDayNumber = daysDiff + 1; // Day 1 is the first day
+        
+        // Update the expense with the new dayNumber
+        await this.updateExpense(expense.id, { dayNumber: newDayNumber });
+      }
     }
   }
 }

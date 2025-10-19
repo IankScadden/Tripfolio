@@ -418,6 +418,7 @@ export default function DayDetail({
           description: lodgingName,
           cost: lodgingCost,
           url: lodgingUrl || undefined,
+          date,
           dayNumber,
         });
       } else {
@@ -427,6 +428,7 @@ export default function DayDetail({
           description: lodgingName,
           cost: lodgingCost,
           url: lodgingUrl || undefined,
+          date,
           dayNumber,
         });
       }
@@ -444,6 +446,7 @@ export default function DayDetail({
             description: activity.name,
             cost: activity.cost,
             url: activity.url || undefined,
+            date,
             dayNumber,
           });
         } else {
@@ -453,6 +456,7 @@ export default function DayDetail({
             description: activity.name,
             cost: activity.cost,
             url: activity.url || undefined,
+            date,
             dayNumber,
           });
         }
@@ -478,6 +482,7 @@ export default function DayDetail({
             description: transport.name,
             cost: transport.cost,
             url: transport.url || undefined,
+            date,
             dayNumber,
           });
         } else {
@@ -487,6 +492,7 @@ export default function DayDetail({
             description: transport.name,
             cost: transport.cost,
             url: transport.url || undefined,
+            date,
             dayNumber,
           });
         }

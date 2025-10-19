@@ -110,6 +110,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
       }
+      
+      // If startDate was updated, recalculate dayNumbers for all expenses based on their dates
+      if (updates.startDate && trip.startDate && updates.startDate !== existingTrip.startDate) {
+        await storage.recalculateExpenseDayNumbers(trip.id, trip.startDate);
+      }
+      
       const expenses = await storage.getExpensesByTrip(trip.id);
       const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
       res.json({ ...trip, totalCost: total });
