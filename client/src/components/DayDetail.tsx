@@ -197,12 +197,23 @@ export default function DayDetail({
     // Determine which type of transportation exists (prioritize flight > intercity > local)
     const transportExpense = flightExpense || intercityExpense || localTransport;
     
+    // Check for legacy local transportation notes (from before unified UI)
+    const hasLegacyNotes = !transportExpense && dayDetailData?.localTransportNotes;
+    
     if (transportExpense) {
       setTransportationType(transportExpense.category);
       setTransportName(transportExpense.description || "");
       setTransportCost(transportExpense.cost ? String(transportExpense.cost) : "");
       setTransportUrl(transportExpense.url || "");
       setTransportNotes(dayDetailData?.localTransportNotes || ""); // Notes only for local
+      setShowTransportationForm(true);
+    } else if (hasLegacyNotes) {
+      // Preserve legacy local transport notes (no expense, just notes)
+      setTransportationType("local");
+      setTransportName("");
+      setTransportCost("");
+      setTransportUrl("");
+      setTransportNotes(dayDetailData.localTransportNotes);
       setShowTransportationForm(true);
     } else {
       // Clear transportation if none exists
