@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useParams, useLocation } from "wouter";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
