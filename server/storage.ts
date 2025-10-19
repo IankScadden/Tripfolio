@@ -188,8 +188,10 @@ export class DatabaseStorage implements IStorage {
         const expenseDate = new Date(expYear, expMonth - 1, expDay);
         
         // Calculate days difference
-        const daysDiff = Math.ceil((expenseDate.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
-        const newDayNumber = daysDiff + 1; // Day 1 is the first day
+        const daysDiff = Math.floor((expenseDate.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
+        // Clamp to minimum of 1 to ensure expenses always appear on valid days
+        // If expense is before trip start, it appears on Day 1
+        const newDayNumber = Math.max(1, daysDiff + 1);
         
         // Update the expense with the new dayNumber
         await this.updateExpense(expense.id, { dayNumber: newDayNumber });
