@@ -5,6 +5,7 @@ import { insertTripSchema, insertExpenseSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { randomUUID } from "crypto";
+import { geocodeDestination } from "./geocoding";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -321,12 +322,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (trip.userId !== userId) {
         return res.status(403).json({ error: "Forbidden" });
       }
+
+      // Geocode destination if provided and coordinates are not already set
+      let latitude = req.body.latitude;
+      let longitude = req.body.longitude;
+
+      if (req.body.destination && (!latitude || !longitude)) {
+        const geocodeResult = await geocodeDestination(req.body.destination);
+        if (geocodeResult) {
+          latitude = geocodeResult.lat;
+          longitude = geocodeResult.lon;
+        }
+      }
+
       const dayDetail = await storage.upsertDayDetail({
         tripId: req.params.tripId,
         dayNumber: req.body.dayNumber,
         destination: req.body.destination,
-        latitude: req.body.latitude,
-        longitude: req.body.longitude,
+        latitude: latitude,
+        longitude: longitude,
         localTransportNotes: req.body.localTransportNotes,
         foodBudgetAdjustment: req.body.foodBudgetAdjustment,
         stayingInSameCity: req.body.stayingInSameCity,

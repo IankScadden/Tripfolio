@@ -473,11 +473,11 @@ export default function TripDetail() {
           <Button
             variant="default"
             className="gap-2"
-            onClick={() => setShowCalendar(true)}
+            onClick={() => setLocation(`/trip/${tripId}/itinerary`)}
             data-testid="button-day-by-day-layout"
           >
             <ExternalLink className="h-4 w-4" />
-            Day by Day Layout
+            Itinerary Planner
           </Button>
         </div>
 
