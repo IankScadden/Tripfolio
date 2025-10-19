@@ -25,6 +25,7 @@ export interface IStorage {
   deleteExpense(id: string): Promise<boolean>;
   
   // Day detail operations
+  getAllDayDetails(tripId: string): Promise<DayDetail[]>;
   getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined>;
   upsertDayDetail(dayDetail: InsertDayDetail): Promise<DayDetail>;
   
@@ -136,6 +137,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Day detail operations
+  async getAllDayDetails(tripId: string): Promise<DayDetail[]> {
+    const allDayDetails = await db
+      .select()
+      .from(dayDetails)
+      .where(eq(dayDetails.tripId, tripId))
+      .orderBy(dayDetails.dayNumber);
+    return allDayDetails;
+  }
+
   async getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined> {
     const [dayDetail] = await db
       .select()

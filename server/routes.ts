@@ -295,6 +295,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Day details routes
+  app.get("/api/trips/:tripId/all-day-details", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.tripId);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const dayDetails = await storage.getAllDayDetails(req.params.tripId);
+      res.json(dayDetails);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch day details" });
+    }
+  });
+
   app.get("/api/trips/:tripId/day-details/:dayNumber", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -327,11 +344,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let latitude = req.body.latitude;
       let longitude = req.body.longitude;
 
+      console.log('[Day Details] Saving day detail - destination:', req.body.destination, 'lat/lng:', latitude, longitude);
+
       if (req.body.destination && (!latitude || !longitude)) {
+        console.log('[Day Details] Attempting to geocode destination:', req.body.destination);
         const geocodeResult = await geocodeDestination(req.body.destination);
         if (geocodeResult) {
           latitude = geocodeResult.lat;
           longitude = geocodeResult.lon;
+          console.log('[Day Details] Geocoding successful - lat:', latitude, 'lng:', longitude);
+        } else {
+          console.log('[Day Details] Geocoding failed or returned null');
         }
       }
 

@@ -8,7 +8,11 @@ export interface GeocodingResult {
 }
 
 export async function geocodeDestination(destination: string): Promise<GeocodingResult | null> {
+  console.log('[Geocoding] Starting geocode for:', destination);
+  console.log('[Geocoding] API key available:', !!LOCATIONIQ_API_KEY);
+  
   if (!destination || !LOCATIONIQ_API_KEY) {
+    console.log('[Geocoding] Missing destination or API key');
     return null;
   }
 
@@ -20,26 +24,34 @@ export async function geocodeDestination(destination: string): Promise<Geocoding
       limit: '1',
     });
 
-    const response = await fetch(`${GEOCODE_BASE_URL}?${params}`);
+    const url = `${GEOCODE_BASE_URL}?${params}`;
+    console.log('[Geocoding] Fetching:', url.replace(LOCATIONIQ_API_KEY, 'REDACTED'));
+    const response = await fetch(url);
     
     if (!response.ok) {
-      console.error('Geocoding failed:', response.statusText);
+      console.error('[Geocoding] Failed with status:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('[Geocoding] Error response:', errorText);
       return null;
     }
 
     const data = await response.json();
+    console.log('[Geocoding] Response data:', JSON.stringify(data).substring(0, 200));
     
     if (data && data.length > 0) {
-      return {
+      const result = {
         lat: data[0].lat,
         lon: data[0].lon,
         display_name: data[0].display_name,
       };
+      console.log('[Geocoding] Success:', result);
+      return result;
     }
 
+    console.log('[Geocoding] No results found');
     return null;
   } catch (error) {
-    console.error('Error geocoding destination:', error);
+    console.error('[Geocoding] Error:', error);
     return null;
   }
 }
