@@ -116,6 +116,7 @@ export default function TripDetail() {
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -395,6 +396,24 @@ export default function TripDetail() {
       (sum, e) => sum + parseFloat(e.cost),
       0
     );
+  };
+
+  const toggleCategoryExpanded = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  const getVisibleExpenses = (categoryId: string) => {
+    const categoryExpenses = getExpensesByCategory(categoryId);
+    const isExpanded = expandedCategories.has(categoryId);
+    return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 3);
   };
 
   const chartData = CATEGORIES.map((cat) => ({
