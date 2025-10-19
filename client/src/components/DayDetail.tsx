@@ -50,17 +50,15 @@ export default function DayDetail({
   const [lodgingCost, setLodgingCost] = useState("");
   const [lodgingUrl, setLodgingUrl] = useState("");
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [localTransportName, setLocalTransportName] = useState("");
-  const [localTransportCost, setLocalTransportCost] = useState("");
-  const [localTransportNotes, setLocalTransportNotes] = useState("");
-  const [showLocalTransportForm, setShowLocalTransportForm] = useState(false);
-  const [showIntercityTravel, setShowIntercityTravel] = useState(false);
-  const [stayingInSameCity, setStayingInSameCity] = useState(false);
-  const [intercityTransportType, setIntercityTransportType] = useState<string>("");
-  const [intercityName, setIntercityName] = useState("");
-  const [intercityCost, setIntercityCost] = useState("");
-  const [intercityUrl, setIntercityUrl] = useState("");
   const [foodBudgetAdjustment, setFoodBudgetAdjustment] = useState("");
+  
+  // Unified transportation state
+  const [showTransportationForm, setShowTransportationForm] = useState(false);
+  const [transportationType, setTransportationType] = useState<string>("");  // "flights", "intercity", "local"
+  const [transportName, setTransportName] = useState("");
+  const [transportCost, setTransportCost] = useState("");
+  const [transportUrl, setTransportUrl] = useState("");
+  const [transportNotes, setTransportNotes] = useState("");
   
   // Multi-day lodging dialog state
   const [showMultiDayLodging, setShowMultiDayLodging] = useState(false);
@@ -165,11 +163,7 @@ export default function DayDetail({
   useEffect(() => {
     // Always set values, clearing them if no data exists for this day
     setDestination(dayDetailData?.destination || "");
-    setLocalTransportNotes(dayDetailData?.localTransportNotes || "");
     setFoodBudgetAdjustment(dayDetailData?.foodBudgetAdjustment || "");
-    setStayingInSameCity(dayDetailData?.stayingInSameCity === 1);
-    setIntercityTransportType(dayDetailData?.intercityTransportType || "");
-    setShowIntercityTravel(!!dayDetailData?.intercityTransportType && !dayDetailData?.stayingInSameCity);
   }, [dayDetailData, dayNumber]);
 
   useEffect(() => {
@@ -195,32 +189,31 @@ export default function DayDetail({
       url: e.url || "",
     })));
 
-    // Load local transport
-    const localTransport = dayExpenses.find((e: any) => e.category === "local");
-    if (localTransport) {
-      setLocalTransportName(localTransport.description || "");
-      setLocalTransportCost(localTransport.cost || "");
-      setShowLocalTransportForm(true);
-    } else {
-      // Clear local transport if none exists for this day
-      setLocalTransportName("");
-      setLocalTransportCost("");
-      setShowLocalTransportForm(false);
-    }
-
-    // Load intercity transport
+    // Load unified transportation - check flights, intercity, and local
+    const flightExpense = dayExpenses.find((e: any) => e.category === "flights");
     const intercityExpense = dayExpenses.find((e: any) => e.category === "intercity");
-    if (intercityExpense) {
-      setIntercityName(intercityExpense.description || "");
-      setIntercityCost(intercityExpense.cost || "");
-      setIntercityUrl(intercityExpense.url || "");
+    const localTransport = dayExpenses.find((e: any) => e.category === "local");
+    
+    // Determine which type of transportation exists (prioritize flight > intercity > local)
+    const transportExpense = flightExpense || intercityExpense || localTransport;
+    
+    if (transportExpense) {
+      setTransportationType(transportExpense.category);
+      setTransportName(transportExpense.description || "");
+      setTransportCost(transportExpense.cost || "");
+      setTransportUrl(transportExpense.url || "");
+      setTransportNotes(dayDetailData?.localTransportNotes || ""); // Notes only for local
+      setShowTransportationForm(true);
     } else {
-      // Clear intercity transport if none exists for this day
-      setIntercityName("");
-      setIntercityCost("");
-      setIntercityUrl("");
+      // Clear transportation if none exists
+      setTransportationType("");
+      setTransportName("");
+      setTransportCost("");
+      setTransportUrl("");
+      setTransportNotes("");
+      setShowTransportationForm(false);
     }
-  }, [dayExpenses]);
+  }, [dayExpenses, dayDetailData]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
@@ -244,13 +237,13 @@ export default function DayDetail({
     setActivities(activities.filter((_, i) => i !== index));
   };
 
-  const handleStayingInSameCity = () => {
-    setStayingInSameCity(true);
-    setShowIntercityTravel(false);
-    setIntercityTransportType("");
-    setIntercityName("");
-    setIntercityCost("");
-    setIntercityUrl("");
+  const clearTransportation = () => {
+    setShowTransportationForm(false);
+    setTransportationType("");
+    setTransportName("");
+    setTransportCost("");
+    setTransportUrl("");
+    setTransportNotes("");
   };
 
   const saveDayDetailMutation = useMutation({
@@ -360,10 +353,10 @@ export default function DayDetail({
       destination,
       latitude: null,
       longitude: null,
-      localTransportNotes,
+      localTransportNotes: transportationType === "local" ? transportNotes : "",
       foodBudgetAdjustment: foodBudgetAdjustment || "0",
-      stayingInSameCity: stayingInSameCity ? 1 : 0,
-      intercityTransportType: stayingInSameCity ? null : intercityTransportType,
+      stayingInSameCity: 0,
+      intercityTransportType: null,
     });
 
     // Save/update lodging expense
@@ -422,52 +415,26 @@ export default function DayDetail({
       }
     }
 
-    // Save/update local transportation
-    const existingLocalTransport = dayExpenses?.find((e: any) => e.category === "local");
-    if (localTransportName && localTransportCost) {
-      if (existingLocalTransport) {
-        await updateExpenseMutation.mutateAsync({
-          id: existingLocalTransport.id,
-          description: localTransportName,
-          cost: localTransportCost,
-          dayNumber,
-        });
-      } else {
-        await createExpenseMutation.mutateAsync({
-          tripId,
-          category: "local",
-          description: localTransportName,
-          cost: localTransportCost,
-          dayNumber,
-        });
-      }
-    } else if (existingLocalTransport) {
-      await deleteExpenseMutation.mutateAsync(existingLocalTransport.id);
-    }
-
-    // Save/update intercity transport
+    // Save/update unified transportation - delete all old transport types first, then create new one
+    const existingFlight = dayExpenses?.find((e: any) => e.category === "flights");
     const existingIntercity = dayExpenses?.find((e: any) => e.category === "intercity");
-    if (intercityName && intercityCost && !stayingInSameCity) {
-      if (existingIntercity) {
-        await updateExpenseMutation.mutateAsync({
-          id: existingIntercity.id,
-          description: intercityName,
-          cost: intercityCost,
-          url: intercityUrl || undefined,
-          dayNumber,
-        });
-      } else {
-        await createExpenseMutation.mutateAsync({
-          tripId,
-          category: "intercity",
-          description: intercityName,
-          cost: intercityCost,
-          url: intercityUrl || undefined,
-          dayNumber,
-        });
-      }
-    } else if (existingIntercity) {
-      await deleteExpenseMutation.mutateAsync(existingIntercity.id);
+    const existingLocalTransport = dayExpenses?.find((e: any) => e.category === "local");
+    
+    // Delete all existing transportation expenses
+    if (existingFlight) await deleteExpenseMutation.mutateAsync(existingFlight.id);
+    if (existingIntercity) await deleteExpenseMutation.mutateAsync(existingIntercity.id);
+    if (existingLocalTransport) await deleteExpenseMutation.mutateAsync(existingLocalTransport.id);
+    
+    // Create new transportation expense if provided
+    if (transportationType && transportName && transportCost) {
+      await createExpenseMutation.mutateAsync({
+        tripId,
+        category: transportationType,
+        description: transportName,
+        cost: transportCost,
+        url: transportUrl || undefined,
+        dayNumber,
+      });
     }
 
     await onSave({ success: true });
@@ -660,164 +627,110 @@ export default function DayDetail({
             </div>
           </div>
 
-          {/* Local Transportation */}
+          {/* Transportation (unified) */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bus className="h-5 w-5 text-purple-500" />
-                <h3 className="font-semibold">Local Transportation</h3>
+                <h3 className="font-semibold">Transportation</h3>
               </div>
-              {!showLocalTransportForm && (
+              {!showTransportationForm && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowLocalTransportForm(true)}
-                  data-testid="button-add-local-transport"
+                  onClick={() => setShowTransportationForm(true)}
+                  data-testid="button-add-transportation"
                 >
                   + Add Transportation
                 </Button>
               )}
             </div>
-            {showLocalTransportForm ? (
-              <div className="pl-7 space-y-2 p-3 border rounded-lg">
+            {showTransportationForm ? (
+              <div className="pl-7 space-y-3 p-3 border rounded-lg">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-3">
-                    <Input
-                      placeholder="Name (e.g., Metro Pass, Taxi, etc.)"
-                      value={localTransportName}
-                      onChange={(e) => setLocalTransportName(e.target.value)}
-                      data-testid="input-local-transport-name"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Cost ($)"
-                      value={localTransportCost}
-                      onChange={(e) => setLocalTransportCost(e.target.value)}
-                      data-testid="input-local-transport-cost"
-                    />
-                    <Textarea
-                      placeholder="Add notes about local transportation (metro, bus, etc.)"
-                      value={localTransportNotes}
-                      onChange={(e) => setLocalTransportNotes(e.target.value)}
-                      data-testid="input-local-transport-notes"
-                    />
+                    <div>
+                      <Label>Transportation Type</Label>
+                      <Select value={transportationType} onValueChange={setTransportationType}>
+                        <SelectTrigger data-testid="select-transportation-type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flights">
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-4 w-4" />
+                              Flight
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="intercity">
+                            <div className="flex items-center gap-2">
+                              <Train className="h-4 w-4" />
+                              City to City Transportation
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="local">
+                            <div className="flex items-center gap-2">
+                              <Bus className="h-4 w-4" />
+                              Local Transportation
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {transportationType && (
+                      <>
+                        <Input
+                          placeholder={
+                            transportationType === "flights" ? "Flight description (e.g., NYC to Paris)" :
+                            transportationType === "intercity" ? "Route description (e.g., Barcelona to Madrid)" :
+                            "Name (e.g., Metro Pass, Taxi)"
+                          }
+                          value={transportName}
+                          onChange={(e) => setTransportName(e.target.value)}
+                          data-testid="input-transport-name"
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input
+                            type="number"
+                            placeholder="Cost ($)"
+                            value={transportCost}
+                            onChange={(e) => setTransportCost(e.target.value)}
+                            data-testid="input-transport-cost"
+                          />
+                          {transportationType !== "local" && (
+                            <Input
+                              type="url"
+                              placeholder="Booking link (optional)"
+                              value={transportUrl}
+                              onChange={(e) => setTransportUrl(e.target.value)}
+                              data-testid="input-transport-url"
+                            />
+                          )}
+                        </div>
+                        {transportationType === "local" && (
+                          <Textarea
+                            placeholder="Add notes about local transportation (metro, bus, etc.)"
+                            value={transportNotes}
+                            onChange={(e) => setTransportNotes(e.target.value)}
+                            data-testid="input-transport-notes"
+                          />
+                        )}
+                      </>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0 ml-2"
-                    onClick={() => {
-                      setLocalTransportName("");
-                      setLocalTransportCost("");
-                      setLocalTransportNotes("");
-                      setShowLocalTransportForm(false);
-                    }}
-                    data-testid="button-remove-local-transport"
+                    onClick={clearTransportation}
+                    data-testid="button-remove-transportation"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ) : (
-              <p className="pl-7 text-sm text-muted-foreground">No local transportation added for this day</p>
-            )}
-          </div>
-
-          {/* Travel to Next City */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Train className="h-5 w-5 text-orange-500" />
-                <h3 className="font-semibold">Travel to Next City</h3>
-              </div>
-              {!showIntercityTravel && !stayingInSameCity && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowIntercityTravel(true)}
-                  data-testid="button-add-intercity"
-                >
-                  + Add Travel
-                </Button>
-              )}
-            </div>
-            {showIntercityTravel && (
-              <div className="space-y-3 pl-7">
-                <div>
-                  <Label>Transport Type</Label>
-                  <Select value={intercityTransportType} onValueChange={setIntercityTransportType}>
-                    <SelectTrigger data-testid="select-intercity-type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="flight">
-                        <div className="flex items-center gap-2">
-                          <Plane className="h-4 w-4" />
-                          Flight
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="train">
-                        <div className="flex items-center gap-2">
-                          <Train className="h-4 w-4" />
-                          Train
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="bus">
-                        <div className="flex items-center gap-2">
-                          <Bus className="h-4 w-4" />
-                          Bus
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Input
-                  placeholder="Route description"
-                  value={intercityName}
-                  onChange={(e) => setIntercityName(e.target.value)}
-                  data-testid="input-intercity-name"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    type="number"
-                    placeholder="Cost ($)"
-                    value={intercityCost}
-                    onChange={(e) => setIntercityCost(e.target.value)}
-                    data-testid="input-intercity-cost"
-                  />
-                  <Input
-                    type="url"
-                    placeholder="Booking link (optional)"
-                    value={intercityUrl}
-                    onChange={(e) => setIntercityUrl(e.target.value)}
-                    data-testid="input-intercity-url"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleStayingInSameCity}
-                  data-testid="button-staying-same-city"
-                >
-                  Staying in Same City
-                </Button>
-              </div>
-            )}
-            {stayingInSameCity && (
-              <div className="pl-7 flex items-center gap-3">
-                <p className="text-sm text-muted-foreground">No intercity travel for this day</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setStayingInSameCity(false);
-                    setShowIntercityTravel(true);
-                  }}
-                  data-testid="button-add-travel-back"
-                >
-                  + Add Travel
-                </Button>
-              </div>
+              <p className="pl-7 text-sm text-muted-foreground">No transportation added for this day</p>
             )}
           </div>
 
