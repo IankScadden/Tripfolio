@@ -171,7 +171,7 @@ export default function DayDetail({
     const lodging = dayExpenses.find((e: any) => e.category === "accommodation");
     if (lodging) {
       setLodgingName(lodging.description || "");
-      setLodgingCost(lodging.cost || "");
+      setLodgingCost(lodging.cost ? String(lodging.cost) : "");
       setLodgingUrl(lodging.url || "");
     } else {
       // Clear lodging if no accommodation expense exists for this day
@@ -185,7 +185,7 @@ export default function DayDetail({
     setActivities(activityExpenses.map((e: any) => ({
       id: e.id,
       name: e.description,
-      cost: e.cost,
+      cost: e.cost ? String(e.cost) : "",
       url: e.url || "",
     })));
 
@@ -200,7 +200,7 @@ export default function DayDetail({
     if (transportExpense) {
       setTransportationType(transportExpense.category);
       setTransportName(transportExpense.description || "");
-      setTransportCost(transportExpense.cost || "");
+      setTransportCost(transportExpense.cost ? String(transportExpense.cost) : "");
       setTransportUrl(transportExpense.url || "");
       setTransportNotes(dayDetailData?.localTransportNotes || ""); // Notes only for local
       setShowTransportationForm(true);
