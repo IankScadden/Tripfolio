@@ -606,48 +606,61 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("flights").length > 0 ? (
-                <div className="space-y-2">
-                  {getExpensesByCategory("flights").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
+                <>
+                  <div className="space-y-2">
+                    {getVisibleExpenses("flights").map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{expense.description}</div>
+                          {expense.date && (
+                            <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-expense-menu-${expense.id}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditExpense(expense)}
+                                data-testid={`menu-edit-expense-${expense.id}`}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-destructive"
+                                data-testid={`menu-delete-expense-${expense.id}`}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              data-testid={`button-expense-menu-${expense.id}`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditExpense(expense)}
-                              data-testid={`menu-edit-expense-${expense.id}`}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteExpense(expense.id)}
-                              className="text-destructive"
-                              data-testid={`menu-delete-expense-${expense.id}`}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {getExpensesByCategory("flights").length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => toggleCategoryExpanded("flights")}
+                      data-testid="button-toggle-flights"
+                    >
+                      {expandedCategories.has("flights") ? "Show Less" : `Show More (${getExpensesByCategory("flights").length - 3} more)`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">No flights added</p>
               )}
@@ -673,48 +686,61 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("intercity").length > 0 ? (
-                <div className="space-y-2">
-                  {getExpensesByCategory("intercity").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
+                <>
+                  <div className="space-y-2">
+                    {getVisibleExpenses("intercity").map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{expense.description}</div>
+                          {expense.date && (
+                            <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-expense-menu-${expense.id}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditExpense(expense)}
+                                data-testid={`menu-edit-expense-${expense.id}`}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-destructive"
+                                data-testid={`menu-delete-expense-${expense.id}`}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              data-testid={`button-expense-menu-${expense.id}`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditExpense(expense)}
-                              data-testid={`menu-edit-expense-${expense.id}`}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteExpense(expense.id)}
-                              className="text-destructive"
-                              data-testid={`menu-delete-expense-${expense.id}`}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {getExpensesByCategory("intercity").length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => toggleCategoryExpanded("intercity")}
+                      data-testid="button-toggle-intercity"
+                    >
+                      {expandedCategories.has("intercity") ? "Show Less" : `Show More (${getExpensesByCategory("intercity").length - 3} more)`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">No transportation added</p>
               )}
@@ -740,48 +766,61 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("local").length > 0 ? (
-                <div className="space-y-2">
-                  {getExpensesByCategory("local").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
+                <>
+                  <div className="space-y-2">
+                    {getVisibleExpenses("local").map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{expense.description}</div>
+                          {expense.date && (
+                            <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-expense-menu-${expense.id}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditExpense(expense)}
+                                data-testid={`menu-edit-expense-${expense.id}`}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-destructive"
+                                data-testid={`menu-delete-expense-${expense.id}`}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              data-testid={`button-expense-menu-${expense.id}`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditExpense(expense)}
-                              data-testid={`menu-edit-expense-${expense.id}`}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteExpense(expense.id)}
-                              className="text-destructive"
-                              data-testid={`menu-delete-expense-${expense.id}`}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {getExpensesByCategory("local").length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => toggleCategoryExpanded("local")}
+                      data-testid="button-toggle-local"
+                    >
+                      {expandedCategories.has("local") ? "Show Less" : `Show More (${getExpensesByCategory("local").length - 3} more)`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">No local transport added</p>
               )}
@@ -807,48 +846,61 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("accommodation").length > 0 ? (
-                <div className="space-y-2">
-                  {getExpensesByCategory("accommodation").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
+                <>
+                  <div className="space-y-2">
+                    {getVisibleExpenses("accommodation").map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{expense.description}</div>
+                          {expense.date && (
+                            <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-expense-menu-${expense.id}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditExpense(expense)}
+                                data-testid={`menu-edit-expense-${expense.id}`}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-destructive"
+                                data-testid={`menu-delete-expense-${expense.id}`}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              data-testid={`button-expense-menu-${expense.id}`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditExpense(expense)}
-                              data-testid={`menu-edit-expense-${expense.id}`}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteExpense(expense.id)}
-                              className="text-destructive"
-                              data-testid={`menu-delete-expense-${expense.id}`}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {getExpensesByCategory("accommodation").length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => toggleCategoryExpanded("accommodation")}
+                      data-testid="button-toggle-accommodation"
+                    >
+                      {expandedCategories.has("accommodation") ? "Show Less" : `Show More (${getExpensesByCategory("accommodation").length - 3} more)`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">No lodging added</p>
               )}
@@ -874,48 +926,61 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("activities").length > 0 ? (
-                <div className="space-y-2">
-                  {getExpensesByCategory("activities").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
+                <>
+                  <div className="space-y-2">
+                    {getVisibleExpenses("activities").map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{expense.description}</div>
+                          {expense.date && (
+                            <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-expense-menu-${expense.id}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditExpense(expense)}
+                                data-testid={`menu-edit-expense-${expense.id}`}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-destructive"
+                                data-testid={`menu-delete-expense-${expense.id}`}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              data-testid={`button-expense-menu-${expense.id}`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditExpense(expense)}
-                              data-testid={`menu-edit-expense-${expense.id}`}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteExpense(expense.id)}
-                              className="text-destructive"
-                              data-testid={`menu-delete-expense-${expense.id}`}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {getExpensesByCategory("activities").length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => toggleCategoryExpanded("activities")}
+                      data-testid="button-toggle-activities"
+                    >
+                      {expandedCategories.has("activities") ? "Show Less" : `Show More (${getExpensesByCategory("activities").length - 3} more)`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">No activities added</p>
               )}
@@ -941,48 +1006,61 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("other").length > 0 ? (
-                <div className="space-y-2">
-                  {getExpensesByCategory("other").map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{expense.description}</div>
-                        {expense.date && (
-                          <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                        )}
+                <>
+                  <div className="space-y-2">
+                    {getVisibleExpenses("other").map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{expense.description}</div>
+                          {expense.date && (
+                            <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-expense-menu-${expense.id}`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditExpense(expense)}
+                                data-testid={`menu-edit-expense-${expense.id}`}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-destructive"
+                                data-testid={`menu-delete-expense-${expense.id}`}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              data-testid={`button-expense-menu-${expense.id}`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditExpense(expense)}
-                              data-testid={`menu-edit-expense-${expense.id}`}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteExpense(expense.id)}
-                              className="text-destructive"
-                              data-testid={`menu-delete-expense-${expense.id}`}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {getExpensesByCategory("other").length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => toggleCategoryExpanded("other")}
+                      data-testid="button-toggle-other"
+                    >
+                      {expandedCategories.has("other") ? "Show Less" : `Show More (${getExpensesByCategory("other").length - 3} more)`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">No other costs added</p>
               )}
