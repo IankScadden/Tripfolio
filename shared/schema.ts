@@ -45,6 +45,7 @@ export const expenses = pgTable("expenses", {
   url: text("url"),
   date: text("date"),
   dayNumber: integer("day_number"),
+  purchased: integer("purchased").default(0).notNull(),
 });
 
 export const dayDetails = pgTable("day_details", {
