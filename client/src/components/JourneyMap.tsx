@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import { LatLngExpression, LatLngTuple } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -20,6 +23,81 @@ interface DayLocation {
 
 interface JourneyMapProps {
   locations: DayLocation[];
+}
+
+interface GroupedLocation {
+  latitude: number;
+  longitude: number;
+  destination: string;
+  days: DayLocation[];
+}
+
+function MarkerWithDayNavigation({ group }: { group: GroupedLocation }) {
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const currentDay = group.days[currentDayIndex];
+  const hasMultipleDays = group.days.length > 1;
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const handlePrevious = () => {
+    setCurrentDayIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentDayIndex((prev) => Math.min(group.days.length - 1, prev + 1));
+  };
+
+  return (
+    <Marker
+      position={[group.latitude, group.longitude]}
+      data-testid={`marker-day-${currentDay.dayNumber}`}
+    >
+      <Popup>
+        <div className="min-w-[200px]">
+          <div className="text-sm mb-2">
+            <div className="font-semibold text-base">Day {currentDay.dayNumber}</div>
+            <div className="text-muted-foreground">{currentDay.destination}</div>
+            {currentDay.date && (
+              <div className="text-xs text-muted-foreground mt-1">{formatDate(currentDay.date)}</div>
+            )}
+          </div>
+          
+          {hasMultipleDays && (
+            <div className="flex items-center justify-between gap-2 pt-2 border-t">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handlePrevious}
+                disabled={currentDayIndex === 0}
+                className="h-7 px-2"
+                data-testid="button-prev-day"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-xs text-muted-foreground">
+                {currentDayIndex + 1} of {group.days.length} days
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleNext}
+                disabled={currentDayIndex === group.days.length - 1}
+                className="h-7 px-2"
+                data-testid="button-next-day"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </Popup>
+    </Marker>
+  );
 }
 
 export function JourneyMap({ locations }: JourneyMapProps) {
@@ -51,31 +129,46 @@ export function JourneyMap({ locations }: JourneyMapProps) {
     );
   }
 
-  const bounds: LatLngTuple[] = locations.map(loc => [loc.latitude, loc.longitude] as LatLngTuple);
+  // Group locations by coordinates (same city)
+  const groupedLocations: GroupedLocation[] = [];
+  locations.forEach((location) => {
+    const existing = groupedLocations.find(
+      (group) =>
+        Math.abs(group.latitude - location.latitude) < 0.001 &&
+        Math.abs(group.longitude - location.longitude) < 0.001
+    );
+
+    if (existing) {
+      existing.days.push(location);
+    } else {
+      groupedLocations.push({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        destination: location.destination,
+        days: [location],
+      });
+    }
+  });
+
+  const bounds: LatLngTuple[] = groupedLocations.map(loc => [loc.latitude, loc.longitude] as LatLngTuple);
   
-  const center: LatLngExpression = locations.length === 1
-    ? [locations[0].latitude, locations[0].longitude]
+  const center: LatLngExpression = groupedLocations.length === 1
+    ? [groupedLocations[0].latitude, groupedLocations[0].longitude]
     : [
-        locations.reduce((sum, loc) => sum + loc.latitude, 0) / locations.length,
-        locations.reduce((sum, loc) => sum + loc.longitude, 0) / locations.length,
+        groupedLocations.reduce((sum, loc) => sum + loc.latitude, 0) / groupedLocations.length,
+        groupedLocations.reduce((sum, loc) => sum + loc.longitude, 0) / groupedLocations.length,
       ];
 
+  // Route coordinates follow the original day order
   const routeCoordinates: LatLngExpression[] = locations.map(loc => [loc.latitude, loc.longitude]);
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
 
   return (
     <div className="h-full w-full rounded-lg overflow-hidden" data-testid="journey-map">
       <MapContainer
         center={center}
-        zoom={locations.length === 1 ? 10 : 4}
+        zoom={groupedLocations.length === 1 ? 10 : 4}
         className="h-full w-full"
-        bounds={locations.length > 1 ? bounds : undefined}
+        bounds={groupedLocations.length > 1 ? bounds : undefined}
         boundsOptions={{ padding: [50, 50] }}
       >
         <TileLayer
@@ -92,21 +185,8 @@ export function JourneyMap({ locations }: JourneyMapProps) {
           />
         )}
 
-        {locations.map((location) => (
-          <Marker
-            key={location.dayNumber}
-            position={[location.latitude, location.longitude]}
-          >
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold">Day {location.dayNumber}</div>
-                <div className="text-muted-foreground">{location.destination}</div>
-                {location.date && (
-                  <div className="text-xs text-muted-foreground mt-1">{formatDate(location.date)}</div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
+        {groupedLocations.map((group, index) => (
+          <MarkerWithDayNavigation key={index} group={group} />
         ))}
       </MapContainer>
     </div>

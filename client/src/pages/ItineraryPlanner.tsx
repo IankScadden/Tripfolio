@@ -90,13 +90,21 @@ export default function ItineraryPlanner() {
 
   const locations = dayDetails
     .filter(detail => detail.destination && detail.latitude && detail.longitude)
-    .map(detail => ({
-      dayNumber: detail.dayNumber,
-      destination: detail.destination!,
-      latitude: parseFloat(detail.latitude!),
-      longitude: parseFloat(detail.longitude!),
-      date: selectedDay?.date,
-    }));
+    .map(detail => {
+      let date: string | undefined;
+      if (trip?.startDate) {
+        const [year, month, day] = trip.startDate.split('-').map(Number);
+        const calculatedDate = new Date(year, month - 1, day + detail.dayNumber - 1);
+        date = calculatedDate.toISOString().split('T')[0];
+      }
+      return {
+        dayNumber: detail.dayNumber,
+        destination: detail.destination!,
+        latitude: parseFloat(detail.latitude!),
+        longitude: parseFloat(detail.longitude!),
+        date,
+      };
+    });
 
   if (tripLoading) {
     return (
