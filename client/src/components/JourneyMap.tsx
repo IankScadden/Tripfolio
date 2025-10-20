@@ -150,6 +150,11 @@ export function JourneyMap({ locations }: JourneyMapProps) {
     }
   });
 
+  // Sort days within each group by dayNumber for consistent navigation
+  groupedLocations.forEach((group) => {
+    group.days.sort((a, b) => a.dayNumber - b.dayNumber);
+  });
+
   const bounds: LatLngTuple[] = groupedLocations.map(loc => [loc.latitude, loc.longitude] as LatLngTuple);
   
   const center: LatLngExpression = groupedLocations.length === 1
