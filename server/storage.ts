@@ -164,6 +164,8 @@ export class DatabaseStorage implements IStorage {
         .update(dayDetails)
         .set({
           destination: insertDayDetail.destination,
+          latitude: insertDayDetail.latitude,
+          longitude: insertDayDetail.longitude,
           localTransportNotes: insertDayDetail.localTransportNotes,
           foodBudgetAdjustment: insertDayDetail.foodBudgetAdjustment,
           stayingInSameCity: insertDayDetail.stayingInSameCity,
