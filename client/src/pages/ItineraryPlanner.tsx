@@ -18,7 +18,6 @@ export default function ItineraryPlanner() {
 
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
-  const [showCalendar, setShowCalendar] = useState(true);
 
   const { data: trip, isLoading: tripLoading } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -35,19 +34,13 @@ export default function ItineraryPlanner() {
   const { data: dayDetails = [] } = useQuery<DayDetailType[]>({
     queryKey: ["/api/trips", tripId, "all-day-details"],
     queryFn: async () => {
-      if (!trip?.days) return [];
-      
-      const promises = Array.from({ length: trip.days }, (_, i) => {
-        const dayNumber = i + 1;
-        return fetch(`/api/trips/${tripId}/day-details/${dayNumber}`, {
-          credentials: "include",
-        }).then(res => res.ok ? res.json() : null);
+      const res = await fetch(`/api/trips/${tripId}/all-day-details`, {
+        credentials: "include",
       });
-      
-      const results = await Promise.all(promises);
-      return results.filter(Boolean);
+      if (!res.ok) throw new Error("Failed to fetch day details");
+      return res.json();
     },
-    enabled: !!tripId && !!trip?.days,
+    enabled: !!tripId,
   });
 
   const handleDayClick = (dayNumber: number, date?: string) => {
@@ -163,15 +156,68 @@ export default function ItineraryPlanner() {
           </TabsList>
 
           <TabsContent value="itinerary" className="mt-0">
-            <TripCalendar
-              open={showCalendar}
-              onOpenChange={setShowCalendar}
-              tripName={trip.name}
-              startDate={trip.startDate || undefined}
-              endDate={trip.endDate || undefined}
-              days={trip.days || undefined}
-              onDayClick={handleDayClick}
-            />
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="text-center mb-6">
+                  <p className="text-muted-foreground">
+                    Click on any day to add activities, lodging, and transportation details.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {Array.from({ length: trip.days || 0 }, (_, i) => {
+                    const dayNumber = i + 1;
+                    let date: Date | null = null;
+                    let dateString = "";
+                    
+                    if (trip.startDate) {
+                      const [year, month, day] = trip.startDate.split('-').map(Number);
+                      date = new Date(year, month - 1, day + i);
+                      dateString = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    }
+                    
+                    const dayDetail = dayDetails.find(d => d.dayNumber === dayNumber);
+                    const hasDestination = !!dayDetail?.destination;
+                    
+                    return (
+                      <button
+                        key={dayNumber}
+                        onClick={() => {
+                          let clickDate: string | undefined = undefined;
+                          if (trip.startDate) {
+                            const [year, month, day] = trip.startDate.split('-').map(Number);
+                            const calculatedDate = new Date(year, month - 1, day + i);
+                            clickDate = calculatedDate.toISOString().split('T')[0];
+                          }
+                          handleDayClick(dayNumber, clickDate);
+                        }}
+                        className={`p-4 border rounded-lg text-center hover-elevate active-elevate-2 transition-colors ${
+                          hasDestination ? 'bg-primary/5 border-primary/20' : 'bg-card'
+                        }`}
+                        data-testid={`button-day-${dayNumber}`}
+                      >
+                        {date && (
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {dateString}
+                          </div>
+                        )}
+                        <div className="text-2xl font-bold mb-1">
+                          {date ? date.getDate() : dayNumber}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground">
+                          Day {dayNumber}
+                        </div>
+                        {hasDestination && (
+                          <div className="text-xs text-primary mt-2 truncate">
+                            {dayDetail.destination}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="map" className="mt-0">

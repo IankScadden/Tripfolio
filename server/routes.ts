@@ -348,13 +348,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (req.body.destination && (!latitude || !longitude)) {
         console.log('[Day Details] Attempting to geocode destination:', req.body.destination);
-        const geocodeResult = await geocodeDestination(req.body.destination);
-        if (geocodeResult) {
-          latitude = geocodeResult.lat;
-          longitude = geocodeResult.lon;
-          console.log('[Day Details] Geocoding successful - lat:', latitude, 'lng:', longitude);
-        } else {
-          console.log('[Day Details] Geocoding failed or returned null');
+        try {
+          const geocodeResult = await geocodeDestination(req.body.destination);
+          if (geocodeResult) {
+            latitude = geocodeResult.lat;
+            longitude = geocodeResult.lon;
+            console.log('[Day Details] Geocoding successful - lat:', latitude, 'lng:', longitude);
+          } else {
+            console.log('[Day Details] Geocoding returned no results for:', req.body.destination);
+          }
+        } catch (error) {
+          console.error('[Day Details] Geocoding error:', error);
+          // Continue saving without coordinates - user can still see destination name
         }
       }
 

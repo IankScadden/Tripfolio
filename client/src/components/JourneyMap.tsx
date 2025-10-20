@@ -23,6 +23,21 @@ interface JourneyMapProps {
 }
 
 export function JourneyMap({ locations }: JourneyMapProps) {
+  const apiKey = import.meta.env.VITE_LOCATIONIQ_API_KEY;
+
+  if (!apiKey) {
+    return (
+      <div className="h-full flex items-center justify-center bg-muted/20 rounded-lg">
+        <div className="text-center p-8">
+          <p className="text-muted-foreground mb-2">Map not available</p>
+          <p className="text-sm text-muted-foreground">
+            LocationIQ API key is not configured. Please contact support.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (locations.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-muted/20 rounded-lg">
