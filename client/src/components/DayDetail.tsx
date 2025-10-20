@@ -507,6 +507,9 @@ export default function DayDetail({
     }
 
     await onSave({ success: true });
+    
+    // Close the dialog after saving
+    onOpenChange(false);
   };
 
   const totalFoodBudget = dailyFoodBudget + (parseFloat(foodBudgetAdjustment) || 0);
