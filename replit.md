@@ -1,7 +1,7 @@
-# TripSavvy - Backpacking Budget Planner
+# Tripfolio - Backpacking Budget Planner
 
 ## Overview
-TripSavvy is a web application designed for planning and tracking backpacking trip budgets. It enables users to create detailed trip plans, itemize expenses across various categories like flights, accommodation, and activities, visualize spending patterns through interactive charts, and share their budget plans with others. The project aims to provide a comprehensive, user-friendly tool for travelers to manage their finances effectively, drawing inspiration from leading travel and productivity platforms.
+Tripfolio is a web application designed for planning and tracking backpacking trip budgets. It enables users to create detailed trip plans, itemize expenses across various categories like flights, accommodation, and activities, visualize spending patterns through interactive charts, and share their budget plans with others. The project aims to provide a comprehensive, user-friendly tool for travelers to manage their finances effectively, drawing inspiration from leading travel and productivity platforms.
 
 ## User Preferences
 - Home page design based on user's Figma mockup with travel-themed hero image and feature cards.
