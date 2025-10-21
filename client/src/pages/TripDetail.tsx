@@ -369,7 +369,7 @@ export default function TripDetail() {
   };
 
   const handleTogglePurchased = (expense: Expense) => {
-    const newPurchasedValue = expense.purchased === 1 ? 0 : 1;
+    const newPurchasedValue = expense.purchased ? 0 : 1;
     togglePurchasedMutation.mutate({ expenseId: expense.id, purchased: newPurchasedValue });
   };
 
@@ -422,7 +422,24 @@ export default function TripDetail() {
   };
 
   const getExpensesByCategory = (categoryId: string) => {
-    return expenses.filter((e) => e.category === categoryId);
+    return expenses
+      .filter((e) => e.category === categoryId)
+      .sort((a, b) => {
+        // If both have dates, sort chronologically
+        if (a.date && b.date) {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        }
+        // If only a has a date, a comes first
+        if (a.date && !b.date) {
+          return -1;
+        }
+        // If only b has a date, b comes first
+        if (!a.date && b.date) {
+          return 1;
+        }
+        // If neither has a date, maintain original order
+        return 0;
+      });
   };
 
   const getCategoryTotal = (categoryId: string) => {
@@ -645,7 +662,7 @@ export default function TripDetail() {
                     {getVisibleExpenses("flights").map((expense) => (
                       <div 
                         key={expense.id} 
-                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${Number(expense.purchased) === 1 ? 'opacity-60' : 'opacity-100'}`}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">{expense.description}</div>
@@ -658,11 +675,11 @@ export default function TripDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${Number(expense.purchased) === 1 ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
+                            className={`h-8 w-8 ${expense.purchased ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
                             onClick={() => handleTogglePurchased(expense)}
                             data-testid={`button-toggle-purchased-${expense.id}`}
                           >
-                            <Check className={`h-4 w-4 ${Number(expense.purchased) === 1 ? 'opacity-100' : 'opacity-30'}`} />
+                            <Check className={`h-4 w-4 ${expense.purchased ? 'opacity-100' : 'opacity-30'}`} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -680,7 +697,7 @@ export default function TripDetail() {
                                 onClick={() => handleTogglePurchased(expense)}
                                 data-testid={`menu-toggle-purchased-${expense.id}`}
                               >
-                                {Number(expense.purchased) === 1 ? 'Mark as Not Purchased' : 'Mark as Purchased'}
+                                {expense.purchased ? 'Mark as Not Purchased' : 'Mark as Purchased'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditExpense(expense)}
@@ -743,7 +760,7 @@ export default function TripDetail() {
                     {getVisibleExpenses("intercity").map((expense) => (
                       <div 
                         key={expense.id} 
-                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${Number(expense.purchased) === 1 ? 'opacity-60' : 'opacity-100'}`}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">{expense.description}</div>
@@ -756,11 +773,11 @@ export default function TripDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${Number(expense.purchased) === 1 ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
+                            className={`h-8 w-8 ${expense.purchased ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
                             onClick={() => handleTogglePurchased(expense)}
                             data-testid={`button-toggle-purchased-${expense.id}`}
                           >
-                            <Check className={`h-4 w-4 ${Number(expense.purchased) === 1 ? 'opacity-100' : 'opacity-30'}`} />
+                            <Check className={`h-4 w-4 ${expense.purchased ? 'opacity-100' : 'opacity-30'}`} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -778,7 +795,7 @@ export default function TripDetail() {
                                 onClick={() => handleTogglePurchased(expense)}
                                 data-testid={`menu-toggle-purchased-${expense.id}`}
                               >
-                                {Number(expense.purchased) === 1 ? 'Mark as Not Purchased' : 'Mark as Purchased'}
+                                {expense.purchased ? 'Mark as Not Purchased' : 'Mark as Purchased'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditExpense(expense)}
@@ -841,7 +858,7 @@ export default function TripDetail() {
                     {getVisibleExpenses("local").map((expense) => (
                       <div 
                         key={expense.id} 
-                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${Number(expense.purchased) === 1 ? 'opacity-60' : 'opacity-100'}`}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">{expense.description}</div>
@@ -854,11 +871,11 @@ export default function TripDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${Number(expense.purchased) === 1 ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
+                            className={`h-8 w-8 ${expense.purchased ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
                             onClick={() => handleTogglePurchased(expense)}
                             data-testid={`button-toggle-purchased-${expense.id}`}
                           >
-                            <Check className={`h-4 w-4 ${Number(expense.purchased) === 1 ? 'opacity-100' : 'opacity-30'}`} />
+                            <Check className={`h-4 w-4 ${expense.purchased ? 'opacity-100' : 'opacity-30'}`} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -876,7 +893,7 @@ export default function TripDetail() {
                                 onClick={() => handleTogglePurchased(expense)}
                                 data-testid={`menu-toggle-purchased-${expense.id}`}
                               >
-                                {Number(expense.purchased) === 1 ? 'Mark as Not Purchased' : 'Mark as Purchased'}
+                                {expense.purchased ? 'Mark as Not Purchased' : 'Mark as Purchased'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditExpense(expense)}
@@ -939,7 +956,7 @@ export default function TripDetail() {
                     {getVisibleExpenses("accommodation").map((expense) => (
                       <div 
                         key={expense.id} 
-                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${Number(expense.purchased) === 1 ? 'opacity-60' : 'opacity-100'}`}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">{expense.description}</div>
@@ -952,11 +969,11 @@ export default function TripDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${Number(expense.purchased) === 1 ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
+                            className={`h-8 w-8 ${expense.purchased ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
                             onClick={() => handleTogglePurchased(expense)}
                             data-testid={`button-toggle-purchased-${expense.id}`}
                           >
-                            <Check className={`h-4 w-4 ${Number(expense.purchased) === 1 ? 'opacity-100' : 'opacity-30'}`} />
+                            <Check className={`h-4 w-4 ${expense.purchased ? 'opacity-100' : 'opacity-30'}`} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -974,7 +991,7 @@ export default function TripDetail() {
                                 onClick={() => handleTogglePurchased(expense)}
                                 data-testid={`menu-toggle-purchased-${expense.id}`}
                               >
-                                {Number(expense.purchased) === 1 ? 'Mark as Not Purchased' : 'Mark as Purchased'}
+                                {expense.purchased ? 'Mark as Not Purchased' : 'Mark as Purchased'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditExpense(expense)}
@@ -1037,7 +1054,7 @@ export default function TripDetail() {
                     {getVisibleExpenses("activities").map((expense) => (
                       <div 
                         key={expense.id} 
-                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${Number(expense.purchased) === 1 ? 'opacity-60' : 'opacity-100'}`}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">{expense.description}</div>
@@ -1050,11 +1067,11 @@ export default function TripDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${Number(expense.purchased) === 1 ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
+                            className={`h-8 w-8 ${expense.purchased ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
                             onClick={() => handleTogglePurchased(expense)}
                             data-testid={`button-toggle-purchased-${expense.id}`}
                           >
-                            <Check className={`h-4 w-4 ${Number(expense.purchased) === 1 ? 'opacity-100' : 'opacity-30'}`} />
+                            <Check className={`h-4 w-4 ${expense.purchased ? 'opacity-100' : 'opacity-30'}`} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1072,7 +1089,7 @@ export default function TripDetail() {
                                 onClick={() => handleTogglePurchased(expense)}
                                 data-testid={`menu-toggle-purchased-${expense.id}`}
                               >
-                                {Number(expense.purchased) === 1 ? 'Mark as Not Purchased' : 'Mark as Purchased'}
+                                {expense.purchased ? 'Mark as Not Purchased' : 'Mark as Purchased'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditExpense(expense)}
@@ -1135,7 +1152,7 @@ export default function TripDetail() {
                     {getVisibleExpenses("other").map((expense) => (
                       <div 
                         key={expense.id} 
-                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${Number(expense.purchased) === 1 ? 'opacity-60' : 'opacity-100'}`}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">{expense.description}</div>
@@ -1148,11 +1165,11 @@ export default function TripDetail() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${Number(expense.purchased) === 1 ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
+                            className={`h-8 w-8 ${expense.purchased ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-green-600'}`}
                             onClick={() => handleTogglePurchased(expense)}
                             data-testid={`button-toggle-purchased-${expense.id}`}
                           >
-                            <Check className={`h-4 w-4 ${Number(expense.purchased) === 1 ? 'opacity-100' : 'opacity-30'}`} />
+                            <Check className={`h-4 w-4 ${expense.purchased ? 'opacity-100' : 'opacity-30'}`} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1170,7 +1187,7 @@ export default function TripDetail() {
                                 onClick={() => handleTogglePurchased(expense)}
                                 data-testid={`menu-toggle-purchased-${expense.id}`}
                               >
-                                {Number(expense.purchased) === 1 ? 'Mark as Not Purchased' : 'Mark as Purchased'}
+                                {expense.purchased ? 'Mark as Not Purchased' : 'Mark as Purchased'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleEditExpense(expense)}
