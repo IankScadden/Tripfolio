@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X, MoreVertical } from "lucide-react";
+import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, ChevronRight, X, MoreVertical, Map } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,7 @@ interface DayDetailProps {
   onSave: (data: any) => void;
   onPrevious?: () => void;
   onNext?: () => void;
+  onReturnToMap?: () => void;
   initialData?: any;
 }
 
@@ -43,6 +44,7 @@ export default function DayDetail({
   onSave,
   onPrevious,
   onNext,
+  onReturnToMap,
   initialData,
 }: DayDetailProps) {
   const { toast } = useToast();
@@ -524,13 +526,30 @@ export default function DayDetail({
               <DialogTitle className="text-xl">Day {dayNumber}</DialogTitle>
               {date && <p className="text-sm text-muted-foreground mt-1">{formatDate(date)}</p>}
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
-              data-testid="button-save-day"
-            >
-              {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
-            </Button>
+            <div className="flex gap-2">
+              {onReturnToMap && (
+                <Button
+                  onClick={async () => {
+                    await handleSave();
+                    onReturnToMap();
+                  }}
+                  disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
+                  variant="outline"
+                  className="gap-2"
+                  data-testid="button-return-to-map"
+                >
+                  <Map className="h-4 w-4" />
+                  Journey Map
+                </Button>
+              )}
+              <Button
+                onClick={handleSave}
+                disabled={saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending}
+                data-testid="button-save-day"
+              >
+                {saveDayDetailMutation.isPending || createExpenseMutation.isPending || updateExpenseMutation.isPending ? "Saving..." : "Done"}
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 

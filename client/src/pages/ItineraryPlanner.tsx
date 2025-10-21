@@ -18,6 +18,8 @@ export default function ItineraryPlanner() {
 
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
+  const [activeTab, setActiveTab] = useState("itinerary");
+  const [navigationSource, setNavigationSource] = useState<"itinerary" | "map" | null>(null);
 
   const { data: trip, isLoading: tripLoading } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -43,9 +45,21 @@ export default function ItineraryPlanner() {
     enabled: !!tripId,
   });
 
-  const handleDayClick = (dayNumber: number, date?: string) => {
+  const handleDayClick = (dayNumber: number, date?: string, source?: "itinerary" | "map") => {
     setSelectedDay({ dayNumber, date });
     setShowDayDetail(true);
+    setNavigationSource(source || "itinerary");
+  };
+
+  const handleEditDayFromMap = (dayNumber: number, date?: string) => {
+    setActiveTab("itinerary");
+    handleDayClick(dayNumber, date, "map");
+  };
+
+  const handleReturnToMap = () => {
+    setShowDayDetail(false);
+    setActiveTab("map");
+    setNavigationSource(null);
   };
 
   const handlePrevious = () => {
@@ -151,7 +165,7 @@ export default function ItineraryPlanner() {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="itinerary" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
             <TabsTrigger value="itinerary" className="gap-2" data-testid="tab-daily-itinerary">
               <Calendar className="h-4 w-4" />
@@ -230,7 +244,7 @@ export default function ItineraryPlanner() {
 
           <TabsContent value="map" className="mt-0">
             <Card className="p-0 overflow-hidden" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
-              <JourneyMap locations={locations} />
+              <JourneyMap locations={locations} onEditDay={handleEditDayFromMap} />
             </Card>
           </TabsContent>
         </Tabs>
@@ -248,6 +262,7 @@ export default function ItineraryPlanner() {
           onSave={handleSave}
           onPrevious={selectedDay.dayNumber > 1 ? handlePrevious : undefined}
           onNext={trip.days && selectedDay.dayNumber < trip.days ? handleNext : undefined}
+          onReturnToMap={navigationSource === "map" ? handleReturnToMap : undefined}
         />
       )}
     </div>

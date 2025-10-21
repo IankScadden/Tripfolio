@@ -4,7 +4,7 @@ import { LatLngExpression, LatLngTuple } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -23,6 +23,7 @@ interface DayLocation {
 
 interface JourneyMapProps {
   locations: DayLocation[];
+  onEditDay?: (dayNumber: number, date?: string) => void;
 }
 
 interface GroupedLocation {
@@ -32,7 +33,7 @@ interface GroupedLocation {
   days: DayLocation[];
 }
 
-function MarkerWithDayNavigation({ group }: { group: GroupedLocation }) {
+function MarkerWithDayNavigation({ group, onEditDay }: { group: GroupedLocation; onEditDay?: (dayNumber: number, date?: string) => void }) {
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const currentDay = group.days[currentDayIndex];
   const hasMultipleDays = group.days.length > 1;
@@ -66,6 +67,19 @@ function MarkerWithDayNavigation({ group }: { group: GroupedLocation }) {
               <div className="text-xs text-muted-foreground mt-1">{formatDate(currentDay.date)}</div>
             )}
           </div>
+
+          {onEditDay && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => onEditDay(currentDay.dayNumber, currentDay.date)}
+              className="w-full mb-2 gap-2"
+              data-testid={`button-edit-day-${currentDay.dayNumber}`}
+            >
+              <Pencil className="h-3 w-3" />
+              Edit Day
+            </Button>
+          )}
           
           {hasMultipleDays && (
             <div className="flex items-center justify-between gap-2 pt-2 border-t">
@@ -100,7 +114,7 @@ function MarkerWithDayNavigation({ group }: { group: GroupedLocation }) {
   );
 }
 
-export function JourneyMap({ locations }: JourneyMapProps) {
+export function JourneyMap({ locations, onEditDay }: JourneyMapProps) {
   const apiKey = import.meta.env.VITE_LOCATIONIQ_API_KEY;
 
   if (!apiKey) {
@@ -193,7 +207,7 @@ export function JourneyMap({ locations }: JourneyMapProps) {
         )}
 
         {groupedLocations.map((group, index) => (
-          <MarkerWithDayNavigation key={index} group={group} />
+          <MarkerWithDayNavigation key={index} group={group} onEditDay={onEditDay} />
         ))}
       </MapContainer>
     </div>
