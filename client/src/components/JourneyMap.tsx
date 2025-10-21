@@ -130,12 +130,14 @@ export function JourneyMap({ locations }: JourneyMapProps) {
   }
 
   // Group locations by coordinates (same city)
+  // Using 0.05 degrees (~5.5km) to group locations within the same city
+  // This handles geocoding variations for the same destination
   const groupedLocations: GroupedLocation[] = [];
   locations.forEach((location) => {
     const existing = groupedLocations.find(
       (group) =>
-        Math.abs(group.latitude - location.latitude) < 0.001 &&
-        Math.abs(group.longitude - location.longitude) < 0.001
+        Math.abs(group.latitude - location.latitude) < 0.05 &&
+        Math.abs(group.longitude - location.longitude) < 0.05
     );
 
     if (existing) {
