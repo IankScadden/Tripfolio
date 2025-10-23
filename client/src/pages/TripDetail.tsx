@@ -528,7 +528,7 @@ export default function TripDetail() {
             data-testid="button-day-by-day-layout"
           >
             <ExternalLink className="h-4 w-4" />
-            Itinerary Planner
+            Day-by-Day Layout
           </Button>
         </div>
 
