@@ -24,11 +24,12 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Public Landing Page**: Engaging entry point for all visitors.
 - **Smart Authentication**: Login required only for privileged actions like trip creation or community exploration.
 - **Trip Management**: Comprehensive tools for creating, viewing, and organizing user-specific trip projects.
+- **Post Trip**: Social media-style publishing feature where users add cover images, trip stories, hashtags, and photo galleries to share trips with the community. Trips remain in My Trips and become visible in Explore.
 - **Expense Tracking**: Detailed expense entry across 7 categories with descriptions, costs, optional links, and dates.
 - **Budget Visualization**: Interactive pie charts for clear expense breakdown by category.
 - **Trip Sharing**: Generation of shareable, read-only links for trip budgets.
 - **Day-by-Day Planning**: Detailed itinerary planning with automatic expense synchronization, including multi-day lodging and flexible transportation entries.
-- **Community Exploration**: Browse public trip budgets by destination/name as a practical research tool for planning.
+- **Community Exploration**: Browse public trip budgets by destination/name as a practical research tool for planning. Features beautiful cards with hero images, descriptions, and hashtags.
 - **Trip Cloning**: Copy entire trip structures (expenses + itinerary) as templates for personal planning.
 - **User Profiles**: Customizable display names shown on public trips, manageable via Profile Settings page.
 - **Dark Mode**: Full support for light and dark themes.
