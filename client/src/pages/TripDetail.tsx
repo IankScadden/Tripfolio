@@ -525,11 +525,11 @@ export default function TripDetail() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => setLocation(`/trip/${tripId}/settings`)}
-              data-testid="button-trip-settings"
+              onClick={() => setLocation(`/trip/${tripId}/post`)}
+              data-testid="button-post-trip"
             >
               <Settings className="h-4 w-4" />
-              Trip Settings
+              Post Trip
             </Button>
             <Button
               variant="default"

@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import TripsList from "@/pages/TripsList";
 import TripDetail from "@/pages/TripDetail";
-import TripSettings from "@/pages/TripSettings";
+import PostTrip from "@/pages/PostTrip";
 import ItineraryPlanner from "@/pages/ItineraryPlanner";
 import SharedTrip from "@/pages/SharedTrip";
 import Explore from "@/pages/Explore";
@@ -20,7 +20,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/my-trips" component={TripsList} />
       <Route path="/trip/:id" component={TripDetail} />
-      <Route path="/trip/:id/settings" component={TripSettings} />
+      <Route path="/trip/:id/post" component={PostTrip} />
       <Route path="/trip/:id/itinerary" component={ItineraryPlanner} />
       <Route path="/share/:shareId" component={SharedTrip} />
       <Route path="/explore" component={Explore} />
