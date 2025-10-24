@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Plus, X, Image as ImageIcon, Tag, FileText } from "lucide-react";
@@ -60,7 +60,7 @@ export default function PostTrip() {
   });
 
   // Update form when trip data loads
-  useState(() => {
+  useEffect(() => {
     if (trip) {
       form.reset({
         description: trip.description || "",
@@ -69,14 +69,14 @@ export default function PostTrip() {
         photos: trip.photos || [],
       });
     }
-  });
+  }, [trip, form]);
 
   const postTripMutation = useMutation({
     mutationFn: async (data: PostTripFormData) => {
       // Post the trip by setting is_public = 1 and updating all the fields
       const response = await apiRequest("PATCH", `/api/trips/${tripId}`, {
         ...data,
-        isPublic: true,
+        isPublic: 1,
       });
       return await response.json();
     },
