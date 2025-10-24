@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, ChevronUp, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign } from "lucide-react";
 
 const CATEGORIES = [
   { id: "flights", title: "Flights", icon: Plane, color: "hsl(200, 85%, 55%)" },
@@ -20,6 +23,8 @@ const CATEGORIES = [
   { id: "other", title: "Other Costs", icon: DollarSign, color: "hsl(180, 60%, 55%)" },
 ];
 
+const DEFAULT_HEADER_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=600&fit=crop";
+
 type Trip = {
   id: string;
   name: string;
@@ -27,6 +32,10 @@ type Trip = {
   endDate?: string;
   days?: number;
   totalCost: number;
+  description?: string;
+  headerImageUrl?: string;
+  tags?: string[];
+  photos?: string[];
 };
 
 type Expense = {
@@ -55,6 +64,7 @@ type User = {
   firstName?: string;
   lastName?: string;
   email?: string;
+  profileImageUrl?: string;
 };
 
 type TripDetailResponse = {
@@ -69,7 +79,7 @@ export default function ExploreTripDetail() {
   const [, setLocation] = useLocation();
   const tripId = params?.id;
   const { toast } = useToast();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [showBudget, setShowBudget] = useState(false);
 
   const { data, isLoading } = useQuery<TripDetailResponse>({
     queryKey: ["/api/explore/trips", tripId],
@@ -146,6 +156,12 @@ export default function ExploreTripDetail() {
     return user.email || "Anonymous";
   };
 
+  const getUserInitial = (user: User) => {
+    if (user.displayName) return user.displayName[0].toUpperCase();
+    if (user.firstName) return user.firstName[0].toUpperCase();
+    return "?";
+  };
+
   const getUniqueDestinations = () => {
     if (!data) return [];
     return Array.from(
@@ -156,6 +172,24 @@ export default function ExploreTripDetail() {
       )
     );
   };
+
+  const locations = data?.dayDetails
+    .filter(detail => detail.destination && detail.latitude && detail.longitude)
+    .map(detail => {
+      let date: string | undefined;
+      if (data.trip.startDate) {
+        const [year, month, day] = data.trip.startDate.split('-').map(Number);
+        const calculatedDate = new Date(year, month - 1, day + detail.dayNumber - 1);
+        date = calculatedDate.toISOString().split('T')[0];
+      }
+      return {
+        dayNumber: detail.dayNumber,
+        destination: detail.destination!,
+        latitude: parseFloat(detail.latitude!),
+        longitude: parseFloat(detail.longitude!),
+        date,
+      };
+    }) || [];
 
   if (isLoading) {
     return (
@@ -181,286 +215,252 @@ export default function ExploreTripDetail() {
   const { trip, owner } = data;
   const destinations = getUniqueDestinations();
 
-  const locations = data.dayDetails
-    .filter(detail => detail.destination && detail.latitude && detail.longitude)
-    .map(detail => {
-      let date: string | undefined;
-      if (trip.startDate) {
-        const [year, month, day] = trip.startDate.split('-').map(Number);
-        const calculatedDate = new Date(year, month - 1, day + detail.dayNumber - 1);
-        date = calculatedDate.toISOString().split('T')[0];
-      }
-      return {
-        dayNumber: detail.dayNumber,
-        destination: detail.destination!,
-        latitude: parseFloat(detail.latitude!),
-        longitude: parseFloat(detail.longitude!),
-        date,
-      };
-    });
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Back Button and Actions */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      {/* Hero Image */}
+      <div className="relative h-[500px] bg-muted">
+        <img 
+          src={trip.headerImageUrl || DEFAULT_HEADER_IMAGE}
+          alt={trip.name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = DEFAULT_HEADER_IMAGE;
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        
+        {/* Back Button Overlay */}
+        <div className="absolute top-6 left-6">
           <Button
-            variant="ghost"
-            className="gap-2"
+            variant="secondary"
+            className="gap-2 bg-white/90 backdrop-blur hover:bg-white"
             onClick={() => setLocation("/explore")}
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Explore
+            Back
           </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => setIsExpanded(!isExpanded)}
-              data-testid="button-expand-trip"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  Collapse Trip
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Expand Trip
-                </>
-              )}
-            </Button>
-            <Button
-              variant="default"
-              className="gap-2"
-              onClick={() => cloneTripMutation.mutate()}
-              disabled={cloneTripMutation.isPending}
-              data-testid="button-clone-trip"
-            >
-              <Copy className="h-4 w-4" />
-              {cloneTripMutation.isPending ? "Copying..." : "Use as Template"}
-            </Button>
-          </div>
         </div>
 
-        {/* Trip Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2" data-testid="text-trip-name">{trip.name}</h1>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              <span data-testid="text-trip-dates">
-                {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-              </span>
-            </div>
-            {trip.days && (
-              <div className="flex items-center gap-1">
-                <span data-testid="text-trip-days">{trip.days} days</span>
-              </div>
-            )}
-            {destinations.length > 0 && (
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>{destinations.join(", ")}</span>
-              </div>
-            )}
-            <div className="text-sm">
-              by <span className="font-medium">{getUserDisplayName(owner)}</span>
-            </div>
+        {/* Location Badge */}
+        {destinations.length > 0 && (
+          <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
+            <Badge className="bg-white/90 text-foreground backdrop-blur px-4 py-2 text-base font-medium">
+              <MapPin className="h-4 w-4 mr-1" />
+              {destinations[0]}
+            </Badge>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Total Cost Card */}
-        <Card className="mb-8 bg-muted/30">
-          <CardContent className="py-6 text-center">
-            <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
-            <div className="text-4xl font-bold" data-testid="text-total-cost">
-              ${trip.totalCost.toFixed(0)}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-32 relative z-10 pb-12">
+        {/* Author Card */}
+        <Card className="mb-6 bg-card/95 backdrop-blur">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={owner.profileImageUrl} />
+                <AvatarFallback>{getUserInitial(owner)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="font-semibold">{getUserDisplayName(owner)}</p>
+                <p className="text-sm text-muted-foreground">
+                  {trip.startDate && formatDate(trip.startDate)}
+                </p>
+              </div>
             </div>
-            {trip.days && trip.days > 0 && (
-              <div className="text-sm text-muted-foreground mt-2">
-                ${(trip.totalCost / trip.days).toFixed(0)} per day
+
+            {/* Trip Title */}
+            <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="text-trip-name">
+              {trip.name}
+            </h1>
+
+            {/* Tags */}
+            {trip.tags && trip.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {trip.tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="px-3 py-1">
+                    {tag.startsWith('#') ? tag : `#${tag}`}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Engagement Row */}
+            <div className="flex items-center gap-6 text-muted-foreground">
+              <button className="flex items-center gap-2 hover:text-foreground transition-colors">
+                <Heart className="h-5 w-5" />
+                <span className="text-sm">234</span>
+              </button>
+              <button className="flex items-center gap-2 hover:text-foreground transition-colors">
+                <MessageCircle className="h-5 w-5" />
+                <span className="text-sm">45</span>
+              </button>
+              <button className="flex items-center gap-2 hover:text-foreground transition-colors">
+                <Share2 className="h-5 w-5" />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Description */}
+        {trip.description && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="prose dark:prose-invert max-w-none">
+                <p className="text-base leading-relaxed whitespace-pre-wrap">
+                  {trip.description}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Photo Gallery */}
+        {trip.photos && trip.photos.length > 0 && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {trip.photos.map((photo, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+                    <img 
+                      src={photo}
+                      alt={`Gallery ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Budget Breakdown Button */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <button
+              onClick={() => setShowBudget(!showBudget)}
+              className="w-full flex items-center justify-between p-4 bg-muted/50 rounded-lg hover-elevate transition-all"
+              data-testid="button-toggle-budget"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-primary/10 p-3 rounded-full">
+                  <DollarSign className="h-6 w-6 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-lg">Budget Breakdown</p>
+                  <p className="text-sm text-muted-foreground">
+                    ${trip.totalCost.toFixed(0)} total
+                    {trip.days && trip.days > 0 && ` • $${(trip.totalCost / trip.days).toFixed(0)} per day`}
+                  </p>
+                </div>
+              </div>
+              <ChevronDown className={`h-5 w-5 transition-transform ${showBudget ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Collapsible Budget Section */}
+            {showBudget && (
+              <div className="mt-6 space-y-6">
+                {/* Budget Breakdown and Visual Breakdown */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Budget Breakdown */}
+                  <div>
+                    <h3 className="font-semibold mb-4">By Category</h3>
+                    <div className="space-y-3">
+                      {CATEGORIES.map((category) => {
+                        const IconComponent = category.icon;
+                        const total = getCategoryTotal(category.id);
+                        if (total === 0) return null;
+                        return (
+                          <div key={category.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                              <span className="text-sm">{category.title}</span>
+                            </div>
+                            <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
+                              ${total.toFixed(0)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Visual Breakdown */}
+                  <div>
+                    <h3 className="font-semibold mb-4">Visual Breakdown</h3>
+                    {chartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie
+                            data={chartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ percent }) => 
+                              percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
+                            }
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            style={{ fontSize: '12px', fontWeight: 'bold' }}
+                          >
+                            {chartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Legend 
+                            wrapperStyle={{ fontSize: '11px' }}
+                            iconSize={8}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                        No expenses added yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Journey Map */}
+                {locations.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-4">Journey Map</h3>
+                    <div className="rounded-lg overflow-hidden" style={{ height: '400px' }}>
+                      <JourneyMap locations={locations} />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Budget Breakdown and Visual Breakdown */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Budget Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Budget Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {CATEGORIES.map((category) => {
-                const IconComponent = category.icon;
-                const total = getCategoryTotal(category.id);
-                return (
-                  <div key={category.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <IconComponent className="h-4 w-4" style={{ color: category.color }} />
-                      <span className="text-sm">{category.title}</span>
-                    </div>
-                    <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
-                      ${total.toFixed(0)}
-                    </span>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Visual Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Visual Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ percent }) => 
-                        percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
-                      }
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="value"
-                      style={{ fontSize: '14px', fontWeight: 'bold' }}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Legend 
-                      wrapperStyle={{ fontSize: '12px' }}
-                      iconSize={10}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  No expenses added yet
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Expandable Day-by-Day Section */}
-        {isExpanded && (
-          <div className="space-y-6">
-            {/* Journey Map */}
-            {locations.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Journey Map</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <JourneyMap locations={locations} />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Day-by-Day Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Day-by-Day Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {Array.from({ length: trip.days || 0 }, (_, i) => {
-                    const dayNumber = i + 1;
-                    const dayDetail = data.dayDetails.find(d => d.dayNumber === dayNumber);
-                    const dayExpenses = data.expenses.filter(e => {
-                      if (!e.date || !trip.startDate) return false;
-                      const expenseDate = new Date(e.date);
-                      const [year, month, day] = trip.startDate.split('-').map(Number);
-                      const tripStartDate = new Date(year, month - 1, day);
-                      const dayDate = new Date(tripStartDate);
-                      dayDate.setDate(tripStartDate.getDate() + i);
-                      return expenseDate.toDateString() === dayDate.toDateString();
-                    });
-                    const dayTotal = dayExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-
-                    let dayDate: string | undefined = undefined;
-                    if (trip.startDate) {
-                      const [year, month, day] = trip.startDate.split('-').map(Number);
-                      const calculatedDate = new Date(year, month - 1, day + i);
-                      dayDate = calculatedDate.toISOString().split('T')[0];
-                    }
-
-                    return (
-                      <div key={dayNumber} className="border-b last:border-0 pb-4 last:pb-0">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h3 className="font-semibold">Day {dayNumber}</h3>
-                            {dayDate && (
-                              <p className="text-xs text-muted-foreground">{formatDate(dayDate)}</p>
-                            )}
-                            {dayDetail?.destination && (
-                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                <MapPin className="h-3 w-3" />
-                                {dayDetail.destination}
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold">${dayTotal.toFixed(0)}</p>
-                          </div>
-                        </div>
-                        {dayDetail?.notes && (
-                          <p className="text-sm text-muted-foreground mb-2">{dayDetail.notes}</p>
-                        )}
-                        {dayExpenses.length > 0 && (
-                          <div className="space-y-1 ml-4">
-                            {dayExpenses.map(expense => {
-                              const category = CATEGORIES.find(c => c.id === expense.category);
-                              return (
-                                <div key={expense.id} className="flex items-center justify-between text-sm">
-                                  <div className="flex items-center gap-2">
-                                    {category && <category.icon className="h-3 w-3" style={{ color: category.color }} />}
-                                    <span>{expense.description}</span>
-                                  </div>
-                                  <span className="font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Clone CTA */}
-        <div className="mt-8 text-center p-6 bg-muted/30 rounded-lg">
-          <p className="text-sm text-muted-foreground mb-3">
-            Like this trip plan? Copy it to your account as a starting point for your own adventure.
-          </p>
-          <Button
-            variant="default"
-            onClick={() => cloneTripMutation.mutate()}
-            disabled={cloneTripMutation.isPending}
-            data-testid="button-clone-bottom"
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            {cloneTripMutation.isPending ? "Copying..." : "Use as Template"}
-          </Button>
-        </div>
+        <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+          <CardContent className="pt-6 text-center">
+            <p className="text-sm text-muted-foreground mb-4">
+              Inspired by this trip? Use it as a template for your own adventure.
+            </p>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => cloneTripMutation.mutate()}
+              disabled={cloneTripMutation.isPending}
+              data-testid="button-clone-trip"
+              className="gap-2"
+            >
+              <Copy className="h-4 w-4" />
+              {cloneTripMutation.isPending ? "Copying..." : "Use as Template"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

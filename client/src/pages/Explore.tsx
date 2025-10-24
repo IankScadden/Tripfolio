@@ -1,72 +1,89 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, MapPin, Calendar, Plane, Hotel, Ticket } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Search, MapPin, DollarSign, TrendingUp, Users, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
+import { isUnauthorizedError } from "@/lib/authUtils";
 
-type PublicTrip = {
+type Trip = {
   id: string;
   name: string;
   startDate?: string;
   endDate?: string;
   days?: number;
   totalCost: number;
-  costPerDay: number;
-  destinations: string[];
-  expenseCounts: {
-    flights: number;
-    accommodation: number;
-    activities: number;
-  };
-  user: {
-    id: string;
-    displayName?: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  };
+  headerImageUrl?: string;
+  description?: string;
+  tags?: string[];
 };
+
+type User = {
+  id: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  profileImageUrl?: string;
+};
+
+type TripWithUser = Trip & { user: User };
+
+const DEFAULT_HEADER_IMAGE = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=400&fit=crop";
 
 export default function Explore() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const { data: trips = [], isLoading } = useQuery<PublicTrip[]>({
-    queryKey: ["/api/explore/trips", debouncedSearch],
+  const { data: trips = [], isLoading } = useQuery<TripWithUser[]>({
+    queryKey: ["/api/explore/trips", searchQuery],
     queryFn: async () => {
-      const params = debouncedSearch ? `?search=${encodeURIComponent(debouncedSearch)}` : "";
-      const response = await fetch(`/api/explore/trips${params}`);
-      if (!response.ok) throw new Error("Failed to fetch trips");
+      const url = searchQuery.trim() 
+        ? `/api/explore/trips?search=${encodeURIComponent(searchQuery.trim())}`
+        : "/api/explore/trips";
+      const response = await fetch(url);
+      if (!response.ok) {
+        const error = new Error("Failed to fetch trips");
+        if (response.status === 401) {
+          (error as any).statusCode = 401;
+        }
+        throw error;
+      }
       return response.json();
+    },
+    retry: (failureCount, error) => {
+      if (isUnauthorizedError(error as Error)) {
+        window.location.href = "/api/login";
+        return false;
+      }
+      return failureCount < 3;
     },
   });
 
-  const handleSearch = () => {
-    setDebouncedSearch(searchQuery);
+  const totalTrips = trips.length;
+  const totalBudget = trips.reduce((sum, trip) => sum + trip.totalCost, 0);
+  const avgBudget = totalTrips > 0 ? totalBudget / totalTrips : 0;
+
+  const getUserDisplayName = (user: User) => {
+    if (user.displayName) return user.displayName;
+    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+    if (user.firstName) return user.firstName;
+    return user.email || "Anonymous";
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+  const getUserInitial = (user: User) => {
+    if (user.displayName) return user.displayName[0].toUpperCase();
+    if (user.firstName) return user.firstName[0].toUpperCase();
+    return "?";
   };
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  };
-
-  const getUserDisplayName = (user: PublicTrip['user']) => {
-    if (user.displayName) return user.displayName;
-    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
-    if (user.firstName) return user.firstName;
-    return user.email || "Anonymous";
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
   };
 
   return (
@@ -74,181 +91,182 @@ export default function Explore() {
       <Header />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-background border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-3" data-testid="text-explore-title">
-              Explore Trip Budgets
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get real cost estimates from travelers around the world. Search by destination to plan your next adventure.
-            </p>
-          </div>
-
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by country, city, or trip name..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  data-testid="input-search"
-                />
-              </div>
-              <Button onClick={handleSearch} data-testid="button-search">
-                Search
-              </Button>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-8 flex justify-center gap-8 text-sm">
-            <div className="text-center">
-              <div className="font-bold text-lg" data-testid="text-trip-count">{trips.length}</div>
-              <div className="text-muted-foreground">Trip Budgets</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">
-                {Array.from(new Set(trips.flatMap(t => t.destinations))).length}
-              </div>
-              <div className="text-muted-foreground">Destinations</div>
-            </div>
+      <div 
+        className="relative h-[400px] bg-cover bg-center flex items-center justify-center"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=400&fit=crop')`,
+        }}
+      >
+        <div className="text-center text-white z-10 px-4 max-w-4xl">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+            Discover Real Travel Budgets
+          </h1>
+          <p className="text-lg md:text-xl mb-8 text-white/90">
+            Explore detailed trip budgets from real travelers around the world
+          </p>
+          <div className="max-w-2xl mx-auto relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by destination or trip name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-14 text-lg bg-white/95 backdrop-blur"
+              data-testid="input-search-trips"
+            />
           </div>
         </div>
       </div>
 
-      {/* Trips Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        {/* Stats Section */}
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <Card className="p-6 hover-elevate cursor-default">
+            <div className="flex items-center gap-4">
+              <div className="bg-primary/10 p-3 rounded-full">
+                <Globe className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalTrips}</p>
+                <p className="text-sm text-muted-foreground">Public Trips</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 hover-elevate cursor-default">
+            <div className="flex items-center gap-4">
+              <div className="bg-primary/10 p-3 rounded-full">
+                <DollarSign className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">${avgBudget.toFixed(0)}</p>
+                <p className="text-sm text-muted-foreground">Average Budget</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 hover-elevate cursor-default">
+            <div className="flex items-center gap-4">
+              <div className="bg-primary/10 p-3 rounded-full">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{new Set(trips.map(t => t.user.id)).size}</p>
+                <p className="text-sm text-muted-foreground">Travelers</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Trips Grid */}
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Loading trips...
+          <div className="text-center py-12">
+            <div className="text-muted-foreground">Loading trips...</div>
           </div>
         ) : trips.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              {debouncedSearch ? "No trips found matching your search" : "No public trips available yet"}
+            <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold mb-2">No trips found</h3>
+            <p className="text-muted-foreground">
+              {searchQuery ? "Try a different search term" : "Be the first to share your trip!"}
             </p>
-            <Button variant="outline" onClick={() => setLocation("/my-trips")} data-testid="button-create-first">
-              Create Your Trip
-            </Button>
           </div>
         ) : (
-          <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold">
-                {debouncedSearch ? `Results for "${debouncedSearch}"` : "All Community Trips"}
-              </h2>
-              <p className="text-sm text-muted-foreground">{trips.length} trips available</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {trips.map((trip) => (
-                <Card
-                  key={trip.id}
-                  className="hover-elevate active-elevate-2 cursor-pointer transition-all"
-                  onClick={() => setLocation(`/explore/${trip.id}`)}
-                  data-testid={`card-trip-${trip.id}`}
-                >
-                  {/* Gradient Header */}
-                  <div className="h-32 bg-gradient-to-br from-blue-400 via-blue-300 to-orange-300 rounded-t-lg" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trips.map((trip) => (
+              <Card 
+                key={trip.id}
+                className="overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all"
+                onClick={() => setLocation(`/explore/${trip.id}`)}
+                data-testid={`trip-card-${trip.id}`}
+              >
+                {/* Header Image */}
+                <div className="relative h-48 bg-muted">
+                  <img 
+                    src={trip.headerImageUrl || DEFAULT_HEADER_IMAGE}
+                    alt={trip.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = DEFAULT_HEADER_IMAGE;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                   
-                  <CardContent className="pt-4">
-                    {/* Trip Name */}
-                    <h3 className="font-bold text-lg mb-2" data-testid={`text-trip-name-${trip.id}`}>
+                  {/* Trip Name Overlay */}
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h3 className="text-white font-bold text-xl mb-1 line-clamp-2">
                       {trip.name}
                     </h3>
-
-                    {/* Author & Date */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>{formatDate(trip.startDate)}</span>
-                      </div>
-                      {trip.days && (
-                        <span>{trip.days} days</span>
-                      )}
-                    </div>
-
-                    {/* Destinations */}
-                    {trip.destinations.length > 0 && (
-                      <div className="flex items-start gap-1 mb-3 text-sm">
-                        <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 text-muted-foreground" />
-                        <span className="text-muted-foreground line-clamp-2">
-                          {trip.destinations.join(" • ")}
-                        </span>
-                      </div>
+                    {trip.startDate && (
+                      <p className="text-white/90 text-sm">
+                        {formatDate(trip.startDate)}
+                        {trip.days && ` • ${trip.days} days`}
+                      </p>
                     )}
+                  </div>
 
-                    {/* Category Counts */}
-                    <div className="flex gap-4 mb-4 text-sm">
-                      {trip.expenseCounts.flights > 0 && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Plane className="h-3 w-3" />
-                          <span>{trip.expenseCounts.flights}</span>
-                        </div>
-                      )}
-                      {trip.expenseCounts.accommodation > 0 && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Hotel className="h-3 w-3" />
-                          <span>{trip.expenseCounts.accommodation}</span>
-                        </div>
-                      )}
-                      {trip.expenseCounts.activities > 0 && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Ticket className="h-3 w-3" />
-                          <span>{trip.expenseCounts.activities}</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Cost Badge */}
+                  <div className="absolute top-4 right-4">
+                    <Badge className="bg-white/95 text-foreground backdrop-blur font-bold text-base px-3 py-1">
+                      ${trip.totalCost.toFixed(0)}
+                    </Badge>
+                  </div>
+                </div>
 
-                    {/* Total Budget */}
-                    <div className="pt-3 border-t">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Total Budget</span>
-                        <span className="text-xl font-bold text-primary" data-testid={`text-cost-${trip.id}`}>
-                          ${trip.totalCost.toFixed(0)}
-                        </span>
-                      </div>
-                      {trip.days && trip.days > 0 && (
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground">Per Day</span>
-                          <span className="text-sm font-medium text-muted-foreground">
-                            ${trip.costPerDay.toFixed(0)}
-                          </span>
-                        </div>
+                {/* Card Content */}
+                <div className="p-4">
+                  {/* User Info */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                      {trip.user.profileImageUrl ? (
+                        <img 
+                          src={trip.user.profileImageUrl} 
+                          alt={getUserDisplayName(trip.user)}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        getUserInitial(trip.user)
                       )}
                     </div>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {getUserDisplayName(trip.user)}
+                    </span>
+                  </div>
 
-                    {/* Author */}
-                    <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                      by {getUserDisplayName(trip.user)}
+                  {/* Description Preview */}
+                  {trip.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {trip.description}
+                    </p>
+                  )}
+
+                  {/* Tags */}
+                  {trip.tags && trip.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {trip.tags.slice(0, 3).map((tag, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary" 
+                          className="text-xs px-2 py-0"
+                        >
+                          {tag.startsWith('#') ? tag : `#${tag}`}
+                        </Badge>
+                      ))}
+                      {trip.tags.length > 3 && (
+                        <Badge variant="secondary" className="text-xs px-2 py-0">
+                          +{trip.tags.length - 3}
+                        </Badge>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
+                  )}
 
-        {/* CTA Section */}
-        {trips.length > 0 && (
-          <div className="mt-12 bg-gradient-to-br from-primary via-primary/90 to-primary/70 rounded-lg p-8 text-center text-primary-foreground">
-            <h2 className="text-2xl font-bold mb-2">Ready to Share Your Adventure?</h2>
-            <p className="mb-6 opacity-90">
-              Create your own trip budget and inspire other travelers
-            </p>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setLocation("/my-trips")}
-              data-testid="button-create-trip-cta"
-            >
-              Create Your Trip
-            </Button>
+                  {/* Per Day Cost */}
+                  {trip.days && trip.days > 0 && (
+                    <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
+                      ${(trip.totalCost / trip.days).toFixed(0)} per day
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </div>

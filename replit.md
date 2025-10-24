@@ -6,10 +6,11 @@ Tripfolio is a web application designed for planning and tracking backpacking tr
 ## User Preferences
 - Home page design based on user's Figma mockup with travel-themed hero image and feature cards.
 - Public-first approach: Beautiful landing page visible to all visitors, login only when needed.
-- Design inspired by Airbnb (warm travel aesthetics) and Notion (clean data organization).
+- Design inspired by Airbnb (warm travel aesthetics), Notion (clean data organization), and Instagram/blog aesthetics for visual storytelling.
 - Primary color: Deep travel blue (210 85% 45%).
 - Category colors mapped to chart colors for visual consistency.
 - Shared Header component with conditional rendering: "Sign In" for visitors, nav links for authenticated users.
+- Blog-post style for trip sharing: Hero images, descriptions, photo galleries, hashtags, and collapsible budget breakdowns.
 
 ## System Architecture
 The application is built with a modern web stack, emphasizing a rich user experience and robust data management.

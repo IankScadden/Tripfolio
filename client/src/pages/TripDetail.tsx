@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -521,15 +521,26 @@ export default function TripDetail() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <Button
-            variant="default"
-            className="gap-2"
-            onClick={() => setLocation(`/trip/${tripId}/itinerary`)}
-            data-testid="button-day-by-day-layout"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Day-by-Day Layout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setLocation(`/trip/${tripId}/settings`)}
+              data-testid="button-trip-settings"
+            >
+              <Settings className="h-4 w-4" />
+              Trip Settings
+            </Button>
+            <Button
+              variant="default"
+              className="gap-2"
+              onClick={() => setLocation(`/trip/${tripId}/itinerary`)}
+              data-testid="button-day-by-day-layout"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Day-by-Day Layout
+            </Button>
+          </div>
         </div>
 
         {/* Trip Name and Info */}
