@@ -25,6 +25,9 @@ export default function Header() {
                 <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                   Explore
                 </Link>
+                <Link href="/profile-settings" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                  Profile
+                </Link>
               </>
             )}
             {isAuthenticated ? (

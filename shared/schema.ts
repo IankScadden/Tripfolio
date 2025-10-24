@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  displayName: varchar("display_name"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -34,6 +35,7 @@ export const trips = pgTable("trips", {
   days: integer("days"),
   shareId: varchar("share_id").unique(),
   favorite: integer("favorite").default(0).notNull(),
+  isPublic: integer("is_public").default(1).notNull(),
 });
 
 export const expenses = pgTable("expenses", {

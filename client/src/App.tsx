@@ -9,6 +9,8 @@ import TripDetail from "@/pages/TripDetail";
 import ItineraryPlanner from "@/pages/ItineraryPlanner";
 import SharedTrip from "@/pages/SharedTrip";
 import Explore from "@/pages/Explore";
+import ExploreTripDetail from "@/pages/ExploreTripDetail";
+import ProfileSettings from "@/pages/ProfileSettings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +22,8 @@ function Router() {
       <Route path="/trip/:id/itinerary" component={ItineraryPlanner} />
       <Route path="/share/:shareId" component={SharedTrip} />
       <Route path="/explore" component={Explore} />
+      <Route path="/explore/:id" component={ExploreTripDetail} />
+      <Route path="/profile-settings" component={ProfileSettings} />
       <Route component={NotFound} />
     </Switch>
   );

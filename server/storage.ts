@@ -1,12 +1,13 @@
 import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, trips, expenses, users, dayDetails } from "@shared/schema";
 import { db } from "./db";
-import { eq, inArray, and } from "drizzle-orm";
+import { eq, inArray, and, or, ilike, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserDisplayName(userId: string, displayName: string): Promise<User | undefined>;
   
   // Trip operations
   getAllTrips(userId: string): Promise<Trip[]>;
@@ -15,6 +16,8 @@ export interface IStorage {
   createTrip(trip: InsertTrip, userId: string): Promise<Trip>;
   updateTrip(id: string, trip: Partial<InsertTrip> & { shareId?: string | null }): Promise<Trip | undefined>;
   deleteTrip(id: string): Promise<boolean>;
+  getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: User }>>;
+  cloneTripStructure(originalTripId: string, newUserId: string): Promise<Trip>;
   
   // Expense operations
   getExpensesByTrip(tripId: string): Promise<Expense[]>;
@@ -60,6 +63,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserDisplayName(userId: string, displayName: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ displayName, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   // Trip operations
   async getAllTrips(userId: string): Promise<Trip[]> {
     return await db.select().from(trips).where(eq(trips.userId, userId));
@@ -97,6 +109,122 @@ export class DatabaseStorage implements IStorage {
   async deleteTrip(id: string): Promise<boolean> {
     const result = await db.delete(trips).where(eq(trips.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: User }>> {
+    if (searchQuery && searchQuery.trim()) {
+      // Search in trip names and day detail destinations
+      const searchPattern = `%${searchQuery.trim()}%`;
+      
+      // Get trip IDs that match destinations
+      const matchingDayDetails = await db
+        .select({ tripId: dayDetails.tripId })
+        .from(dayDetails)
+        .where(ilike(dayDetails.destination, searchPattern));
+      
+      const matchingTripIds = matchingDayDetails.map(d => d.tripId);
+      
+      // Build query with trip name OR trip ID in matching destinations
+      let results;
+      if (matchingTripIds.length > 0) {
+        results = await db
+          .select()
+          .from(trips)
+          .innerJoin(users, eq(trips.userId, users.id))
+          .where(
+            and(
+              eq(trips.isPublic, 1),
+              or(
+                ilike(trips.name, searchPattern),
+                inArray(trips.id, matchingTripIds)
+              )
+            )
+          );
+      } else {
+        // Only search in trip names if no destinations match
+        results = await db
+          .select()
+          .from(trips)
+          .innerJoin(users, eq(trips.userId, users.id))
+          .where(
+            and(
+              eq(trips.isPublic, 1),
+              ilike(trips.name, searchPattern)
+            )
+          );
+      }
+      
+      // Transform results to include user data with trip
+      return results.map(result => ({
+        ...result.trips,
+        user: result.users,
+      }));
+    }
+
+    // No search query - return all public trips
+    const results = await db
+      .select()
+      .from(trips)
+      .innerJoin(users, eq(trips.userId, users.id))
+      .where(eq(trips.isPublic, 1));
+    
+    // Transform results to include user data with trip
+    return results.map(result => ({
+      ...result.trips,
+      user: result.users,
+    }));
+  }
+
+  async cloneTripStructure(originalTripId: string, newUserId: string): Promise<Trip> {
+    // Get original trip
+    const originalTrip = await this.getTrip(originalTripId);
+    if (!originalTrip) {
+      throw new Error("Original trip not found");
+    }
+
+    // Create new trip with same structure but new user
+    const newTrip = await this.createTrip(
+      {
+        name: `${originalTrip.name} (Copy)`,
+        startDate: originalTrip.startDate,
+        endDate: originalTrip.endDate,
+        days: originalTrip.days,
+      },
+      newUserId
+    );
+
+    // Clone all expenses
+    const originalExpenses = await this.getExpensesByTrip(originalTripId);
+    for (const expense of originalExpenses) {
+      await this.createExpense({
+        tripId: newTrip.id,
+        category: expense.category,
+        description: expense.description,
+        cost: expense.cost,
+        url: expense.url,
+        date: expense.date,
+        dayNumber: expense.dayNumber,
+        purchased: 0, // Reset purchased status
+      });
+    }
+
+    // Clone all day details
+    const originalDayDetails = await this.getAllDayDetails(originalTripId);
+    for (const dayDetail of originalDayDetails) {
+      await this.upsertDayDetail({
+        tripId: newTrip.id,
+        dayNumber: dayDetail.dayNumber,
+        destination: dayDetail.destination,
+        latitude: dayDetail.latitude,
+        longitude: dayDetail.longitude,
+        localTransportNotes: dayDetail.localTransportNotes,
+        foodBudgetAdjustment: dayDetail.foodBudgetAdjustment,
+        stayingInSameCity: dayDetail.stayingInSameCity,
+        intercityTransportType: dayDetail.intercityTransportType,
+      });
+    }
+
+    return newTrip;
   }
 
   // Expense operations

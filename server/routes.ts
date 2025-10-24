@@ -522,6 +522,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile routes
+  app.get("/api/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { displayName } = req.body;
+      
+      if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
+        return res.status(400).json({ error: "Display name is required" });
+      }
+      
+      const user = await storage.updateUserDisplayName(userId, displayName.trim());
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Explore routes - require authentication
+  app.get("/api/explore/trips", isAuthenticated, async (req: any, res) => {
+    try {
+      const searchQuery = req.query.search as string | undefined;
+      const publicTrips = await storage.getPublicTrips(searchQuery);
+      
+      // Get expenses for all trips to calculate totals
+      const tripIds = publicTrips.map(t => t.id);
+      const allExpenses = await storage.getExpensesByTripIds(tripIds);
+      
+      // Group expenses by trip ID
+      const expensesByTripId = allExpenses.reduce((acc, expense) => {
+        if (!acc[expense.tripId]) {
+          acc[expense.tripId] = [];
+        }
+        acc[expense.tripId].push(expense);
+        return acc;
+      }, {} as Record<string, typeof allExpenses>);
+      
+      // Get day details for all trips to show destinations
+      const tripsWithDetails = await Promise.all(
+        publicTrips.map(async (trip) => {
+          const tripExpenses = expensesByTripId[trip.id] || [];
+          const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+          const dayDetails = await storage.getAllDayDetails(trip.id);
+          
+          // Get unique destinations
+          const destinations = Array.from(
+            new Set(
+              dayDetails
+                .filter(d => d.destination)
+                .map(d => d.destination as string)
+            )
+          );
+          
+          // Calculate expense counts by category
+          const expenseCounts = {
+            flights: tripExpenses.filter(e => e.category === 'flights').length,
+            accommodation: tripExpenses.filter(e => e.category === 'accommodation').length,
+            activities: tripExpenses.filter(e => e.category === 'activities').length,
+          };
+          
+          return {
+            ...trip,
+            totalCost: total,
+            costPerDay: trip.days ? total / trip.days : 0,
+            destinations,
+            expenseCounts,
+          };
+        })
+      );
+      
+      res.json(tripsWithDetails);
+    } catch (error) {
+      console.error("Error fetching public trips:", error);
+      res.status(500).json({ error: "Failed to fetch public trips" });
+    }
+  });
+
+  app.get("/api/explore/trips/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      
+      // Verify trip is public
+      if (!trip.isPublic) {
+        return res.status(403).json({ error: "This trip is not public" });
+      }
+      
+      // Get trip owner info
+      const owner = await storage.getUser(trip.userId);
+      
+      const expenses = await storage.getExpensesByTrip(trip.id);
+      const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+      const dayDetails = await storage.getAllDayDetails(trip.id);
+      
+      res.json({
+        trip: { ...trip, totalCost: total },
+        expenses,
+        dayDetails,
+        owner,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch trip details" });
+    }
+  });
+
+  app.post("/api/explore/trips/:id/clone", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const originalTripId = req.params.id;
+      
+      // Verify original trip exists and is public
+      const originalTrip = await storage.getTrip(originalTripId);
+      if (!originalTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (!originalTrip.isPublic) {
+        return res.status(403).json({ error: "This trip is not public" });
+      }
+      
+      // Clone the trip structure
+      const newTrip = await storage.cloneTripStructure(originalTripId, userId);
+      
+      // Get the full trip details
+      const expenses = await storage.getExpensesByTrip(newTrip.id);
+      const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+      
+      res.json({ ...newTrip, totalCost: total });
+    } catch (error) {
+      console.error("Error cloning trip:", error);
+      res.status(500).json({ error: "Failed to clone trip" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
