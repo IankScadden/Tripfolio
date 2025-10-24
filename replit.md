@@ -27,6 +27,9 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Budget Visualization**: Interactive pie charts for clear expense breakdown by category.
 - **Trip Sharing**: Generation of shareable, read-only links for trip budgets.
 - **Day-by-Day Planning**: Detailed itinerary planning with automatic expense synchronization, including multi-day lodging and flexible transportation entries.
+- **Community Exploration**: Browse public trip budgets by destination/name as a practical research tool for planning.
+- **Trip Cloning**: Copy entire trip structures (expenses + itinerary) as templates for personal planning.
+- **User Profiles**: Customizable display names shown on public trips, manageable via Profile Settings page.
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model
