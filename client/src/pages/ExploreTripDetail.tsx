@@ -45,6 +45,8 @@ type DayDetail = {
   dayNumber: number;
   destination?: string;
   notes?: string;
+  latitude?: string;
+  longitude?: string;
 };
 
 type User = {
@@ -178,6 +180,24 @@ export default function ExploreTripDetail() {
 
   const { trip, owner } = data;
   const destinations = getUniqueDestinations();
+
+  const locations = data.dayDetails
+    .filter(detail => detail.destination && detail.latitude && detail.longitude)
+    .map(detail => {
+      let date: string | undefined;
+      if (trip.startDate) {
+        const [year, month, day] = trip.startDate.split('-').map(Number);
+        const calculatedDate = new Date(year, month - 1, day + detail.dayNumber - 1);
+        date = calculatedDate.toISOString().split('T')[0];
+      }
+      return {
+        dayNumber: detail.dayNumber,
+        destination: detail.destination!,
+        latitude: parseFloat(detail.latitude!),
+        longitude: parseFloat(detail.longitude!),
+        date,
+      };
+    });
 
   return (
     <div className="min-h-screen bg-background">
@@ -340,17 +360,13 @@ export default function ExploreTripDetail() {
         {isExpanded && (
           <div className="space-y-6">
             {/* Journey Map */}
-            {data.dayDetails.length > 0 && (
+            {locations.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Journey Map</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <JourneyMap 
-                    dayDetails={data.dayDetails}
-                    expenses={data.expenses}
-                    startDate={trip.startDate}
-                  />
+                  <JourneyMap locations={locations} />
                 </CardContent>
               </Card>
             )}
