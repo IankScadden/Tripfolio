@@ -254,15 +254,11 @@ export default function Home() {
       )}
 
       {/* Final CTA */}
-      <div className="py-24">
+      <div className="py-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold mb-8">
             Ready to Plan Your Next Adventure?
           </h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Join thousands of travelers who trust Tripfolio to budget their dream trips. 
-            Start planning in minutes.
-          </p>
           <Button
             size="lg"
             onClick={handleCreateTrip}
