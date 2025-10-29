@@ -254,10 +254,10 @@ export default function Home() {
       )}
 
       {/* Final CTA */}
-      <div className="py-16">
+      <div className="pt-8 pb-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Ready to Plan Your Next Adventure?
+            Ready to Budget Your Next Adventure?
           </h2>
           <Button
             size="lg"
