@@ -132,7 +132,7 @@ export default function Home() {
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
               style={{
-                backgroundImage: `url(https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=800&fit=crop)`,
+                backgroundImage: `url(https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&h=800&fit=crop)`,
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
@@ -178,7 +178,7 @@ export default function Home() {
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
               style={{
-                backgroundImage: `url(https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=600&h=800&fit=crop)`,
+                backgroundImage: `url(https://images.unsplash.com/photo-1527004013197-933c4bb611b3?w=600&h=800&fit=crop)`,
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
