@@ -178,7 +178,7 @@ export default function Home() {
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
               style={{
-                backgroundImage: `url(https://images.unsplash.com/photo-1527004013197-933c4bb611b3?w=600&h=800&fit=crop)`,
+                backgroundImage: `url(https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600&h=800&fit=crop)`,
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
