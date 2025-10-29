@@ -9,7 +9,7 @@ import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import heroImage from "@assets/stock_images/european_city_skylin_c21d2ebc.jpg";
+import heroImage from "@assets/stock_images/european_city_sunset_583e3f9a.jpg";
 
 type FeaturedTrip = {
   id: string;
