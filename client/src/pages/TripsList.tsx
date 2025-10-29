@@ -29,7 +29,7 @@ type Trip = {
   };
 };
 
-const DEFAULT_HERO_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=600&fit=crop";
+const DEFAULT_HERO_IMAGE = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=600&fit=crop";
 
 export default function TripsList() {
   const [, setLocation] = useLocation();
