@@ -9,7 +9,7 @@ import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import heroImage from "@assets/stock_images/paris_eiffel_tower_s_e6fa053c.jpg";
+import heroImage from "@assets/stock_images/paris_eiffel_tower_s_e0fe44a6.jpg";
 
 type FeaturedTrip = {
   id: string;
@@ -80,7 +80,7 @@ export default function Home() {
         style={{
           backgroundImage: `url(${heroImage})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center 40%',
+          backgroundPosition: 'center',
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
