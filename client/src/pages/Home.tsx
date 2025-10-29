@@ -205,7 +205,7 @@ export default function Home() {
       </div>
 
       {/* Featured Community Trips */}
-      {featuredTrips && featuredTrips.trips.length > 0 && (
+      {featuredTrips && featuredTrips.trips && featuredTrips.trips.length > 0 && (
         <div className="bg-muted/30 py-20">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-12">
