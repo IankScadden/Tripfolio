@@ -86,15 +86,11 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-10 leading-tight">
             Your Next Adventure
             <br />
             <span className="text-white/90">Starts Here</span>
           </h1>
-          
-          <p className="text-xl md:text-2xl text-gray-100 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Create stunning trip budgets, share your travel stories, and get inspired by a community of adventurers
-          </p>
           
           <div className="flex gap-4 justify-center flex-wrap">
             <Button
