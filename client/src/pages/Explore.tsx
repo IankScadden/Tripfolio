@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, MapPin, DollarSign, TrendingUp, Users, Globe } from "lucide-react";
+import { Search, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,10 +62,6 @@ export default function Explore() {
     },
   });
 
-  const totalTrips = trips.length;
-  const totalBudget = trips.reduce((sum, trip) => sum + trip.totalCost, 0);
-  const avgBudget = totalTrips > 0 ? totalBudget / totalTrips : 0;
-
   const getUserDisplayName = (user: User) => {
     if (user.displayName) return user.displayName;
     if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
@@ -119,43 +115,6 @@ export default function Explore() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        {/* Stats Section */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="p-6 hover-elevate cursor-default">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Globe className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalTrips}</p>
-                <p className="text-sm text-muted-foreground">Public Trips</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-6 hover-elevate cursor-default">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <DollarSign className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">${avgBudget.toFixed(0)}</p>
-                <p className="text-sm text-muted-foreground">Average Budget</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-6 hover-elevate cursor-default">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{new Set(trips.map(t => t.user.id)).size}</p>
-                <p className="text-sm text-muted-foreground">Travelers</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
         {/* Trips Grid */}
         {isLoading ? (
           <div className="text-center py-12">
