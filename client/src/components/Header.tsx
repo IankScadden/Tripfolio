@@ -17,19 +17,6 @@ export default function Header() {
           </Link>
           
           <nav className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            {isAuthenticated && (
-              <>
-                <Link href="/my-trips" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
-                  My Trips
-                </Link>
-                <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
-                  Explore
-                </Link>
-                <Link href="/profile-settings" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
-                  Profile
-                </Link>
-              </>
-            )}
             {isAuthenticated ? (
               <Button
                 variant="ghost"
