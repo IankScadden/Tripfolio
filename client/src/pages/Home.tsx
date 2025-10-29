@@ -76,9 +76,11 @@ export default function Home() {
       
       {/* Hero Section - Larger and more immersive */}
       <div 
-        className="relative h-[700px] bg-cover bg-center flex items-center justify-center"
+        className="relative h-[700px] flex items-center justify-center"
         style={{
           backgroundImage: `url(${heroImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 40%',
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
