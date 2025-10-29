@@ -87,9 +87,7 @@ export default function Home() {
         
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-10 leading-tight">
-            Your Next Adventure
-            <br />
-            <span className="text-white/90">Starts Here</span>
+            Budget your dream trip, accurately!
           </h1>
           
           <div className="flex gap-4 justify-center flex-wrap">
