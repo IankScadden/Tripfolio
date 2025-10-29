@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, MapPin, Calendar, Plus, ArrowRight, Sparkles } from "lucide-react";
+import { DollarSign, MapPin, Calendar, Plus, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import CreateTripDialog from "@/components/CreateTripDialog";
@@ -84,11 +84,6 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <Badge className="mb-6 bg-white/20 text-white backdrop-blur border-white/30 px-4 py-2 text-sm">
-            <Sparkles className="h-4 w-4 mr-1" />
-            Plan • Budget • Explore
-          </Badge>
-          
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight">
             Your Next Adventure
             <br />
