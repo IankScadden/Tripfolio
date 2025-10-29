@@ -165,19 +165,19 @@ export default function TripsList() {
 
       {/* Immersive Hero Section */}
       <div 
-        className="relative h-[500px] bg-cover bg-center flex items-center justify-center"
+        className="relative h-[350px] bg-cover bg-center flex items-center justify-center"
         style={{
           backgroundImage: `url(${heroImage})`,
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 leading-tight">
             My Trips
           </h1>
           
-          <p className="text-xl text-gray-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-100 mb-6 max-w-2xl mx-auto">
             {trips.length === 0
               ? "Ready to plan your next adventure? Create your first trip budget."
               : `${trips.length} trip${trips.length === 1 ? "" : "s"} in your collection`}
@@ -186,10 +186,10 @@ export default function TripsList() {
           <Button
             onClick={() => setShowCreateDialog(true)}
             size="lg"
-            className="gap-2 h-14 px-8 text-lg"
+            className="gap-2"
             data-testid="button-create-trip"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Create New Trip
           </Button>
         </div>
@@ -220,11 +220,11 @@ export default function TripsList() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {sortedTrips.map((trip) => (
               <Card
                 key={trip.id}
-                className="relative overflow-hidden h-[400px] hover-elevate transition-all cursor-pointer group"
+                className="relative overflow-hidden h-[320px] hover-elevate transition-all cursor-pointer group"
                 onClick={() => setLocation(`/trip/${trip.id}`)}
                 data-testid={`card-trip-${trip.id}`}
               >
@@ -240,14 +240,14 @@ export default function TripsList() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/30" />
                 
                 {/* Action Buttons - Top Left */}
-                <div className="absolute top-4 left-4 flex gap-2 z-20">
+                <div className="absolute top-3 left-3 flex gap-2 z-20">
                   <button
                     onClick={(e) => handleToggleFavorite(e, trip.id)}
-                    className="w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
+                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
                     data-testid={`button-favorite-${trip.id}`}
                   >
                     <Star
-                      className={`h-4 w-4 ${
+                      className={`h-3.5 w-3.5 ${
                         trip.favorite
                           ? "fill-yellow-400 text-yellow-400"
                           : "text-gray-600"
@@ -260,67 +260,67 @@ export default function TripsList() {
                       e.stopPropagation();
                       shareTrip(trip.id);
                     }}
-                    className="w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
+                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
                     data-testid={`button-share-${trip.id}`}
                   >
-                    <Share2 className="h-4 w-4 text-gray-600" />
+                    <Share2 className="h-3.5 w-3.5 text-gray-600" />
                   </button>
 
                   <button
                     onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    className="w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
+                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
                     data-testid={`button-delete-${trip.id}`}
                   >
-                    <Trash2 className="h-4 w-4 text-red-500" />
+                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
                   </button>
                 </div>
 
                 {/* Top Right Badges */}
-                <div className="absolute top-4 right-4 flex gap-2 z-20">
+                <div className="absolute top-3 right-3 flex gap-2 z-20">
                   {trip.isPublic === 1 && (
-                    <Badge className="bg-green-500 text-white shadow-lg">
+                    <Badge className="bg-green-500 text-white shadow-lg text-xs">
                       Public
                     </Badge>
                   )}
                   {isUpcoming(trip.startDate) && (
-                    <Badge className="bg-blue-500 text-white shadow-lg">
+                    <Badge className="bg-blue-500 text-white shadow-lg text-xs">
                       Upcoming
                     </Badge>
                   )}
                 </div>
 
                 {/* Content - Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-10">
-                  <h4 className="text-2xl font-bold mb-3 line-clamp-2" data-testid={`text-trip-name-${trip.id}`}>
+                <div className="absolute bottom-0 left-0 right-0 p-5 text-white z-10">
+                  <h4 className="text-xl font-bold mb-2 line-clamp-2" data-testid={`text-trip-name-${trip.id}`}>
                     {trip.name}
                   </h4>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-200 mb-4">
+                  <div className="flex items-center gap-3 text-sm text-gray-200 mb-3">
                     {trip.startDate && (
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span className="text-xs">{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                     )}
                     {trip.days && (
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4" />
-                        <span>{trip.days} days</span>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        <span className="text-xs">{trip.days} days</span>
                       </div>
                     )}
                   </div>
 
                   {/* Total Budget */}
-                  <div className="flex items-center justify-between pt-4 border-t border-white/20">
-                    <span className="text-sm text-gray-300">Total Budget</span>
-                    <span className="text-2xl font-bold" data-testid={`text-total-cost-${trip.id}`}>
+                  <div className="flex items-center justify-between pt-3 border-t border-white/20">
+                    <span className="text-xs text-gray-300">Total Budget</span>
+                    <span className="text-xl font-bold" data-testid={`text-total-cost-${trip.id}`}>
                       ${trip.totalCost.toFixed(0)}
                     </span>
                   </div>
 
                   {/* View Details Arrow (appears on hover) */}
-                  <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight className="h-6 w-6" />
+                  <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowRight className="h-5 w-5" />
                   </div>
                 </div>
               </Card>
