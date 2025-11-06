@@ -107,7 +107,7 @@ export default function Explore() {
               placeholder="Search by destination or trip name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 text-lg bg-white/95 backdrop-blur"
+              className="pl-12 h-14 text-lg bg-white/95 backdrop-blur text-foreground"
               data-testid="input-search-trips"
             />
           </div>
