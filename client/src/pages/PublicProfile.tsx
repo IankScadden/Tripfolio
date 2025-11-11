@@ -259,7 +259,7 @@ export default function PublicProfile() {
 
                     {/* Per Day Cost */}
                     {trip.days && trip.days > 0 && (
-                      <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
+                      <div className="mt-3 pt-3 border-t text-sm font-medium">
                         ${(trip.totalCost / trip.days).toFixed(0)} per day
                       </div>
                     )}
