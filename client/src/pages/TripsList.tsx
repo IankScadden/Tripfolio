@@ -243,14 +243,14 @@ export default function TripsList() {
                 <div className="absolute top-3 left-3 flex gap-2 z-20">
                   <button
                     onClick={(e) => handleToggleFavorite(e, trip.id)}
-                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
+                    className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
                     data-testid={`button-favorite-${trip.id}`}
                   >
                     <Star
                       className={`h-3.5 w-3.5 ${
                         trip.favorite
                           ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-600"
+                          : "text-gray-600 dark:text-gray-300"
                       }`}
                     />
                   </button>
@@ -260,18 +260,18 @@ export default function TripsList() {
                       e.stopPropagation();
                       shareTrip(trip.id);
                     }}
-                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
+                    className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
                     data-testid={`button-share-${trip.id}`}
                   >
-                    <Share2 className="h-3.5 w-3.5 text-gray-600" />
+                    <Share2 className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                   </button>
 
                   <button
                     onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all hover-elevate"
+                    className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
                     data-testid={`button-delete-${trip.id}`}
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    <Trash2 className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
                   </button>
                 </div>
 

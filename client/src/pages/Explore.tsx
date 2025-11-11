@@ -164,7 +164,7 @@ export default function Explore() {
 
                   {/* Cost Badge */}
                   <div className="absolute top-4 right-4">
-                    <Badge className="bg-white/95 text-foreground backdrop-blur font-bold text-base px-3 py-1">
+                    <Badge className="bg-white/95 dark:bg-gray-900/95 text-gray-900 dark:text-white backdrop-blur font-bold text-base px-3 py-1">
                       ${trip.totalCost.toFixed(0)}
                     </Badge>
                   </div>

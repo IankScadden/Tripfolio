@@ -235,7 +235,7 @@ export default function ExploreTripDetail() {
         <div className="absolute top-6 left-6">
           <Button
             variant="secondary"
-            className="gap-2 bg-white/90 backdrop-blur hover:bg-white"
+            className="gap-2 bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white backdrop-blur hover:bg-white dark:hover:bg-gray-900"
             onClick={() => setLocation("/explore")}
             data-testid="button-back"
           >
@@ -247,7 +247,7 @@ export default function ExploreTripDetail() {
         {/* Location Badge */}
         {destinations.length > 0 && (
           <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
-            <Badge className="bg-white/90 text-foreground backdrop-blur px-4 py-2 text-base font-medium">
+            <Badge className="bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white backdrop-blur px-4 py-2 text-base font-medium">
               <MapPin className="h-4 w-4 mr-1" />
               {destinations[0]}
             </Badge>
