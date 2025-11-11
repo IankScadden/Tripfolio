@@ -568,6 +568,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public user profile endpoint
+  app.get("/api/users/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      
+      // Get user info
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Get user's public trips
+      const publicTrips = await storage.getPublicTrips();
+      const userPublicTrips = publicTrips.filter(t => t.user.id === userId);
+      
+      // Get expenses for all trips to calculate totals
+      const tripIds = userPublicTrips.map(t => t.id);
+      const allExpenses = await storage.getExpensesByTripIds(tripIds);
+      
+      // Group expenses by trip ID
+      const expensesByTripId = allExpenses.reduce((acc, expense) => {
+        if (!acc[expense.tripId]) {
+          acc[expense.tripId] = [];
+        }
+        acc[expense.tripId].push(expense);
+        return acc;
+      }, {} as Record<string, typeof allExpenses>);
+      
+      // Calculate totals for each trip
+      const tripsWithTotals = userPublicTrips.map((trip) => {
+        const tripExpenses = expensesByTripId[trip.id] || [];
+        const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+        
+        return {
+          ...trip,
+          totalCost: total,
+        };
+      });
+      
+      res.json({
+        user,
+        trips: tripsWithTotals,
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Failed to fetch user profile" });
+    }
+  });
+
   // Explore routes - require authentication
   app.get("/api/explore/trips", isAuthenticated, async (req: any, res) => {
     try {

@@ -265,7 +265,13 @@ export default function ExploreTripDetail() {
                 <AvatarFallback>{getUserInitial(owner)}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="font-semibold">{getUserDisplayName(owner)}</p>
+                <button
+                  onClick={() => setLocation(`/profile/${owner.id}`)}
+                  className="font-semibold hover:text-primary transition-colors hover:underline text-left"
+                  data-testid={`link-user-profile-${owner.id}`}
+                >
+                  {getUserDisplayName(owner)}
+                </button>
                 <p className="text-sm text-muted-foreground">
                   {trip.startDate && formatDate(trip.startDate)}
                 </p>

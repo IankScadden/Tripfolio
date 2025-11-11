@@ -12,6 +12,7 @@ import SharedTrip from "@/pages/SharedTrip";
 import Explore from "@/pages/Explore";
 import ExploreTripDetail from "@/pages/ExploreTripDetail";
 import ProfileSettings from "@/pages/ProfileSettings";
+import PublicProfile from "@/pages/PublicProfile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/explore" component={Explore} />
       <Route path="/explore/:id" component={ExploreTripDetail} />
       <Route path="/profile-settings" component={ProfileSettings} />
+      <Route path="/profile/:userId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
   );

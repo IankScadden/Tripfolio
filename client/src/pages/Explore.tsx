@@ -185,9 +185,16 @@ export default function Explore() {
                         getUserInitial(trip.user)
                       )}
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLocation(`/profile/${trip.user.id}`);
+                      }}
+                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                      data-testid={`link-user-profile-${trip.user.id}`}
+                    >
                       {getUserDisplayName(trip.user)}
-                    </span>
+                    </button>
                   </div>
 
                   {/* Description Preview */}
