@@ -31,7 +31,8 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Day-by-Day Planning**: Detailed itinerary planning with automatic expense synchronization, including multi-day lodging and flexible transportation entries.
 - **Community Exploration**: Browse public trip budgets by destination/name as a practical research tool for planning. Features beautiful cards with hero images, descriptions, and hashtags.
 - **Trip Cloning**: Copy entire trip structures (expenses + itinerary) as templates for personal planning.
-- **User Profiles**: Customizable display names shown on public trips, manageable via Profile Settings page.
+- **User Profiles**: Customizable display names, bios, and profile pictures shown on public trips, manageable via Profile Settings page.
+- **Public Profiles**: View other users' profiles showing their name, bio, profile picture, and all their public trips. Accessible by clicking usernames throughout the app.
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model
