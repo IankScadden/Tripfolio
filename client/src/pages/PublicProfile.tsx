@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Header from "@/components/Header";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useAuth } from "@/hooks/useAuth";
 
 type User = {
   id: string;
@@ -42,6 +43,9 @@ export default function PublicProfile() {
   const [, params] = useRoute("/profile/:userId");
   const [, setLocation] = useLocation();
   const userId = params?.userId;
+  const { user: currentUser } = useAuth();
+  
+  const isOwnProfile = currentUser && (currentUser as any).id === userId;
 
   const { data: profileData, isLoading } = useQuery<ProfileData>({
     queryKey: ["/api/users", userId],
@@ -139,9 +143,24 @@ export default function PublicProfile() {
             </Avatar>
             
             <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2" data-testid="text-user-name">
-                {getUserDisplayName(user)}
-              </h1>
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
+                <h1 className="text-3xl font-bold" data-testid="text-user-name">
+                  {getUserDisplayName(user)}
+                </h1>
+                
+                {isOwnProfile ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLocation("/profile-settings")}
+                    className="gap-2"
+                    data-testid="button-edit-profile"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Edit Profile
+                  </Button>
+                ) : null}
+              </div>
               
               {user.bio && (
                 <p className="text-muted-foreground mb-4 whitespace-pre-wrap" data-testid="text-user-bio">

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Compass } from "lucide-react";
 
 export default function Header() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -25,9 +25,11 @@ export default function Header() {
                 <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                   Explore
                 </Link>
-                <Link href="/profile-settings" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
-                  Profile
-                </Link>
+                {user && (
+                  <Link href={`/profile/${(user as any).id}`} className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                    Profile
+                  </Link>
+                )}
               </>
             )}
             {isAuthenticated ? (
