@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/Header";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const profileSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(50, "Display name must be less than 50 characters"),
+  bio: z.string().max(300, "Bio must be less than 300 characters").optional(),
+  profileImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -26,6 +29,7 @@ type User = {
   lastName?: string;
   displayName?: string;
   profileImageUrl?: string;
+  bio?: string;
 };
 
 export default function ProfileSettings() {
@@ -40,6 +44,8 @@ export default function ProfileSettings() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       displayName: "",
+      bio: "",
+      profileImageUrl: "",
     },
   });
 
@@ -51,6 +57,8 @@ export default function ProfileSettings() {
         user.email || "";
       form.reset({
         displayName: defaultName,
+        bio: user.bio || "",
+        profileImageUrl: user.profileImageUrl || "",
       });
     }
   }, [user, form]);
@@ -65,7 +73,7 @@ export default function ProfileSettings() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Success",
-        description: "Your display name has been updated",
+        description: "Your profile has been updated",
       });
     },
     onError: () => {
@@ -131,6 +139,49 @@ export default function ProfileSettings() {
                       </FormControl>
                       <FormDescription>
                         This is how your name will appear on trips you share with the community
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Tell others about yourself and your travel experiences..."
+                          {...field}
+                          data-testid="input-bio"
+                          className="min-h-[100px]"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Share a bit about yourself (max 300 characters)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="profileImageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Profile Picture URL</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com/your-photo.jpg"
+                          {...field}
+                          data-testid="input-profile-image-url"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Enter a URL to an image for your profile picture
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

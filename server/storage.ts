@@ -7,7 +7,7 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  updateUserDisplayName(userId: string, displayName: string): Promise<User | undefined>;
+  updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string }): Promise<User | undefined>;
   
   // Trip operations
   getAllTrips(userId: string): Promise<Trip[]>;
@@ -63,10 +63,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserDisplayName(userId: string, displayName: string): Promise<User | undefined> {
+  async updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string }): Promise<User | undefined> {
     const [user] = await db
       .update(users)
-      .set({ displayName, updatedAt: new Date() })
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     return user;

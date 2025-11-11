@@ -539,13 +539,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { displayName } = req.body;
+      const { displayName, bio, profileImageUrl } = req.body;
       
       if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
         return res.status(400).json({ error: "Display name is required" });
       }
       
-      const user = await storage.updateUserDisplayName(userId, displayName.trim());
+      const updates: any = {
+        displayName: displayName.trim(),
+      };
+      
+      if (bio !== undefined) {
+        updates.bio = bio.trim();
+      }
+      
+      if (profileImageUrl !== undefined) {
+        updates.profileImageUrl = profileImageUrl.trim();
+      }
+      
+      const user = await storage.updateUserProfile(userId, updates);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
