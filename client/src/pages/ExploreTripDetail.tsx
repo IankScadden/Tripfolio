@@ -1,28 +1,28 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
 import BudgetChart from "@/components/BudgetChart";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign } from "lucide-react";
 
 const CATEGORIES = [
-  { id: "flights", title: "Flights", icon: Plane, color: "hsl(200, 85%, 55%)" },
-  { id: "intercity", title: "City to City Transportation", icon: Train, color: "hsl(30, 90%, 60%)" },
-  { id: "local", title: "Local Transportation", icon: Bus, color: "hsl(280, 70%, 65%)" },
-  { id: "accommodation", title: "Lodging", icon: Hotel, color: "hsl(150, 60%, 50%)" },
-  { id: "food", title: "Food", icon: Utensils, color: "hsl(330, 70%, 65%)" },
-  { id: "activities", title: "Activities & Attractions", icon: Ticket, color: "hsl(50, 85%, 60%)" },
-  { id: "other", title: "Other Costs", icon: DollarSign, color: "hsl(180, 60%, 55%)" },
+  { id: "flights", title: "Flights", icon: Plane, color: "hsl(200, 85%, 55%)", addLabel: "Add Flight", emptyLabel: "No flights added" },
+  { id: "intercity", title: "City to City Transportation", icon: Train, color: "hsl(30, 90%, 60%)", addLabel: "Add Route", emptyLabel: "No transportation added" },
+  { id: "local", title: "Local Transportation", icon: Bus, color: "hsl(280, 70%, 65%)", addLabel: "Add Transport", emptyLabel: "No local transport added" },
+  { id: "accommodation", title: "Lodging", icon: Hotel, color: "hsl(150, 60%, 50%)", addLabel: "Add Lodging", emptyLabel: "No lodging added" },
+  { id: "food", title: "Food", icon: Utensils, color: "hsl(330, 70%, 65%)", addLabel: "Edit Budget", emptyLabel: "No food budget set" },
+  { id: "activities", title: "Activities & Attractions", icon: Ticket, color: "hsl(50, 85%, 60%)", addLabel: "Add Activity", emptyLabel: "No activities added" },
+  { id: "other", title: "Other Costs", icon: DollarSign, color: "hsl(180, 60%, 55%)", addLabel: "Add Cost", emptyLabel: "No other costs added" },
 ];
 
 const DEFAULT_HEADER_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=600&fit=crop";
@@ -397,111 +397,168 @@ export default function ExploreTripDetail() {
           </CardContent>
         </Card>
 
-        {/* Full Budget Breakdown Dialog */}
+        {/* Full Budget Breakdown Dialog - EXACT copy of My Trips layout */}
         <Dialog open={showBudget} onOpenChange={setShowBudget}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto" data-testid="dialog-budget-breakdown">
             <div className="space-y-6">
-              {/* Trip Header */}
+              {/* Trip Name and Info - EXACT from TripDetail */}
               <div>
-                <h2 className="text-3xl font-bold mb-2">{trip.name}</h2>
+                <h1 className="text-2xl font-bold mb-2">{trip.name}</h1>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     <span>
                       {trip.startDate && trip.endDate
-                        ? `${new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        ? `${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}`
                         : 'Dates not set'}
                     </span>
                   </div>
                   {trip.days && (
-                    <span>{trip.days} days</span>
+                    <div className="flex items-center gap-1">
+                      <span>{trip.days} days</span>
+                    </div>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    data-testid="button-edit-trip"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
-              {/* Total Trip Cost */}
-              <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Total Trip Cost</p>
-                    <p className="text-4xl font-bold">${trip.totalCost.toFixed(0)}</p>
+              {/* Total Trip Cost Card - EXACT from TripDetail */}
+              <Card className="bg-muted/30">
+                <CardContent className="py-6 text-center">
+                  <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
+                  <div className="text-4xl font-bold">
+                    ${trip.totalCost.toFixed(0)}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Budget Breakdown - Side by Side */}
+              {/* Budget Breakdown and Visual Breakdown - EXACT from TripDetail */}
               <div className="grid md:grid-cols-2 gap-6">
-                {/* Left: Category List */}
+                {/* Budget Breakdown */}
                 <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold text-xl mb-4">Budget Breakdown</h3>
-                    <div className="space-y-3">
-                      {CATEGORIES.map((category) => {
-                        const total = getCategoryTotal(category.id);
-                        if (total === 0) return null;
-                        const IconComponent = category.icon;
-                        return (
-                          <div key={category.id} className="flex items-center justify-between py-2">
-                            <div className="flex items-center gap-2">
-                              <IconComponent className="h-5 w-5" style={{ color: category.color }} />
-                              <span className="text-sm">{category.title}</span>
-                            </div>
-                            <span className="font-semibold">${total.toFixed(0)}</span>
+                  <CardHeader>
+                    <CardTitle>Budget Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {CATEGORIES.map((category) => {
+                      const IconComponent = category.icon;
+                      const total = getCategoryTotal(category.id);
+                      return (
+                        <div key={category.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                            <span className="text-sm">{category.title}</span>
                           </div>
-                        );
-                      })}
-                    </div>
+                          <span className="text-sm font-medium">
+                            ${total.toFixed(0)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </CardContent>
                 </Card>
 
-                {/* Right: Pie Chart */}
-                <Card className="relative">
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold text-xl mb-4">Budget Breakdown</h3>
-                    <BudgetChart data={chartData} />
-                  </CardContent>
-                </Card>
+                {/* Visual Breakdown with BudgetChart - EXACT from TripDetail */}
+                {chartData.length > 0 ? (
+                  <BudgetChart data={chartData} />
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Visual Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                        No expenses added yet
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
-              {/* Category Cards with Expenses */}
-              <div className="space-y-4">
+              {/* Category Cards - EXACT from TripDetail */}
+              <div className="grid md:grid-cols-2 gap-6">
                 {CATEGORIES.map((category) => {
                   const categoryExpenses = getExpensesByCategory(category.id);
                   const total = getCategoryTotal(category.id);
-                  if (categoryExpenses.length === 0) return null;
-                  
                   const IconComponent = category.icon;
                   
                   return (
                     <Card key={category.id}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <IconComponent className="h-5 w-5" style={{ color: category.color }} />
-                            <h4 className="font-semibold text-lg">{category.title}</h4>
-                          </div>
-                          <Badge variant="secondary" className="text-base px-3 py-1">
-                            ${total.toFixed(0)}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {categoryExpenses.map((expense) => (
-                            <div key={expense.id} className="flex items-start justify-between py-2 border-b last:border-0">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{expense.description}</p>
-                                {expense.date && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatDate(expense.date)}
-                                  </p>
-                                )}
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-base font-medium flex items-center gap-2">
+                          <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                          {category.title}
+                        </CardTitle>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="gap-1"
+                          data-testid={`button-add-${category.id}`}
+                        >
+                          <span className="text-2xl leading-none">+</span> {category.addLabel}
+                        </Button>
+                      </CardHeader>
+                      <CardContent>
+                        {categoryExpenses.length > 0 ? (
+                          <div className="space-y-2">
+                            {categoryExpenses.map((expense) => (
+                              <div 
+                                key={expense.id} 
+                                className="flex items-center justify-between py-2 border-b last:border-0"
+                              >
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium">{expense.description}</div>
+                                  {expense.date && (
+                                    <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground"
+                                    data-testid={`button-toggle-purchased-${expense.id}`}
+                                  >
+                                    <Check className="h-4 w-4 opacity-30" />
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        data-testid={`button-expense-menu-${expense.id}`}
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem data-testid={`menu-toggle-purchased-${expense.id}`}>
+                                        Mark as Purchased
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem data-testid={`menu-edit-expense-${expense.id}`}>
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-destructive" data-testid={`menu-delete-expense-${expense.id}`}>
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </div>
-                              <span className="text-sm font-medium ml-4 flex-shrink-0">
-                                ${parseFloat(expense.cost).toFixed(0)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">{category.emptyLabel}</p>
+                        )}
                       </CardContent>
                     </Card>
                   );
