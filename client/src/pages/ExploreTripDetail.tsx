@@ -88,6 +88,25 @@ export default function ExploreTripDetail() {
   const [activeTab, setActiveTab] = useState("itinerary"); // itinerary or map
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
   const [showDayDetail, setShowDayDetail] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategoryExpanded = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const getVisibleExpenses = (categoryId: string) => {
+    const allExpenses = getExpensesByCategory(categoryId);
+    if (expandedCategories.has(categoryId) || allExpenses.length <= 3) {
+      return allExpenses;
+    }
+    return allExpenses.slice(0, 3);
+  };
 
   const { data, isLoading } = useQuery<TripDetailResponse>({
     queryKey: ["/api/explore/trips", tripId],
@@ -527,55 +546,68 @@ export default function ExploreTripDetail() {
                       </CardHeader>
                       <CardContent>
                         {categoryExpenses.length > 0 ? (
-                          <div className="space-y-2">
-                            {categoryExpenses.map((expense) => (
-                              <div 
-                                key={expense.id} 
-                                className="flex items-center justify-between py-2 border-b last:border-0"
+                          <>
+                            <div className="space-y-2">
+                              {getVisibleExpenses(category.id).map((expense) => (
+                                <div 
+                                  key={expense.id} 
+                                  className="flex items-center justify-between py-2 border-b last:border-0"
+                                >
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium">{expense.description}</div>
+                                    {expense.date && (
+                                      <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground"
+                                      data-testid={`button-toggle-purchased-${expense.id}`}
+                                    >
+                                      <Check className="h-4 w-4 opacity-30" />
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          data-testid={`button-expense-menu-${expense.id}`}
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem data-testid={`menu-toggle-purchased-${expense.id}`}>
+                                          Mark as Purchased
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem data-testid={`menu-edit-expense-${expense.id}`}>
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" data-testid={`menu-delete-expense-${expense.id}`}>
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {categoryExpenses.length > 3 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={() => toggleCategoryExpanded(category.id)}
+                                data-testid={`button-toggle-${category.id}`}
                               >
-                                <div className="flex-1">
-                                  <div className="text-sm font-medium">{expense.description}</div>
-                                  {expense.date && (
-                                    <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">${parseFloat(expense.cost).toFixed(0)}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground"
-                                    data-testid={`button-toggle-purchased-${expense.id}`}
-                                  >
-                                    <Check className="h-4 w-4 opacity-30" />
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        data-testid={`button-expense-menu-${expense.id}`}
-                                      >
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem data-testid={`menu-toggle-purchased-${expense.id}`}>
-                                        Mark as Purchased
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem data-testid={`menu-edit-expense-${expense.id}`}>
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem className="text-destructive" data-testid={`menu-delete-expense-${expense.id}`}>
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                                {expandedCategories.has(category.id) ? "Show Less" : `Show More (${categoryExpenses.length - 3} more)`}
+                              </Button>
+                            )}
+                          </>
                         ) : (
                           <p className="text-sm text-muted-foreground">{category.emptyLabel}</p>
                         )}
