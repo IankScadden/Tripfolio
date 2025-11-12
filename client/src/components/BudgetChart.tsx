@@ -47,16 +47,14 @@ export default function BudgetChart({ data }: BudgetChartProps) {
     const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
     const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
 
-    if (percent < 0.05) return null;
-
     return (
       <text
         x={x}
         y={y}
         fill="white"
-        textAnchor={x > cx ? "start" : "end"}
+        textAnchor="middle"
         dominantBaseline="central"
-        className="text-xs font-medium"
+        className="text-xs font-bold"
       >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
@@ -64,8 +62,8 @@ export default function BudgetChart({ data }: BudgetChartProps) {
   };
 
   const ChartComponent = ({ size = "normal" }: { size?: "normal" | "large" }) => {
-    const outerRadius = size === "large" ? 250 : 100;
-    const innerRadius = size === "large" ? 150 : 60;
+    const outerRadius = size === "large" ? 180 : 100;
+    const innerRadius = size === "large" ? 100 : 60;
     
     return (
       <ResponsiveContainer width="100%" height="100%">
