@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2 } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -275,6 +275,39 @@ export default function TripDetail() {
     },
   });
 
+  const shareTripMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/share-link`);
+      return await response.json();
+    },
+    onSuccess: (data: { shareId: string }) => {
+      const shareUrl = `${window.location.origin}/share/${data.shareId}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Share link has been copied to your clipboard. Anyone with this link can view your budget breakdown.",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate share link. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
   const updateTripMutation = useMutation({
     mutationFn: async (data: { name: string; startDate?: string | null; endDate?: string | null; days?: number | null }) => {
       const response = await apiRequest("PATCH", `/api/trips/${tripId}`, data);
@@ -522,6 +555,16 @@ export default function TripDetail() {
             Back
           </Button>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => shareTripMutation.mutate()}
+              disabled={shareTripMutation.isPending}
+              data-testid="button-share-trip"
+            >
+              <Share2 className="h-4 w-4" />
+              {shareTripMutation.isPending ? "Generating..." : "Share Trip"}
+            </Button>
             <Button
               variant="outline"
               className="gap-2"
