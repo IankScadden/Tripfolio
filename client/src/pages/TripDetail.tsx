@@ -13,7 +13,7 @@ import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import BudgetChart from "@/components/BudgetChart";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -606,45 +606,21 @@ export default function TripDetail() {
             </CardContent>
           </Card>
 
-          {/* Visual Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Visual Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ percent }) => 
-                        percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
-                      }
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="value"
-                      style={{ fontSize: '14px', fontWeight: 'bold' }}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Legend 
-                      wrapperStyle={{ fontSize: '12px' }}
-                      iconSize={10}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
+          {/* Visual Breakdown with BudgetChart */}
+          {chartData.length > 0 ? (
+            <BudgetChart data={chartData} />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Visual Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   No expenses added yet
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Category Cards */}
