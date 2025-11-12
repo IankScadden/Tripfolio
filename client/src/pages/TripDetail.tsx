@@ -277,7 +277,7 @@ export default function TripDetail() {
 
   const shareTripMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/trips/${tripId}/share-link`);
+      const response = await apiRequest("POST", `/api/trips/${tripId}/share`);
       return await response.json();
     },
     onSuccess: async (data: { shareId: string }) => {
