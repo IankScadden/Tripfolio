@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -401,30 +401,50 @@ export default function ExploreTripDetail() {
         <Dialog open={showBudget} onOpenChange={setShowBudget}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto" data-testid="dialog-budget-breakdown">
             <div className="space-y-6">
-              {/* Trip Name and Info - EXACT from TripDetail */}
-              <div>
-                <h1 className="text-2xl font-bold mb-2">{trip.name}</h1>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {trip.startDate && trip.endDate
-                        ? `${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}`
-                        : 'Dates not set'}
-                    </span>
-                  </div>
-                  {trip.days && (
+              {/* Back Button and Trip Header with Action Buttons - EXACT from TripDetail */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold mb-2">{trip.name}</h1>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <span>{trip.days} days</span>
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {trip.startDate && trip.endDate
+                          ? `${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}`
+                          : 'Dates not set'}
+                      </span>
                     </div>
-                  )}
+                    {trip.days && (
+                      <div className="flex items-center gap-1">
+                        <span>{trip.days} days</span>
+                      </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      data-testid="button-edit-trip"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    data-testid="button-edit-trip"
+                    variant="outline"
+                    className="gap-2"
+                    data-testid="button-post-trip"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Settings className="h-4 w-4" />
+                    Post Trip
+                  </Button>
+                  <Button
+                    variant="default"
+                    className="gap-2"
+                    data-testid="button-day-by-day-layout"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Day-by-Day Layout
                   </Button>
                 </div>
               </div>
