@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
+import BudgetChart from "@/components/BudgetChart";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign } from "lucide-react";
@@ -399,175 +400,113 @@ export default function ExploreTripDetail() {
         {/* Full Budget Breakdown Dialog */}
         <Dialog open={showBudget} onOpenChange={setShowBudget}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto" data-testid="dialog-budget-breakdown">
-            <DialogHeader>
-              <DialogTitle>{trip.name} - Budget Breakdown</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-8 py-4">
-              {/* Day-by-Day Itinerary */}
-              {data.dayDetails.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-xl mb-4">Day-by-Day Itinerary</h3>
-                    <div className="space-y-4">
-                      {data.dayDetails
-                        .sort((a, b) => a.dayNumber - b.dayNumber)
-                        .map((day) => {
-                          const dayExpenses = data.expenses.filter(
-                            (e) => e.dayNumber === day.dayNumber
-                          );
-                          const dayTotal = dayExpenses.reduce(
-                            (sum, e) => sum + parseFloat(e.cost),
-                            0
-                          );
-                          
-                          return (
-                            <Card key={day.id} className="overflow-hidden">
-                              <CardContent className="pt-6">
-                                <div className="flex items-start justify-between mb-4">
-                                  <div>
-                                    <h4 className="font-semibold text-lg">
-                                      Day {day.dayNumber}
-                                      {day.destination && ` - ${day.destination}`}
-                                    </h4>
-                                    {trip.startDate && (
-                                      <p className="text-sm text-muted-foreground">
-                                        {formatDayDate(trip.startDate, day.dayNumber)}
-                                      </p>
-                                    )}
-                                  </div>
-                                  {dayTotal > 0 && (
-                                    <Badge variant="secondary" className="text-base px-3 py-1">
-                                      ${dayTotal.toFixed(0)}
-                                    </Badge>
-                                  )}
-                                </div>
-                                
-                                {day.notes && (
-                                  <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap">
-                                    {day.notes}
+            <div className="space-y-6">
+              {/* Trip Header */}
+              <div>
+                <h2 className="text-3xl font-bold mb-2">{trip.name}</h2>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {trip.startDate && trip.endDate
+                        ? `${new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : 'Dates not set'}
+                    </span>
+                  </div>
+                  {trip.days && (
+                    <span>{trip.days} days</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Total Trip Cost */}
+              <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-2">Total Trip Cost</p>
+                    <p className="text-4xl font-bold">${trip.totalCost.toFixed(0)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Budget Breakdown - Side by Side */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Left: Category List */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold text-xl mb-4">Budget Breakdown</h3>
+                    <div className="space-y-3">
+                      {CATEGORIES.map((category) => {
+                        const total = getCategoryTotal(category.id);
+                        if (total === 0) return null;
+                        const IconComponent = category.icon;
+                        return (
+                          <div key={category.id} className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2">
+                              <IconComponent className="h-5 w-5" style={{ color: category.color }} />
+                              <span className="text-sm">{category.title}</span>
+                            </div>
+                            <span className="font-semibold">${total.toFixed(0)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Right: Pie Chart */}
+                <Card className="relative">
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold text-xl mb-4">Budget Breakdown</h3>
+                    <BudgetChart chartData={chartData} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Category Cards with Expenses */}
+              <div className="space-y-4">
+                {CATEGORIES.map((category) => {
+                  const categoryExpenses = getExpensesByCategory(category.id);
+                  const total = getCategoryTotal(category.id);
+                  if (categoryExpenses.length === 0) return null;
+                  
+                  const IconComponent = category.icon;
+                  
+                  return (
+                    <Card key={category.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="h-5 w-5" style={{ color: category.color }} />
+                            <h4 className="font-semibold text-lg">{category.title}</h4>
+                          </div>
+                          <Badge variant="secondary" className="text-base px-3 py-1">
+                            ${total.toFixed(0)}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {categoryExpenses.map((expense) => (
+                            <div key={expense.id} className="flex items-start justify-between py-2 border-b last:border-0">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{expense.description}</p>
+                                {expense.date && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatDate(expense.date)}
                                   </p>
                                 )}
-                                
-                                {dayExpenses.length > 0 && (
-                                  <div className="space-y-2 mt-4 pt-4 border-t">
-                                    <p className="text-sm font-medium text-muted-foreground mb-2">Expenses:</p>
-                                    {dayExpenses.map((expense) => {
-                                      const category = CATEGORIES.find(c => c.id === expense.category);
-                                      const IconComponent = category?.icon || DollarSign;
-                                      return (
-                                        <div key={expense.id} className="flex items-center justify-between py-2">
-                                          <div className="flex items-center gap-2 flex-1">
-                                            <IconComponent 
-                                              className="h-4 w-4 flex-shrink-0" 
-                                              style={{ color: category?.color || '#888' }} 
-                                            />
-                                            <span className="text-sm">{expense.description}</span>
-                                          </div>
-                                          <span className="text-sm font-medium ml-4">${parseFloat(expense.cost).toFixed(0)}</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Budget Breakdown by Category */}
-                <div>
-                  <h3 className="font-semibold text-xl mb-4">Budget Breakdown by Category</h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {CATEGORIES.map((category) => {
-                      const categoryExpenses = getExpensesByCategory(category.id);
-                      const total = getCategoryTotal(category.id);
-                      if (categoryExpenses.length === 0) return null;
-                      
-                      const IconComponent = category.icon;
-                      
-                      return (
-                        <Card key={category.id}>
-                          <CardContent className="pt-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-2">
-                                <IconComponent className="h-5 w-5" style={{ color: category.color }} />
-                                <h4 className="font-semibold">{category.title}</h4>
                               </div>
-                              <Badge variant="secondary" className="text-base px-3 py-1">
-                                ${total.toFixed(0)}
-                              </Badge>
+                              <span className="text-sm font-medium ml-4 flex-shrink-0">
+                                ${parseFloat(expense.cost).toFixed(0)}
+                              </span>
                             </div>
-                            
-                            <div className="space-y-2">
-                              {categoryExpenses.map((expense) => (
-                                <div key={expense.id} className="flex items-start justify-between py-2 border-b last:border-0">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{expense.description}</p>
-                                    {expense.date && (
-                                      <p className="text-xs text-muted-foreground">
-                                        {formatDate(expense.date)}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <span className="text-sm font-medium ml-4 flex-shrink-0">
-                                    ${parseFloat(expense.cost).toFixed(0)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Visual Breakdown */}
-                <div>
-                  <h3 className="font-semibold text-xl mb-4">Visual Breakdown</h3>
-                  {chartData.length > 0 ? (
-                    <Card>
-                      <CardContent className="pt-6">
-                        <ResponsiveContainer width="100%" height={350}>
-                          <PieChart>
-                            <Pie
-                              data={chartData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={({ percent }) => 
-                                `${(percent * 100).toFixed(0)}%`
-                              }
-                              outerRadius={120}
-                              fill="#8884d8"
-                              dataKey="value"
-                              style={{ fontSize: '14px', fontWeight: 'bold' }}
-                            >
-                              {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Legend 
-                              wrapperStyle={{ fontSize: '12px' }}
-                              iconSize={10}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                          No expenses added yet
+                          ))}
                         </div>
                       </CardContent>
                     </Card>
-                  )}
-                </div>
+                  );
+                })}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
