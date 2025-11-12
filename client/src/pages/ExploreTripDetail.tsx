@@ -458,7 +458,7 @@ export default function ExploreTripDetail() {
                 <Card className="relative">
                   <CardContent className="pt-6">
                     <h3 className="font-semibold text-xl mb-4">Budget Breakdown</h3>
-                    <BudgetChart chartData={chartData} />
+                    <BudgetChart data={chartData} />
                   </CardContent>
                 </Card>
               </div>
