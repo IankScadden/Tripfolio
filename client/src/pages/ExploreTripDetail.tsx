@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
@@ -353,14 +354,22 @@ export default function ExploreTripDetail() {
           </Card>
         )}
 
-        {/* Budget Breakdown Button */}
+        {/* Journey Map - Always Visible */}
+        {locations.length > 0 && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <h3 className="font-semibold text-xl mb-4">Journey Map</h3>
+              <div className="rounded-lg overflow-hidden border" style={{ height: '400px' }}>
+                <JourneyMap locations={locations} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Budget Breakdown with Expand Button */}
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <button
-              onClick={() => setShowBudget(!showBudget)}
-              className="w-full flex items-center justify-between p-4 bg-muted/50 rounded-lg hover-elevate transition-all"
-              data-testid="button-toggle-budget"
-            >
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-4">
                 <div className="bg-primary/10 p-3 rounded-full">
                   <DollarSign className="h-6 w-6 text-primary" />
@@ -373,24 +382,30 @@ export default function ExploreTripDetail() {
                   </p>
                 </div>
               </div>
-              <ChevronDown className={`h-5 w-5 transition-transform ${showBudget ? 'rotate-180' : ''}`} />
-            </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBudget(true)}
+                data-testid="button-expand-budget"
+                className="gap-2"
+              >
+                View Details
+                <ArrowLeft className="h-4 w-4 rotate-180" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Collapsible Budget Section */}
-            {showBudget && (
-              <div className="mt-6 space-y-8">
-                {/* Journey Map */}
-                {locations.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-xl mb-4">Journey Map</h3>
-                    <div className="rounded-lg overflow-hidden border" style={{ height: '400px' }}>
-                      <JourneyMap locations={locations} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Day-by-Day Itinerary */}
-                {data.dayDetails.length > 0 && (
+        {/* Full Budget Breakdown Dialog */}
+        <Dialog open={showBudget} onOpenChange={setShowBudget}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto" data-testid="dialog-budget-breakdown">
+            <DialogHeader>
+              <DialogTitle>{trip.name} - Budget Breakdown</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-8 py-4">
+              {/* Day-by-Day Itinerary */}
+              {data.dayDetails.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-xl mb-4">Day-by-Day Itinerary</h3>
                     <div className="space-y-4">
@@ -553,10 +568,9 @@ export default function ExploreTripDetail() {
                     </Card>
                   )}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Clone CTA */}
         <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
