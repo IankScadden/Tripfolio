@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRoute, Link, useLocation } from "wouter";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { JourneyMap } from "@/components/JourneyMap";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Sheet,
   SheetContent,
@@ -99,6 +101,8 @@ export default function SharedTrip() {
   const [, params] = useRoute("/share/:shareId");
   const shareId = params?.shareId;
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data, isLoading } = useQuery<SharedTripData>({
     queryKey: ["/api/share", shareId],
@@ -108,6 +112,33 @@ export default function SharedTrip() {
       return response.json();
     },
     enabled: !!shareId,
+  });
+
+  const cloneTripMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/share/${shareId}/clone`);
+      return await response.json();
+    },
+    onSuccess: (newTrip) => {
+      toast({
+        title: "Template Created!",
+        description: `"${newTrip.name}" has been added to your trips. Let's customize it!`,
+      });
+      // Redirect to the new trip
+      setLocation(`/trip/${newTrip.id}`);
+    },
+    onError: (error: any) => {
+      if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        // Not logged in - redirect to login
+        window.location.href = `/api/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create template. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
   });
 
   const trip = data?.trip;
@@ -217,20 +248,134 @@ export default function SharedTrip() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Trip Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-3" data-testid="text-trip-name">
-            {trip.name}
-          </h1>
-          {trip.startDate && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <CalendarDays className="h-4 w-4" />
-              <span>
-                {formatDate(trip.startDate)}
-                {trip.endDate && ` - ${formatDate(trip.endDate)}`}
-              </span>
-              {trip.days && <span className="ml-2">• {trip.days} days</span>}
-            </div>
-          )}
+        <div className="mb-8">
+          <div className="text-center mb-4">
+            <h1 className="text-4xl font-bold mb-3" data-testid="text-trip-name">
+              {trip.name}
+            </h1>
+            {trip.startDate && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                <span>
+                  {formatDate(trip.startDate)}
+                  {trip.endDate && ` - ${formatDate(trip.endDate)}`}
+                </span>
+                {trip.days && <span className="ml-2">• {trip.days} days</span>}
+              </div>
+            )}
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              variant="default"
+              className="gap-2"
+              onClick={() => cloneTripMutation.mutate()}
+              disabled={cloneTripMutation.isPending}
+              data-testid="button-use-as-template"
+            >
+              <Copy className="h-4 w-4" />
+              {cloneTripMutation.isPending ? "Creating..." : "Use as Template"}
+            </Button>
+            
+            {trip.days && trip.days > 0 && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    data-testid="button-day-by-day-layout"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    Day-by-Day Layout
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle className="text-2xl">Daily Itinerary</SheetTitle>
+                  </SheetHeader>
+                  
+                  <div className="space-y-4">
+                    {Array.from({ length: trip.days }, (_, i) => i + 1).map((dayNumber) => {
+                      const dayDetail = dayDetails.find(d => d.dayNumber === dayNumber);
+                      const dayExpenses = expensesByDay[dayNumber] || [];
+                      const dayDate = dayExpenses.find(e => e.date)?.date;
+
+                      return (
+                        <Card key={dayNumber} data-testid={`card-day-${dayNumber}`}>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <CalendarDays className="h-5 w-5" />
+                              Day {dayNumber}
+                              {dayDate && (
+                                <span className="text-sm font-normal text-muted-foreground ml-2">
+                                  • {formatDate(dayDate)}
+                                </span>
+                              )}
+                            </CardTitle>
+                            {dayDetail?.destination && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4" />
+                                {dayDetail.destination}
+                              </div>
+                            )}
+                          </CardHeader>
+                          <CardContent>
+                            {dayExpenses.length > 0 ? (
+                              <div className="space-y-2">
+                                {dayExpenses.map((expense) => {
+                                  const category = CATEGORIES.find(c => c.id === expense.category);
+                                  const Icon = category?.icon || DollarSign;
+                                  
+                                  return (
+                                    <div
+                                      key={expense.id}
+                                      className="flex items-start justify-between py-2 border-b last:border-0"
+                                    >
+                                      <div className="flex items-start gap-2 flex-1">
+                                        <Icon className="h-4 w-4 mt-0.5" style={{ color: category?.color }} />
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium">{expense.description}</p>
+                                            {expense.url && (
+                                              <a
+                                                href={expense.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:underline"
+                                              >
+                                                <Link2 className="h-3 w-3" />
+                                              </a>
+                                            )}
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">{category?.title}</p>
+                                        </div>
+                                      </div>
+                                      <span className="text-sm font-semibold ml-2">
+                                        ${parseFloat(expense.cost).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">No expenses for this day</p>
+                            )}
+                            {dayDetail?.localTransportNotes && (
+                              <div className="mt-3 pt-3 border-t">
+                                <p className="text-xs text-muted-foreground mb-1">Local Transport Notes:</p>
+                                <p className="text-sm">{dayDetail.localTransportNotes}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
+          </div>
         </div>
 
         {/* Total Cost */}
@@ -388,107 +533,6 @@ export default function SharedTrip() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Day-by-Day Layout Button (Fixed Position) */}
-        {trip.days && trip.days > 0 && (
-          <div className="fixed bottom-8 right-8 z-50">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  size="lg"
-                  className="shadow-lg gap-2"
-                  data-testid="button-day-by-day-layout"
-                >
-                  <CalendarDays className="h-5 w-5" />
-                  Day-by-Day Layout
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-                <SheetHeader className="mb-6">
-                  <SheetTitle className="text-2xl">Daily Itinerary</SheetTitle>
-                </SheetHeader>
-                
-                <div className="space-y-4">
-                  {Array.from({ length: trip.days }, (_, i) => i + 1).map((dayNumber) => {
-                    const dayDetail = dayDetails.find(d => d.dayNumber === dayNumber);
-                    const dayExpenses = expensesByDay[dayNumber] || [];
-                    const dayDate = dayExpenses.find(e => e.date)?.date;
-
-                    return (
-                      <Card key={dayNumber} data-testid={`card-day-${dayNumber}`}>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <CalendarDays className="h-5 w-5" />
-                            Day {dayNumber}
-                            {dayDate && (
-                              <span className="text-sm font-normal text-muted-foreground ml-2">
-                                • {formatDate(dayDate)}
-                              </span>
-                            )}
-                          </CardTitle>
-                          {dayDetail?.destination && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4" />
-                              {dayDetail.destination}
-                            </div>
-                          )}
-                        </CardHeader>
-                        <CardContent>
-                          {dayExpenses.length > 0 ? (
-                            <div className="space-y-2">
-                              {dayExpenses.map((expense) => {
-                                const category = CATEGORIES.find(c => c.id === expense.category);
-                                const Icon = category?.icon || DollarSign;
-                                
-                                return (
-                                  <div
-                                    key={expense.id}
-                                    className="flex items-start justify-between py-2 border-b last:border-0"
-                                  >
-                                    <div className="flex items-start gap-2 flex-1">
-                                      <Icon className="h-4 w-4 mt-0.5" style={{ color: category?.color }} />
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <p className="text-sm font-medium">{expense.description}</p>
-                                          {expense.url && (
-                                            <a
-                                              href={expense.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-primary hover:underline"
-                                            >
-                                              <Link2 className="h-3 w-3" />
-                                            </a>
-                                          )}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">{category?.title}</p>
-                                      </div>
-                                    </div>
-                                    <span className="text-sm font-semibold ml-2">
-                                      ${parseFloat(expense.cost).toFixed(2)}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">No expenses for this day</p>
-                          )}
-                          {dayDetail?.localTransportNotes && (
-                            <div className="mt-3 pt-3 border-t">
-                              <p className="text-xs text-muted-foreground mb-1">Local Transport Notes:</p>
-                              <p className="text-sm">{dayDetail.localTransportNotes}</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        )}
       </div>
     </div>
   );

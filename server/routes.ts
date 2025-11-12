@@ -523,6 +523,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clone a shared trip as a template (requires auth)
+  app.post("/api/share/:shareId/clone", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const shareId = req.params.shareId;
+      
+      // Get the original trip by shareId
+      const originalTrip = await storage.getTripByShareId(shareId);
+      if (!originalTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      
+      // Clone the trip structure
+      const newTrip = await storage.cloneTripStructure(originalTrip.id, userId);
+      
+      // Get the full trip details
+      const expenses = await storage.getExpensesByTrip(newTrip.id);
+      const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+      
+      res.json({ ...newTrip, totalCost: total });
+    } catch (error) {
+      console.error("Error cloning shared trip:", error);
+      res.status(500).json({ error: "Failed to clone trip" });
+    }
+  });
+
   // Profile routes
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
