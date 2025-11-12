@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, ExternalLink, Map } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, Link2, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -460,7 +460,7 @@ export default function ExploreTripDetail() {
                     onClick={() => setShowItinerary(!showItinerary)}
                     data-testid="button-day-by-day-layout"
                   >
-                    <ExternalLink className="h-4 w-4" />
+                    <Map className="h-4 w-4" />
                     {showItinerary ? "Budget View" : "Day-by-Day Layout"}
                   </Button>
                 </div>
@@ -565,7 +565,7 @@ export default function ExploreTripDetail() {
                                           data-testid={`link-expense-url-${expense.id}`}
                                           onClick={(e) => e.stopPropagation()}
                                         >
-                                          <ExternalLink className="h-3.5 w-3.5" />
+                                          <Link2 className="h-3.5 w-3.5" />
                                         </a>
                                       )}
                                     </div>
@@ -818,7 +818,7 @@ export default function ExploreTripDetail() {
                                             data-testid={`link-day-expense-url-${expense.id}`}
                                             onClick={(e) => e.stopPropagation()}
                                           >
-                                            <ExternalLink className="h-3.5 w-3.5" />
+                                            <Link2 className="h-3.5 w-3.5" />
                                           </a>
                                         )}
                                       </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -663,7 +663,7 @@ export default function TripDetail() {
                                 data-testid={`link-expense-url-${expense.id}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <ExternalLink className="h-3.5 w-3.5" />
+                                <Link2 className="h-3.5 w-3.5" />
                               </a>
                             )}
                           </div>
@@ -775,7 +775,7 @@ export default function TripDetail() {
                                 data-testid={`link-expense-url-${expense.id}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <ExternalLink className="h-3.5 w-3.5" />
+                                <Link2 className="h-3.5 w-3.5" />
                               </a>
                             )}
                           </div>
@@ -887,7 +887,7 @@ export default function TripDetail() {
                                 data-testid={`link-expense-url-${expense.id}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <ExternalLink className="h-3.5 w-3.5" />
+                                <Link2 className="h-3.5 w-3.5" />
                               </a>
                             )}
                           </div>
@@ -999,7 +999,7 @@ export default function TripDetail() {
                                 data-testid={`link-expense-url-${expense.id}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <ExternalLink className="h-3.5 w-3.5" />
+                                <Link2 className="h-3.5 w-3.5" />
                               </a>
                             )}
                           </div>
@@ -1111,7 +1111,7 @@ export default function TripDetail() {
                                 data-testid={`link-expense-url-${expense.id}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <ExternalLink className="h-3.5 w-3.5" />
+                                <Link2 className="h-3.5 w-3.5" />
                               </a>
                             )}
                           </div>
@@ -1223,7 +1223,7 @@ export default function TripDetail() {
                                 data-testid={`link-expense-url-${expense.id}`}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <ExternalLink className="h-3.5 w-3.5" />
+                                <Link2 className="h-3.5 w-3.5" />
                               </a>
                             )}
                           </div>

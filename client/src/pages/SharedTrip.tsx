@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, MapPin, DollarSign } from "lucide-react";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 
@@ -233,7 +233,7 @@ export default function SharedTrip() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="text-primary hover:underline"
                                 >
-                                  <ExternalLink className="h-3 w-3" />
+                                  <Link2 className="h-3 w-3" />
                                 </a>
                               )}
                             </div>
