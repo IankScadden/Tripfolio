@@ -280,15 +280,25 @@ export default function TripDetail() {
       const response = await apiRequest("POST", `/api/trips/${tripId}/share-link`);
       return await response.json();
     },
-    onSuccess: (data: { shareId: string }) => {
+    onSuccess: async (data: { shareId: string }) => {
       const shareUrl = `${window.location.origin}/share/${data.shareId}`;
-      navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link Copied!",
-        description: "Share link has been copied to your clipboard. Anyone with this link can view your budget breakdown.",
-      });
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link Copied!",
+          description: "Share link has been copied to your clipboard. Anyone with this link can view your budget breakdown.",
+        });
+      } catch (clipboardError) {
+        // Fallback if clipboard API fails - show the link
+        toast({
+          title: "Share Link Generated!",
+          description: shareUrl,
+          duration: 10000,
+        });
+      }
     },
     onError: (error) => {
+      console.error("Share trip error:", error);
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -301,7 +311,7 @@ export default function TripDetail() {
       } else {
         toast({
           title: "Error",
-          description: "Failed to generate share link. Please try again.",
+          description: `Failed to generate share link: ${error instanceof Error ? error.message : 'Please try again.'}`,
           variant: "destructive",
         });
       }
