@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, ExternalLink } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, ExternalLink, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
@@ -84,6 +85,9 @@ export default function ExploreTripDetail() {
   const { toast } = useToast();
   const [showBudget, setShowBudget] = useState(false);
   const [showItinerary, setShowItinerary] = useState(false); // false = budget view, true = itinerary view
+  const [activeTab, setActiveTab] = useState("itinerary"); // itinerary or map
+  const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
+  const [showDayDetail, setShowDayDetail] = useState(false);
 
   const { data, isLoading } = useQuery<TripDetailResponse>({
     queryKey: ["/api/explore/trips", tripId],
@@ -583,139 +587,206 @@ export default function ExploreTripDetail() {
             </>
           )}
 
-          {/* Day-by-Day Itinerary View */}
+          {/* Day-by-Day Itinerary View with Tabs */}
           {showItinerary && (
-            <div className="space-y-4">
-              <Card className="p-6">
-                <div className="space-y-4">
-                  <div className="text-center mb-6">
-                    <p className="text-muted-foreground">
-                      View the day-by-day itinerary for this trip.
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                    {Array.from({ length: trip.days || 0 }, (_, i) => {
-                      const dayNumber = i + 1;
-                      let date: Date | null = null;
-                      let dateString = "";
-                      
-                      if (trip.startDate) {
-                        const [year, month, day] = trip.startDate.split('-').map(Number);
-                        date = new Date(year, month - 1, day + i);
-                        dateString = date.toLocaleDateString('en-US', { weekday: 'short' });
-                      }
-                      
-                      const dayDetail = data.dayDetails.find(d => d.dayNumber === dayNumber);
-                      const hasDestination = !!dayDetail?.destination;
-                      
-                      return (
-                        <div
-                          key={dayNumber}
-                          className={`p-4 border rounded-lg text-center ${
-                            hasDestination ? 'bg-primary/5 border-primary/30' : ''
-                          }`}
-                        >
-                          {trip.startDate && date && (
-                            <div className="text-xs text-muted-foreground mb-1">{dateString}</div>
-                          )}
-                          <div className="font-semibold text-lg mb-1">Day {dayNumber}</div>
-                          {trip.startDate && date && (
-                            <div className="text-xs text-muted-foreground mb-2">
-                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </div>
-                          )}
-                          {dayDetail?.destination && (
-                            <div className="text-xs font-medium text-primary mt-2 truncate" title={dayDetail.destination}>
-                              {dayDetail.destination}
-                            </div>
-                          )}
-                          {dayDetail?.notes && (
-                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {dayDetail.notes}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </Card>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+                <TabsTrigger value="itinerary" className="gap-2" data-testid="tab-daily-itinerary">
+                  <Calendar className="h-4 w-4" />
+                  Daily Itinerary
+                </TabsTrigger>
+                <TabsTrigger value="map" className="gap-2" data-testid="tab-journey-map">
+                  <Map className="h-4 w-4" />
+                  Journey Map
+                </TabsTrigger>
+              </TabsList>
 
-              {/* Day Details */}
-              {data.dayDetails.length > 0 && (
-                <div className="space-y-4">
-                  {data.dayDetails
-                    .sort((a, b) => a.dayNumber - b.dayNumber)
-                    .map((day) => {
-                      const dayExpenses = data.expenses.filter(
-                        (e) => e.dayNumber === day.dayNumber
-                      );
-                      const dayTotal = dayExpenses.reduce(
-                        (sum, e) => sum + parseFloat(e.cost),
-                        0
-                      );
-                      
-                      return (
-                        <Card key={day.id}>
-                          <CardContent className="pt-6">
-                            <div className="flex items-start justify-between mb-4">
-                              <div>
-                                <h4 className="font-semibold text-lg">
-                                  Day {day.dayNumber}
-                                  {day.destination && ` - ${day.destination}`}
-                                </h4>
-                                {trip.startDate && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {formatDayDate(trip.startDate, day.dayNumber)}
-                                  </p>
-                                )}
-                              </div>
-                              {dayTotal > 0 && (
-                                <Badge variant="secondary" className="text-base px-3 py-1">
-                                  ${dayTotal.toFixed(0)}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            {day.notes && (
-                              <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap">
-                                {day.notes}
-                              </p>
+              <TabsContent value="itinerary" className="mt-0">
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <p className="text-muted-foreground">
+                        Click on any day to view activities, lodging, and transportation details.
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {Array.from({ length: trip.days || 0 }, (_, i) => {
+                        const dayNumber = i + 1;
+                        let date: Date | null = null;
+                        let dateString = "";
+                        
+                        if (trip.startDate) {
+                          const [year, month, day] = trip.startDate.split('-').map(Number);
+                          date = new Date(year, month - 1, day + i);
+                          dateString = date.toLocaleDateString('en-US', { weekday: 'short' });
+                        }
+                        
+                        const dayDetail = data.dayDetails.find(d => d.dayNumber === dayNumber);
+                        const hasDestination = !!dayDetail?.destination;
+                        
+                        return (
+                          <button
+                            key={dayNumber}
+                            onClick={() => {
+                              let clickDate: string | undefined = undefined;
+                              if (trip.startDate) {
+                                const [year, month, day] = trip.startDate.split('-').map(Number);
+                                const calculatedDate = new Date(year, month - 1, day + i);
+                                clickDate = calculatedDate.toISOString().split('T')[0];
+                              }
+                              setSelectedDay({ dayNumber, date: clickDate });
+                              setShowDayDetail(true);
+                            }}
+                            className={`p-4 border rounded-lg text-center hover-elevate active-elevate-2 transition-colors ${
+                              hasDestination ? 'bg-primary/5 border-primary/30' : ''
+                            }`}
+                            data-testid={`button-day-${dayNumber}`}
+                          >
+                            {trip.startDate && date && (
+                              <div className="text-xs text-muted-foreground mb-1">{dateString}</div>
                             )}
-                            
-                            {dayExpenses.length > 0 && (
-                              <div className="space-y-2 mt-4 pt-4 border-t">
-                                <p className="text-sm font-medium text-muted-foreground mb-2">Expenses:</p>
-                                {dayExpenses.map((expense) => {
-                                  const category = CATEGORIES.find(c => c.id === expense.category);
-                                  const IconComponent = category?.icon || DollarSign;
-                                  return (
-                                    <div key={expense.id} className="flex items-center justify-between py-2">
-                                      <div className="flex items-center gap-2 flex-1">
-                                        <IconComponent 
-                                          className="h-4 w-4 flex-shrink-0" 
-                                          style={{ color: category?.color || '#888' }} 
-                                        />
-                                        <span className="text-sm">{expense.description}</span>
-                                      </div>
-                                      <span className="text-sm font-medium ml-4">${parseFloat(expense.cost).toFixed(0)}</span>
-                                    </div>
-                                  );
-                                })}
+                            {trip.startDate && date && (
+                              <div className="text-3xl font-bold mb-1">
+                                {date.getDate()}
                               </div>
                             )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                            <div className="text-sm font-medium text-muted-foreground mb-1">Day {dayNumber}</div>
+                            {dayDetail?.destination && (
+                              <div className="text-xs font-medium text-primary mt-2 truncate" title={dayDetail.destination}>
+                                {dayDetail.destination}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="map" className="mt-0">
+                <div className="bg-card rounded-lg border">
+                  <JourneyMap 
+                    locations={data.dayDetails
+                      .filter(d => d.destination && d.latitude && d.longitude)
+                      .map(d => ({
+                        dayNumber: d.dayNumber,
+                        destination: d.destination,
+                        latitude: d.latitude,
+                        longitude: d.longitude,
+                        date: trip.startDate ? (() => {
+                          const [year, month, day] = trip.startDate!.split('-').map(Number);
+                          const date = new Date(year, month - 1, day + d.dayNumber - 1);
+                          return date.toISOString().split('T')[0];
+                        })() : undefined
+                      }))}
+                    onEditDay={(dayNumber, date) => {
+                      setSelectedDay({ dayNumber, date });
+                      setShowDayDetail(true);
+                    }}
+                  />
                 </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
           )}
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Day Detail Dialog - Read-only view */}
+        {showDayDetail && selectedDay && (
+          <Dialog open={showDayDetail} onOpenChange={setShowDayDetail}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-day-detail">
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <DialogTitle className="text-xl">Day {selectedDay.dayNumber}</DialogTitle>
+                    {selectedDay.date && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {formatDate(selectedDay.date)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {(() => {
+                  const dayDetail = data.dayDetails.find(d => d.dayNumber === selectedDay.dayNumber);
+                  const dayExpenses = data.expenses.filter(e => e.dayNumber === selectedDay.dayNumber);
+                  const dayTotal = dayExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+
+                  return (
+                    <>
+                      {/* Destination */}
+                      {dayDetail?.destination && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold">Destination</h3>
+                          </div>
+                          <p className="text-sm">{dayDetail.destination}</p>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {dayDetail?.notes && (
+                        <div className="space-y-3">
+                          <h3 className="font-semibold">Notes</h3>
+                          <p className="text-sm whitespace-pre-wrap">{dayDetail.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Expenses */}
+                      {dayExpenses.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Expenses</h3>
+                            {dayTotal > 0 && (
+                              <Badge variant="secondary" className="text-base px-3 py-1">
+                                ${dayTotal.toFixed(0)}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            {dayExpenses.map((expense) => {
+                              const category = CATEGORIES.find(c => c.id === expense.category);
+                              const IconComponent = category?.icon || DollarSign;
+                              return (
+                                <div key={expense.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <IconComponent 
+                                      className="h-4 w-4 flex-shrink-0" 
+                                      style={{ color: category?.color || '#888' }} 
+                                    />
+                                    <div>
+                                      <p className="text-sm font-medium">{expense.description}</p>
+                                      {expense.date && (
+                                        <p className="text-xs text-muted-foreground">{formatDate(expense.date)}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-medium ml-4">${parseFloat(expense.cost).toFixed(0)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {!dayDetail && dayExpenses.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>No details added for this day yet.</p>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Clone CTA */}
         <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
