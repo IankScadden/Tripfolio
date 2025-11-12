@@ -83,6 +83,7 @@ export default function ExploreTripDetail() {
   const tripId = params?.id;
   const { toast } = useToast();
   const [showBudget, setShowBudget] = useState(false);
+  const [showItinerary, setShowItinerary] = useState(false); // false = budget view, true = itinerary view
 
   const { data, isLoading } = useQuery<TripDetailResponse>({
     queryKey: ["/api/explore/trips", tripId],
@@ -431,33 +432,28 @@ export default function ExploreTripDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="outline"
+                    variant={showItinerary ? "outline" : "default"}
                     className="gap-2"
-                    data-testid="button-post-trip"
-                  >
-                    <Settings className="h-4 w-4" />
-                    Post Trip
-                  </Button>
-                  <Button
-                    variant="default"
-                    className="gap-2"
+                    onClick={() => setShowItinerary(!showItinerary)}
                     data-testid="button-day-by-day-layout"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    Day-by-Day Layout
+                    {showItinerary ? "Budget View" : "Day-by-Day Layout"}
                   </Button>
                 </div>
               </div>
 
-              {/* Total Trip Cost Card - EXACT from TripDetail */}
-              <Card className="bg-muted/30">
-                <CardContent className="py-6 text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
-                  <div className="text-4xl font-bold">
-                    ${trip.totalCost.toFixed(0)}
-                  </div>
-                </CardContent>
-              </Card>
+              {!showItinerary && (
+                <>
+                  {/* Total Trip Cost Card - EXACT from TripDetail */}
+                  <Card className="bg-muted/30">
+                    <CardContent className="py-6 text-center">
+                      <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
+                      <div className="text-4xl font-bold">
+                        ${trip.totalCost.toFixed(0)}
+                      </div>
+                    </CardContent>
+                  </Card>
 
               {/* Budget Breakdown and Visual Breakdown - EXACT from TripDetail */}
               <div className="grid md:grid-cols-2 gap-6">
@@ -584,6 +580,139 @@ export default function ExploreTripDetail() {
                   );
                 })}
               </div>
+            </>
+          )}
+
+          {/* Day-by-Day Itinerary View */}
+          {showItinerary && (
+            <div className="space-y-4">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <p className="text-muted-foreground">
+                      View the day-by-day itinerary for this trip.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {Array.from({ length: trip.days || 0 }, (_, i) => {
+                      const dayNumber = i + 1;
+                      let date: Date | null = null;
+                      let dateString = "";
+                      
+                      if (trip.startDate) {
+                        const [year, month, day] = trip.startDate.split('-').map(Number);
+                        date = new Date(year, month - 1, day + i);
+                        dateString = date.toLocaleDateString('en-US', { weekday: 'short' });
+                      }
+                      
+                      const dayDetail = data.dayDetails.find(d => d.dayNumber === dayNumber);
+                      const hasDestination = !!dayDetail?.destination;
+                      
+                      return (
+                        <div
+                          key={dayNumber}
+                          className={`p-4 border rounded-lg text-center ${
+                            hasDestination ? 'bg-primary/5 border-primary/30' : ''
+                          }`}
+                        >
+                          {trip.startDate && date && (
+                            <div className="text-xs text-muted-foreground mb-1">{dateString}</div>
+                          )}
+                          <div className="font-semibold text-lg mb-1">Day {dayNumber}</div>
+                          {trip.startDate && date && (
+                            <div className="text-xs text-muted-foreground mb-2">
+                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
+                          {dayDetail?.destination && (
+                            <div className="text-xs font-medium text-primary mt-2 truncate" title={dayDetail.destination}>
+                              {dayDetail.destination}
+                            </div>
+                          )}
+                          {dayDetail?.notes && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {dayDetail.notes}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Day Details */}
+              {data.dayDetails.length > 0 && (
+                <div className="space-y-4">
+                  {data.dayDetails
+                    .sort((a, b) => a.dayNumber - b.dayNumber)
+                    .map((day) => {
+                      const dayExpenses = data.expenses.filter(
+                        (e) => e.dayNumber === day.dayNumber
+                      );
+                      const dayTotal = dayExpenses.reduce(
+                        (sum, e) => sum + parseFloat(e.cost),
+                        0
+                      );
+                      
+                      return (
+                        <Card key={day.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div>
+                                <h4 className="font-semibold text-lg">
+                                  Day {day.dayNumber}
+                                  {day.destination && ` - ${day.destination}`}
+                                </h4>
+                                {trip.startDate && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {formatDayDate(trip.startDate, day.dayNumber)}
+                                  </p>
+                                )}
+                              </div>
+                              {dayTotal > 0 && (
+                                <Badge variant="secondary" className="text-base px-3 py-1">
+                                  ${dayTotal.toFixed(0)}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {day.notes && (
+                              <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap">
+                                {day.notes}
+                              </p>
+                            )}
+                            
+                            {dayExpenses.length > 0 && (
+                              <div className="space-y-2 mt-4 pt-4 border-t">
+                                <p className="text-sm font-medium text-muted-foreground mb-2">Expenses:</p>
+                                {dayExpenses.map((expense) => {
+                                  const category = CATEGORIES.find(c => c.id === expense.category);
+                                  const IconComponent = category?.icon || DollarSign;
+                                  return (
+                                    <div key={expense.id} className="flex items-center justify-between py-2">
+                                      <div className="flex items-center gap-2 flex-1">
+                                        <IconComponent 
+                                          className="h-4 w-4 flex-shrink-0" 
+                                          style={{ color: category?.color || '#888' }} 
+                                        />
+                                        <span className="text-sm">{expense.description}</span>
+                                      </div>
+                                      <span className="text-sm font-medium ml-4">${parseFloat(expense.cost).toFixed(0)}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
             </div>
           </DialogContent>
         </Dialog>
