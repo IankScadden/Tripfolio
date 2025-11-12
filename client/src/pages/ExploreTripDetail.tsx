@@ -666,15 +666,15 @@ export default function ExploreTripDetail() {
               </TabsContent>
 
               <TabsContent value="map" className="mt-0">
-                <div className="bg-card rounded-lg border">
+                <div className="bg-card rounded-lg border" style={{ height: '600px' }}>
                   <JourneyMap 
                     locations={data.dayDetails
                       .filter(d => d.destination && d.latitude && d.longitude)
                       .map(d => ({
                         dayNumber: d.dayNumber,
-                        destination: d.destination,
-                        latitude: d.latitude,
-                        longitude: d.longitude,
+                        destination: d.destination!,
+                        latitude: d.latitude!,
+                        longitude: d.longitude!,
                         date: trip.startDate ? (() => {
                           const [year, month, day] = trip.startDate!.split('-').map(Number);
                           const date = new Date(year, month - 1, day + d.dayNumber - 1);
