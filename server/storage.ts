@@ -189,6 +189,10 @@ export class DatabaseStorage implements IStorage {
         startDate: originalTrip.startDate,
         endDate: originalTrip.endDate,
         days: originalTrip.days,
+        description: originalTrip.description,
+        headerImageUrl: originalTrip.headerImageUrl,
+        tags: originalTrip.tags,
+        photos: originalTrip.photos,
       },
       newUserId
     );

@@ -46,6 +46,7 @@ type Expense = {
   cost: string;
   url?: string;
   date?: string;
+  dayNumber?: number;
 };
 
 type DayDetail = {
@@ -147,6 +148,12 @@ export default function ExploreTripDetail() {
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const formatDayDate = (startDate: string, dayNumber: number) => {
+    const [year, month, day] = startDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day + dayNumber - 1);
+    return date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" });
   };
 
   const getUserDisplayName = (user: User) => {
@@ -371,78 +378,181 @@ export default function ExploreTripDetail() {
 
             {/* Collapsible Budget Section */}
             {showBudget && (
-              <div className="mt-6 space-y-6">
-                {/* Budget Breakdown and Visual Breakdown */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Budget Breakdown */}
-                  <div>
-                    <h3 className="font-semibold mb-4">By Category</h3>
-                    <div className="space-y-3">
-                      {CATEGORIES.map((category) => {
-                        const IconComponent = category.icon;
-                        const total = getCategoryTotal(category.id);
-                        if (total === 0) return null;
-                        return (
-                          <div key={category.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <IconComponent className="h-4 w-4" style={{ color: category.color }} />
-                              <span className="text-sm">{category.title}</span>
-                            </div>
-                            <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
-                              ${total.toFixed(0)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Visual Breakdown */}
-                  <div>
-                    <h3 className="font-semibold mb-4">Visual Breakdown</h3>
-                    {chartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                          <Pie
-                            data={chartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ percent }) => 
-                              percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
-                            }
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            style={{ fontSize: '12px', fontWeight: 'bold' }}
-                          >
-                            {chartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Legend 
-                            wrapperStyle={{ fontSize: '11px' }}
-                            iconSize={8}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                        No expenses added yet
-                      </div>
-                    )}
-                  </div>
-                </div>
-
+              <div className="mt-6 space-y-8">
                 {/* Journey Map */}
                 {locations.length > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-4">Journey Map</h3>
-                    <div className="rounded-lg overflow-hidden" style={{ height: '400px' }}>
+                    <h3 className="font-semibold text-xl mb-4">Journey Map</h3>
+                    <div className="rounded-lg overflow-hidden border" style={{ height: '400px' }}>
                       <JourneyMap locations={locations} />
                     </div>
                   </div>
                 )}
+
+                {/* Day-by-Day Itinerary */}
+                {data.dayDetails.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-xl mb-4">Day-by-Day Itinerary</h3>
+                    <div className="space-y-4">
+                      {data.dayDetails
+                        .sort((a, b) => a.dayNumber - b.dayNumber)
+                        .map((day) => {
+                          const dayExpenses = data.expenses.filter(
+                            (e) => e.dayNumber === day.dayNumber
+                          );
+                          const dayTotal = dayExpenses.reduce(
+                            (sum, e) => sum + parseFloat(e.cost),
+                            0
+                          );
+                          
+                          return (
+                            <Card key={day.id} className="overflow-hidden">
+                              <CardContent className="pt-6">
+                                <div className="flex items-start justify-between mb-4">
+                                  <div>
+                                    <h4 className="font-semibold text-lg">
+                                      Day {day.dayNumber}
+                                      {day.destination && ` - ${day.destination}`}
+                                    </h4>
+                                    {trip.startDate && (
+                                      <p className="text-sm text-muted-foreground">
+                                        {formatDayDate(trip.startDate, day.dayNumber)}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {dayTotal > 0 && (
+                                    <Badge variant="secondary" className="text-base px-3 py-1">
+                                      ${dayTotal.toFixed(0)}
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                {day.notes && (
+                                  <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap">
+                                    {day.notes}
+                                  </p>
+                                )}
+                                
+                                {dayExpenses.length > 0 && (
+                                  <div className="space-y-2 mt-4 pt-4 border-t">
+                                    <p className="text-sm font-medium text-muted-foreground mb-2">Expenses:</p>
+                                    {dayExpenses.map((expense) => {
+                                      const category = CATEGORIES.find(c => c.id === expense.category);
+                                      const IconComponent = category?.icon || DollarSign;
+                                      return (
+                                        <div key={expense.id} className="flex items-center justify-between py-2">
+                                          <div className="flex items-center gap-2 flex-1">
+                                            <IconComponent 
+                                              className="h-4 w-4 flex-shrink-0" 
+                                              style={{ color: category?.color || '#888' }} 
+                                            />
+                                            <span className="text-sm">{expense.description}</span>
+                                          </div>
+                                          <span className="text-sm font-medium ml-4">${parseFloat(expense.cost).toFixed(0)}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Budget Breakdown by Category */}
+                <div>
+                  <h3 className="font-semibold text-xl mb-4">Budget Breakdown by Category</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {CATEGORIES.map((category) => {
+                      const categoryExpenses = getExpensesByCategory(category.id);
+                      const total = getCategoryTotal(category.id);
+                      if (categoryExpenses.length === 0) return null;
+                      
+                      const IconComponent = category.icon;
+                      
+                      return (
+                        <Card key={category.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-5 w-5" style={{ color: category.color }} />
+                                <h4 className="font-semibold">{category.title}</h4>
+                              </div>
+                              <Badge variant="secondary" className="text-base px-3 py-1">
+                                ${total.toFixed(0)}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              {categoryExpenses.map((expense) => (
+                                <div key={expense.id} className="flex items-start justify-between py-2 border-b last:border-0">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{expense.description}</p>
+                                    {expense.date && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatDate(expense.date)}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span className="text-sm font-medium ml-4 flex-shrink-0">
+                                    ${parseFloat(expense.cost).toFixed(0)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Visual Breakdown */}
+                <div>
+                  <h3 className="font-semibold text-xl mb-4">Visual Breakdown</h3>
+                  {chartData.length > 0 ? (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <ResponsiveContainer width="100%" height={350}>
+                          <PieChart>
+                            <Pie
+                              data={chartData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ percent }) => 
+                                `${(percent * 100).toFixed(0)}%`
+                              }
+                              outerRadius={120}
+                              fill="#8884d8"
+                              dataKey="value"
+                              style={{ fontSize: '14px', fontWeight: 'bold' }}
+                            >
+                              {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Legend 
+                              wrapperStyle={{ fontSize: '12px' }}
+                              iconSize={10}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                          No expenses added yet
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
