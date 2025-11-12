@@ -554,7 +554,21 @@ export default function ExploreTripDetail() {
                                   className="flex items-center justify-between py-2 border-b last:border-0"
                                 >
                                   <div className="flex-1">
-                                    <div className="text-sm font-medium">{expense.description}</div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-sm font-medium">{expense.description}</div>
+                                      {expense.url && (
+                                        <a
+                                          href={expense.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-muted-foreground hover:text-primary transition-colors"
+                                          data-testid={`link-expense-url-${expense.id}`}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <ExternalLink className="h-3.5 w-3.5" />
+                                        </a>
+                                      )}
+                                    </div>
                                     {expense.date && (
                                       <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                                     )}
@@ -705,8 +719,8 @@ export default function ExploreTripDetail() {
                       .map(d => ({
                         dayNumber: d.dayNumber,
                         destination: d.destination!,
-                        latitude: d.latitude!,
-                        longitude: d.longitude!,
+                        latitude: parseFloat(d.latitude!),
+                        longitude: parseFloat(d.longitude!),
                         date: trip.startDate ? (() => {
                           const [year, month, day] = trip.startDate!.split('-').map(Number);
                           const date = new Date(year, month - 1, day + d.dayNumber - 1);
@@ -793,7 +807,21 @@ export default function ExploreTripDetail() {
                                       style={{ color: category?.color || '#888' }} 
                                     />
                                     <div>
-                                      <p className="text-sm font-medium">{expense.description}</p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-sm font-medium">{expense.description}</p>
+                                        {expense.url && (
+                                          <a
+                                            href={expense.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-muted-foreground hover:text-primary transition-colors"
+                                            data-testid={`link-day-expense-url-${expense.id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <ExternalLink className="h-3.5 w-3.5" />
+                                          </a>
+                                        )}
+                                      </div>
                                       {expense.date && (
                                         <p className="text-xs text-muted-foreground">{formatDate(expense.date)}</p>
                                       )}

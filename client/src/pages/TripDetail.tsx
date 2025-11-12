@@ -652,7 +652,21 @@ export default function TripDetail() {
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{expense.description}</div>
+                            {expense.url && (
+                              <a
+                                href={expense.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                data-testid={`link-expense-url-${expense.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           {expense.date && (
                             <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                           )}
@@ -750,7 +764,21 @@ export default function TripDetail() {
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{expense.description}</div>
+                            {expense.url && (
+                              <a
+                                href={expense.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                data-testid={`link-expense-url-${expense.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           {expense.date && (
                             <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                           )}
@@ -848,7 +876,21 @@ export default function TripDetail() {
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{expense.description}</div>
+                            {expense.url && (
+                              <a
+                                href={expense.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                data-testid={`link-expense-url-${expense.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           {expense.date && (
                             <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                           )}
@@ -946,7 +988,21 @@ export default function TripDetail() {
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{expense.description}</div>
+                            {expense.url && (
+                              <a
+                                href={expense.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                data-testid={`link-expense-url-${expense.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           {expense.date && (
                             <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                           )}
@@ -1044,7 +1100,21 @@ export default function TripDetail() {
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{expense.description}</div>
+                            {expense.url && (
+                              <a
+                                href={expense.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                data-testid={`link-expense-url-${expense.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           {expense.date && (
                             <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                           )}
@@ -1142,7 +1212,21 @@ export default function TripDetail() {
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{expense.description}</div>
+                            {expense.url && (
+                              <a
+                                href={expense.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                data-testid={`link-expense-url-${expense.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           {expense.date && (
                             <div className="text-xs text-muted-foreground">{formatDate(expense.date)}</div>
                           )}
