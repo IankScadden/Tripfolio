@@ -515,8 +515,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Trip not found" });
       }
       const expenses = await storage.getExpensesByTrip(trip.id);
+      const dayDetails = await storage.getAllDayDetails(trip.id);
       const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-      res.json({ trip: { ...trip, totalCost: total }, expenses });
+      res.json({ trip: { ...trip, totalCost: total }, expenses, dayDetails });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch shared trip" });
     }

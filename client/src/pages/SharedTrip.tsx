@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute } from "wouter";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign } from "lucide-react";
+import { useRoute, Link } from "wouter";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { JourneyMap } from "@/components/JourneyMap";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const CATEGORIES = [
   {
@@ -66,16 +76,29 @@ type Expense = {
   cost: string;
   url?: string;
   date?: string;
+  dayNumber?: number;
+};
+
+type DayDetail = {
+  id: string;
+  tripId: string;
+  dayNumber: number;
+  destination?: string;
+  latitude?: string;
+  longitude?: string;
+  localTransportNotes?: string;
 };
 
 type SharedTripData = {
   trip: Trip;
   expenses: Expense[];
+  dayDetails: DayDetail[];
 };
 
 export default function SharedTrip() {
   const [, params] = useRoute("/share/:shareId");
   const shareId = params?.shareId;
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const { data, isLoading } = useQuery<SharedTripData>({
     queryKey: ["/api/share", shareId],
@@ -89,6 +112,7 @@ export default function SharedTrip() {
 
   const trip = data?.trip;
   const expenses = data?.expenses || [];
+  const dayDetails = data?.dayDetails || [];
 
   const expensesByCategory = expenses.reduce((acc, expense) => {
     const category = expense.category;
@@ -108,6 +132,53 @@ export default function SharedTrip() {
       color: category.color,
     };
   }).filter((cat) => cat.value > 0);
+
+  // Prepare journey map locations
+  const mapLocations = dayDetails
+    .filter((day) => day.destination && day.latitude && day.longitude)
+    .map((day) => ({
+      dayNumber: day.dayNumber,
+      destination: day.destination!,
+      latitude: parseFloat(day.latitude!),
+      longitude: parseFloat(day.longitude!),
+      date: expenses.find(e => e.dayNumber === day.dayNumber)?.date,
+    }));
+
+  // Group expenses by day for itinerary
+  const expensesByDay = expenses.reduce((acc, expense) => {
+    if (expense.dayNumber) {
+      if (!acc[expense.dayNumber]) {
+        acc[expense.dayNumber] = [];
+      }
+      acc[expense.dayNumber].push(expense);
+    }
+    return acc;
+  }, {} as Record<number, Expense[]>);
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  const getVisibleExpenses = (categoryId: string) => {
+    const categoryExpenses = expensesByCategory[categoryId] || [];
+    const isExpanded = expandedCategories.has(categoryId);
+    return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 3);
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
 
   if (isLoading) {
     return (
@@ -134,54 +205,61 @@ export default function SharedTrip() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Tripfolio</h1>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <Link href="/" data-testid="link-tripfolio-home">
+            <a className="flex items-center gap-2 hover-elevate transition-colors px-3 py-2 rounded-md w-fit">
+              <MapPin className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Tripfolio</h1>
+            </a>
+          </Link>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Trip Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-trip-name">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold mb-3" data-testid="text-trip-name">
             {trip.name}
           </h1>
           {trip.startDate && (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <CalendarDays className="h-4 w-4" />
               <span>
-                {new Date(trip.startDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-                {trip.endDate &&
-                  ` - ${new Date(trip.endDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}`}
+                {formatDate(trip.startDate)}
+                {trip.endDate && ` - ${formatDate(trip.endDate)}`}
               </span>
               {trip.days && <span className="ml-2">• {trip.days} days</span>}
             </div>
           )}
         </div>
 
-        {/* Total Cost Card */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Total Trip Cost</p>
-              <p className="text-5xl font-bold text-primary" data-testid="text-total-cost">
-                ${trip.totalCost.toFixed(0)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Total Cost */}
+        <div className="mb-8 text-center">
+          <p className="text-sm text-muted-foreground mb-2">Total Trip Cost</p>
+          <p className="text-6xl font-bold text-primary mb-2" data-testid="text-total-cost">
+            ${trip.totalCost.toFixed(0)}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Journey Map */}
+        {mapLocations.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Journey Map
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[600px]">
+                <JourneyMap locations={mapLocations} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Budget Breakdown and Visual */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Budget Breakdown */}
           <Card>
             <CardHeader>
@@ -190,11 +268,13 @@ export default function SharedTrip() {
             <CardContent className="space-y-4">
               {CATEGORIES.map((category) => {
                 const categoryExpenses = expensesByCategory[category.id] || [];
-                const total = categoryExpenses.reduce(
-                  (sum, e) => sum + parseFloat(e.cost),
-                  0
-                );
+                const total = categoryExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+                if (total === 0) return null;
+
                 const Icon = category.icon;
+                const visibleExpenses = getVisibleExpenses(category.id);
+                const hasMore = categoryExpenses.length > 3;
+                const isExpanded = expandedCategories.has(category.id);
 
                 return (
                   <div key={category.id}>
@@ -203,43 +283,68 @@ export default function SharedTrip() {
                         <Icon className="h-4 w-4" style={{ color: category.color }} />
                         <span className="font-medium">{category.title}</span>
                       </div>
-                      <span className="font-semibold">${total.toFixed(0)}</span>
+                      <span className="font-semibold" data-testid={`text-category-total-${category.id}`}>
+                        ${total.toFixed(0)}
+                      </span>
                     </div>
-                    
+
                     {categoryExpenses.length > 0 && (
-                      <div className="ml-6 space-y-2">
-                        {categoryExpenses.map((expense) => (
-                          <div
-                            key={expense.id}
-                            className="flex items-start justify-between text-sm"
-                          >
-                            <div className="flex-1">
-                              <p className="text-foreground">{expense.description}</p>
-                              {expense.date && (
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(expense.date).toLocaleDateString()}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">
+                      <>
+                        <div className="ml-6 space-y-2">
+                          {visibleExpenses.map((expense) => (
+                            <div
+                              key={expense.id}
+                              className="flex items-start justify-between text-sm"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-foreground">{expense.description}</p>
+                                  {expense.url && (
+                                    <a
+                                      href={expense.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                      data-testid={`link-expense-url-${expense.id}`}
+                                    >
+                                      <Link2 className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </div>
+                                {expense.date && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatDate(expense.date)}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="text-muted-foreground ml-2">
                                 ${parseFloat(expense.cost).toFixed(2)}
                               </span>
-                              {expense.url && (
-                                <a
-                                  href={expense.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="text-primary hover:underline"
-                                >
-                                  <Link2 className="h-3 w-3" />
-                                </a>
-                              )}
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                        {hasMore && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-6 mt-2 gap-1"
+                            onClick={() => toggleCategory(category.id)}
+                            data-testid={`button-toggle-${category.id}`}
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp className="h-3 w-3" />
+                                Show Less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="h-3 w-3" />
+                                Show More ({categoryExpenses.length - 3} more)
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 );
@@ -283,6 +388,107 @@ export default function SharedTrip() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Day-by-Day Layout Button (Fixed Position) */}
+        {trip.days && trip.days > 0 && (
+          <div className="fixed bottom-8 right-8 z-50">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  size="lg"
+                  className="shadow-lg gap-2"
+                  data-testid="button-day-by-day-layout"
+                >
+                  <CalendarDays className="h-5 w-5" />
+                  Day-by-Day Layout
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+                <SheetHeader className="mb-6">
+                  <SheetTitle className="text-2xl">Daily Itinerary</SheetTitle>
+                </SheetHeader>
+                
+                <div className="space-y-4">
+                  {Array.from({ length: trip.days }, (_, i) => i + 1).map((dayNumber) => {
+                    const dayDetail = dayDetails.find(d => d.dayNumber === dayNumber);
+                    const dayExpenses = expensesByDay[dayNumber] || [];
+                    const dayDate = dayExpenses.find(e => e.date)?.date;
+
+                    return (
+                      <Card key={dayNumber} data-testid={`card-day-${dayNumber}`}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <CalendarDays className="h-5 w-5" />
+                            Day {dayNumber}
+                            {dayDate && (
+                              <span className="text-sm font-normal text-muted-foreground ml-2">
+                                • {formatDate(dayDate)}
+                              </span>
+                            )}
+                          </CardTitle>
+                          {dayDetail?.destination && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              {dayDetail.destination}
+                            </div>
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          {dayExpenses.length > 0 ? (
+                            <div className="space-y-2">
+                              {dayExpenses.map((expense) => {
+                                const category = CATEGORIES.find(c => c.id === expense.category);
+                                const Icon = category?.icon || DollarSign;
+                                
+                                return (
+                                  <div
+                                    key={expense.id}
+                                    className="flex items-start justify-between py-2 border-b last:border-0"
+                                  >
+                                    <div className="flex items-start gap-2 flex-1">
+                                      <Icon className="h-4 w-4 mt-0.5" style={{ color: category?.color }} />
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <p className="text-sm font-medium">{expense.description}</p>
+                                          {expense.url && (
+                                            <a
+                                              href={expense.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-primary hover:underline"
+                                            >
+                                              <Link2 className="h-3 w-3" />
+                                            </a>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">{category?.title}</p>
+                                      </div>
+                                    </div>
+                                    <span className="text-sm font-semibold ml-2">
+                                      ${parseFloat(expense.cost).toFixed(2)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No expenses for this day</p>
+                          )}
+                          {dayDetail?.localTransportNotes && (
+                            <div className="mt-3 pt-3 border-t">
+                              <p className="text-xs text-muted-foreground mb-1">Local Transport Notes:</p>
+                              <p className="text-sm">{dayDetail.localTransportNotes}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </div>
     </div>
   );
