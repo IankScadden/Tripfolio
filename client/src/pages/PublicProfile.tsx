@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, MapPin, Calendar, Settings, Eye, EyeOff, Map } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Settings, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import MapDisplay from "@/components/MapDisplay";
 
 type User = {
   id: string;
@@ -200,31 +201,18 @@ export default function PublicProfile() {
                   {getUserDisplayName(user)}
                 </h1>
                 
-                <div className="flex gap-2">
+                {isOwnProfile && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setLocation(`/map/${userId}`)}
+                    onClick={() => setLocation("/profile-settings")}
                     className="gap-2"
-                    data-testid="button-my-map"
+                    data-testid="button-edit-profile"
                   >
-                    <Map className="h-4 w-4" />
-                    {isOwnProfile ? "My Map" : "View Map"}
+                    <Settings className="h-4 w-4" />
+                    Edit Profile
                   </Button>
-                  
-                  {isOwnProfile && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLocation("/profile-settings")}
-                      className="gap-2"
-                      data-testid="button-edit-profile"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Edit Profile
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
               
               {user.bio && (
@@ -346,6 +334,25 @@ export default function PublicProfile() {
                 </Card>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* User's Travel Map */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-6">
+            {isOwnProfile ? "My Map" : `${getUserDisplayName(user)}'s Map`}
+          </h2>
+          <Card className="overflow-hidden">
+            <MapDisplay 
+              userId={userId!} 
+              isOwnMap={!!isOwnProfile} 
+              height="500px"
+            />
+          </Card>
+          {isOwnProfile && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Click anywhere on the map to drop a pin where you've traveled
+            </p>
           )}
         </div>
       </div>
