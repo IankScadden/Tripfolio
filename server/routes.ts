@@ -913,6 +913,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Travel pin endpoints
+  // Note: This endpoint is intentionally public (no authentication required)
+  // The My Map feature is designed to be publicly viewable, similar to public trips
+  // This allows users to see each other's travel pins for inspiration and exploration
   app.get("/api/users/:userId/pins", async (req, res) => {
     try {
       const userId = req.params.userId;
@@ -928,7 +931,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/pins", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const pinData = insertTravelPinSchema.parse({ ...req.body, userId });
+      // Always use authenticated user's ID, ignore any client-provided userId
+      const { latitude, longitude, locationName } = req.body;
+      const pinData = insertTravelPinSchema.parse({ 
+        userId, 
+        latitude, 
+        longitude, 
+        locationName 
+      });
       
       const pin = await storage.addTravelPin(pinData);
       res.json(pin);
@@ -946,13 +956,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const pinId = req.params.id;
       
-      // Note: In production, verify ownership before deleting
+      // Verify ownership before deleting
+      const pin = await storage.getTravelPin(pinId);
+      if (!pin) {
+        return res.status(404).json({ error: "Pin not found" });
+      }
+      
+      if (pin.userId !== userId) {
+        return res.status(403).json({ error: "You can only delete your own pins" });
+      }
+      
       const deleted = await storage.deleteTravelPin(pinId);
       
       if (deleted) {
         res.json({ success: true });
       } else {
-        res.status(404).json({ error: "Pin not found" });
+        res.status(500).json({ error: "Failed to delete pin" });
       }
     } catch (error) {
       console.error("Error deleting travel pin:", error);

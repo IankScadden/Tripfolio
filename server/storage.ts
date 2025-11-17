@@ -51,6 +51,7 @@ export interface IStorage {
   
   // Travel pin operations
   getTravelPinsByUser(userId: string): Promise<TravelPin[]>;
+  getTravelPin(id: string): Promise<TravelPin | undefined>;
   addTravelPin(pin: InsertTravelPin): Promise<TravelPin>;
   deleteTravelPin(id: string): Promise<boolean>;
 }
@@ -477,6 +478,14 @@ export class DatabaseStorage implements IStorage {
       .insert(travelPins)
       .values(insertPin)
       .returning();
+    return pin;
+  }
+
+  async getTravelPin(id: string): Promise<TravelPin | undefined> {
+    const [pin] = await db
+      .select()
+      .from(travelPins)
+      .where(eq(travelPins.id, id));
     return pin;
   }
 

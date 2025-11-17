@@ -60,7 +60,12 @@ export default function MyMap() {
 
   const addPinMutation = useMutation({
     mutationFn: async (data: { latitude: number; longitude: number; locationName?: string }) => {
-      return await apiRequest("POST", "/api/pins", data);
+      // Convert numbers to strings for decimal database columns
+      return await apiRequest("POST", "/api/pins", {
+        ...data,
+        latitude: data.latitude.toString(),
+        longitude: data.longitude.toString(),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users", userId, "pins"] });
