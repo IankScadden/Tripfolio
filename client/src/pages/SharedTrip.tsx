@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp, Copy, Heart, MessageCircle, Send, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { JourneyMap } from "@/components/JourneyMap";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Sheet,
   SheetContent,
@@ -97,12 +98,28 @@ type SharedTripData = {
   dayDetails: DayDetail[];
 };
 
+type Comment = {
+  id: string;
+  tripId: string;
+  userId: string;
+  comment: string;
+  createdAt: string;
+  user: {
+    id: string;
+    displayName?: string;
+    firstName?: string;
+    lastName?: string;
+    profileImageUrl?: string;
+  };
+};
+
 export default function SharedTrip() {
   const [, params] = useRoute("/share/:shareId");
   const shareId = params?.shareId;
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [newComment, setNewComment] = useState("");
 
   const { data, isLoading } = useQuery<SharedTripData>({
     queryKey: ["/api/share", shareId],
@@ -142,6 +159,115 @@ export default function SharedTrip() {
   });
 
   const trip = data?.trip;
+  const tripId = trip?.id;
+
+  // Likes query
+  const { data: likesData } = useQuery({
+    queryKey: ["/api/trips", tripId, "likes"],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}/likes`);
+      if (!response.ok) throw new Error("Failed to fetch likes");
+      return response.json() as Promise<{ likeCount: number; hasLiked: boolean }>;
+    },
+    enabled: !!tripId,
+  });
+
+  // Comments query
+  const { data: comments = [] } = useQuery<Comment[]>({
+    queryKey: ["/api/trips", tripId, "comments"],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}/comments`);
+      if (!response.ok) throw new Error("Failed to fetch comments");
+      return response.json();
+    },
+    enabled: !!tripId,
+  });
+
+  // Like mutation
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      if (likesData?.hasLiked) {
+        await apiRequest("DELETE", `/api/trips/${tripId}/like`);
+      } else {
+        await apiRequest("POST", `/api/trips/${tripId}/like`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "likes"] });
+    },
+    onError: (error: any) => {
+      if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        window.location.href = `/api/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update like",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  // Comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async (comment: string) => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/comments`, { comment });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "comments"] });
+      setNewComment("");
+      toast({
+        title: "Comment added!",
+        description: "Your comment has been posted.",
+      });
+    },
+    onError: (error: any) => {
+      if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        window.location.href = `/api/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add comment",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      await apiRequest("DELETE", `/api/comments/${commentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "comments"] });
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddComment = () => {
+    if (newComment.trim()) {
+      addCommentMutation.mutate(newComment.trim());
+    }
+  };
+
+  const getUserDisplayName = (user: Comment["user"]) => {
+    if (user.displayName) return user.displayName;
+    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+    if (user.firstName) return user.firstName;
+    return "Anonymous";
+  };
   const expenses = data?.expenses || [];
   const dayDetails = data?.dayDetails || [];
 
@@ -375,6 +501,116 @@ export default function SharedTrip() {
                 </SheetContent>
               </Sheet>
             )}
+          </div>
+
+          {/* Likes and Comments Section */}
+          <div className="mt-6 max-w-2xl mx-auto">
+            {/* Like Button */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <Button
+                variant={likesData?.hasLiked ? "default" : "outline"}
+                className="gap-2"
+                onClick={() => likeMutation.mutate()}
+                disabled={likeMutation.isPending}
+                data-testid="button-like-trip"
+              >
+                <Heart className={`h-4 w-4 ${likesData?.hasLiked ? "fill-current" : ""}`} />
+                {likesData?.hasLiked ? "Liked" : "Like"}
+                {likesData && likesData.likeCount > 0 && (
+                  <span className="text-xs">({likesData.likeCount})</span>
+                )}
+              </Button>
+              
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-sm">{comments.length} {comments.length === 1 ? "comment" : "comments"}</span>
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Comments
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Add Comment Form */}
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="resize-none"
+                    rows={3}
+                    data-testid="textarea-add-comment"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || addCommentMutation.isPending}
+                      className="gap-2"
+                      data-testid="button-post-comment"
+                    >
+                      <Send className="h-4 w-4" />
+                      {addCommentMutation.isPending ? "Posting..." : "Post Comment"}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="space-y-4 border-t pt-4">
+                  {comments.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">
+                      No comments yet. Be the first to comment!
+                    </p>
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-3" data-testid={`comment-${comment.id}`}>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                          {comment.user.profileImageUrl ? (
+                            <img
+                              src={comment.user.profileImageUrl}
+                              alt={getUserDisplayName(comment.user)}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            getUserDisplayName(comment.user)[0].toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">
+                              {getUserDisplayName(comment.user)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(comment.createdAt).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-foreground whitespace-pre-wrap">{comment.comment}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-1 h-auto py-1 px-2 text-xs gap-1"
+                            onClick={() => deleteCommentMutation.mutate(comment.id)}
+                            disabled={deleteCommentMutation.isPending}
+                            data-testid={`button-delete-comment-${comment.id}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
