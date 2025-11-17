@@ -106,33 +106,32 @@ export default function MyMap() {
   const handleMapClick = async (lat: number, lng: number) => {
     if (!isOwnMap) return;
 
-    try {
-      // Reverse geocode to get location name using LocationIQ API
-      let locationName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      
-      const apiKey = import.meta.env.VITE_LOCATIONIQ_API_KEY;
-      if (apiKey) {
-        try {
-          const response = await fetch(
-            `https://us1.locationiq.com/v1/reverse?key=${apiKey}&lat=${lat}&lon=${lng}&format=json&accept-language=en`
-          );
-          if (response.ok) {
-            const data = await response.json();
-            locationName = data.display_name || locationName;
-          }
-        } catch (err) {
-          console.warn("Reverse geocoding failed, using coordinates:", err);
+    // Default to coordinates as location name
+    let locationName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    
+    // Try reverse geocoding (optional, don't block pin creation if it fails)
+    const apiKey = import.meta.env.VITE_LOCATIONIQ_API_KEY;
+    if (apiKey) {
+      try {
+        const response = await fetch(
+          `https://us1.locationiq.com/v1/reverse?key=${apiKey}&lat=${lat}&lon=${lng}&format=json&accept-language=en`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          locationName = data.display_name || locationName;
         }
+      } catch (err) {
+        // Silently fall back to coordinates if geocoding fails
+        console.warn("Reverse geocoding failed, using coordinates");
       }
-
-      addPinMutation.mutate({
-        latitude: lat,
-        longitude: lng,
-        locationName,
-      });
-    } catch (error) {
-      console.error("Error adding pin:", error);
     }
+
+    // Always create the pin, even if reverse geocoding failed
+    addPinMutation.mutate({
+      latitude: lat,
+      longitude: lng,
+      locationName,
+    });
   };
 
   const handleDeletePin = (e: React.MouseEvent, pinId: string) => {
@@ -150,12 +149,6 @@ export default function MyMap() {
 
   const defaultCenter: LatLngExpression = [20, 0]; // World view
   const defaultZoom = 2;
-  
-  // Set map bounds to prevent infinite horizontal wrapping
-  const worldBounds: [[number, number], [number, number]] = [
-    [-90, -180], // Southwest coordinates
-    [90, 180]    // Northeast coordinates
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -196,14 +189,14 @@ export default function MyMap() {
               style={{ height: "100%", width: "100%" }}
               scrollWheelZoom={true}
               worldCopyJump={false}
-              maxBounds={worldBounds}
-              maxBoundsViscosity={1.0}
               minZoom={2}
+              maxZoom={18}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 noWrap={true}
+                bounds={[[-90, -180], [90, 180]]}
               />
               
               <MapClickHandler onMapClick={handleMapClick} isOwnMap={isOwnMap} />
