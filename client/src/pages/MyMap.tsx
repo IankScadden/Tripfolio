@@ -103,6 +103,36 @@ export default function MyMap() {
     },
   });
 
+  const formatLocationName = (data: any): string => {
+    if (!data.address) return data.display_name;
+    
+    const address = data.address;
+    const city = address.city || address.town || address.village || address.hamlet;
+    const state = address.state;
+    const country = address.country;
+    
+    // For US locations: City, State, USA
+    if (country === 'United States' || country === 'USA') {
+      if (city && state) {
+        return `${city}, ${state}, USA`;
+      } else if (state) {
+        return `${state}, USA`;
+      } else {
+        return 'USA';
+      }
+    }
+    
+    // For non-US locations: City, Country
+    if (city && country) {
+      return `${city}, ${country}`;
+    } else if (country) {
+      return country;
+    }
+    
+    // Fallback to full display name
+    return data.display_name;
+  };
+
   const handleMapClick = async (lat: number, lng: number) => {
     if (!isOwnMap) return;
 
@@ -118,7 +148,7 @@ export default function MyMap() {
         );
         if (response.ok) {
           const data = await response.json();
-          locationName = data.display_name || locationName;
+          locationName = formatLocationName(data);
         }
       } catch (err) {
         // Silently fall back to coordinates if geocoding fails
