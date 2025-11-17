@@ -15,6 +15,7 @@ import { JourneyMap } from "@/components/JourneyMap";
 import BudgetChart from "@/components/BudgetChart";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import type { Comment, User as SchemaUser } from "@shared/schema";
 
 const CATEGORIES = [
   { id: "flights", title: "Flights", icon: Plane, color: "hsl(200, 85%, 55%)", addLabel: "Add Flight", emptyLabel: "No flights added" },
@@ -89,6 +90,7 @@ export default function ExploreTripDetail() {
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [newComment, setNewComment] = useState("");
 
   const toggleCategoryExpanded = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -141,6 +143,88 @@ export default function ExploreTripDetail() {
       });
     },
   });
+
+  const { data: likesData } = useQuery<{ likeCount: number; hasLiked: boolean }>({
+    queryKey: ["/api/trips", tripId, "likes"],
+    enabled: !!tripId,
+  });
+
+  const { data: commentsData = [] } = useQuery<Array<Comment & { user: SchemaUser }>>({
+    queryKey: ["/api/trips", tripId, "comments"],
+    enabled: !!tripId,
+  });
+
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/like`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "likes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+    },
+  });
+
+  const unlikeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/trips/${tripId}/like`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "likes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+    },
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/comments`, { content });
+      return response.json();
+    },
+    onSuccess: () => {
+      setNewComment("");
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted successfully.",
+      });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const response = await apiRequest("DELETE", `/api/comments/${commentId}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been removed.",
+      });
+    },
+  });
+
+  const handleLikeToggle = () => {
+    if (!tripId) return;
+    if (likesData?.hasLiked) {
+      unlikeMutation.mutate();
+    } else {
+      likeMutation.mutate();
+    }
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim() || !tripId) return;
+    addCommentMutation.mutate(newComment);
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!tripId) return;
+    deleteCommentMutation.mutate(commentId);
+  };
 
   const getExpensesByCategory = (categoryId: string) => {
     if (!data) return [];
@@ -329,13 +413,28 @@ export default function ExploreTripDetail() {
 
             {/* Engagement Row */}
             <div className="flex items-center gap-6 text-muted-foreground">
-              <button className="flex items-center gap-2 hover:text-foreground transition-colors">
-                <Heart className="h-5 w-5" />
-                <span className="text-sm">234</span>
+              <button 
+                onClick={handleLikeToggle}
+                className={`flex items-center gap-2 hover:text-foreground transition-colors ${likesData?.hasLiked ? 'text-red-500' : ''}`}
+                data-testid="button-like-trip"
+              >
+                <Heart className={`h-5 w-5 ${likesData?.hasLiked ? 'fill-current' : ''}`} />
+                {likesData && likesData.likeCount > 0 && (
+                  <span className="text-sm">({likesData.likeCount})</span>
+                )}
               </button>
-              <button className="flex items-center gap-2 hover:text-foreground transition-colors">
+              <button 
+                onClick={() => {
+                  const commentsSection = document.getElementById('comments-section');
+                  commentsSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
+                data-testid="button-view-comments"
+              >
                 <MessageCircle className="h-5 w-5" />
-                <span className="text-sm">45</span>
+                {commentsData && commentsData.length > 0 && (
+                  <span className="text-sm">({commentsData.length})</span>
+                )}
               </button>
               <button className="flex items-center gap-2 hover:text-foreground transition-colors">
                 <Share2 className="h-5 w-5" />
@@ -865,6 +964,80 @@ export default function ExploreTripDetail() {
               <Copy className="h-4 w-4" />
               {cloneTripMutation.isPending ? "Copying..." : "Use as Template"}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Comments Section */}
+        <Card id="comments-section">
+          <CardHeader>
+            <CardTitle className="text-xl">
+              Comments ({commentsData?.length || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Add Comment Form */}
+            <div className="flex gap-3">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Share your thoughts about this trip..."
+                className="flex-1 min-h-[80px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                data-testid="textarea-add-comment"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || addCommentMutation.isPending}
+                data-testid="button-post-comment"
+              >
+                {addCommentMutation.isPending ? "Posting..." : "Post Comment"}
+              </Button>
+            </div>
+
+            {/* Comments List */}
+            <div className="space-y-4 mt-6">
+              {commentsData && commentsData.length > 0 ? (
+                commentsData.map((comment) => (
+                  <div key={comment.id} className="flex gap-3 p-4 rounded-lg bg-muted/50">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={comment.user.profileImageUrl} />
+                      <AvatarFallback>
+                        {comment.user.displayName?.[0] || comment.user.firstName?.[0] || comment.user.lastName?.[0] || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => setLocation(`/profile/${comment.user.id}`)}
+                          className="font-semibold hover:text-primary transition-colors hover:underline text-sm"
+                          data-testid={`link-commenter-profile-${comment.user.id}`}
+                        >
+                          {comment.user.displayName || `${comment.user.firstName || ''} ${comment.user.lastName || ''}`.trim() || 'Anonymous'}
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(comment.createdAt).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No comments yet. Be the first to share your thoughts!</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

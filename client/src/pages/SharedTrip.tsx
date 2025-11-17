@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { JourneyMap } from "@/components/JourneyMap";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Comment, User as SchemaUser } from "@shared/schema";
 import {
   Sheet,
   SheetContent,
@@ -98,21 +99,6 @@ type SharedTripData = {
   dayDetails: DayDetail[];
 };
 
-type Comment = {
-  id: string;
-  tripId: string;
-  userId: string;
-  comment: string;
-  createdAt: string;
-  user: {
-    id: string;
-    displayName?: string;
-    firstName?: string;
-    lastName?: string;
-    profileImageUrl?: string;
-  };
-};
-
 export default function SharedTrip() {
   const [, params] = useRoute("/share/:shareId");
   const shareId = params?.shareId;
@@ -173,7 +159,7 @@ export default function SharedTrip() {
   });
 
   // Comments query
-  const { data: comments = [] } = useQuery<Comment[]>({
+  const { data: comments = [] } = useQuery<Array<Comment & { user: SchemaUser }>>({
     queryKey: ["/api/trips", tripId, "comments"],
     queryFn: async () => {
       const response = await fetch(`/api/trips/${tripId}/comments`);

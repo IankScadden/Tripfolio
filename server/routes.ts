@@ -839,9 +839,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const tripId = req.params.id;
-      const { comment } = req.body;
+      const { content } = req.body;
       
-      if (!comment || comment.trim().length === 0) {
+      if (!content || content.trim().length === 0) {
         return res.status(400).json({ error: "Comment cannot be empty" });
       }
       
@@ -854,7 +854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Cannot comment on a private trip" });
       }
       
-      const newComment = await storage.addComment({ tripId, userId, comment: comment.trim() });
+      const newComment = await storage.addComment({ tripId, userId, content: content.trim() });
       
       res.json(newComment);
     } catch (error) {

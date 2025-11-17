@@ -33,6 +33,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Trip Cloning**: Copy entire trip structures (expenses + itinerary) as templates for personal planning.
 - **User Profiles**: Customizable display names, bios, and profile pictures shown on public trips, manageable via Profile Settings page.
 - **Public Profiles**: View other users' profiles showing their name, bio, profile picture, and all their public trips. Accessible by clicking usernames throughout the app.
+- **Social Engagement**: Like and comment system for public trips. Users can like trips (with toggle functionality), post comments, and view engagement counts. All interactions require authentication.
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model
@@ -40,6 +41,8 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Trips**: Manages trip details, associated user, dates, and shareable IDs.
 - **Expenses**: Records individual expenses with category, cost, description, and linkage to specific trip days.
 - **DayDetails**: Captures daily itinerary specifics, destinations, and local notes.
+- **Likes**: Tracks user likes on public trips with unique constraint preventing duplicate likes (tripId, userId).
+- **Comments**: Stores user comments on public trips with content, timestamps, and user attribution.
 - **Sessions**: Handles user session management for authentication.
 
 ### Categories
