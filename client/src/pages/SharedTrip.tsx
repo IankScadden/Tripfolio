@@ -387,23 +387,6 @@ export default function SharedTrip() {
           </p>
         </div>
 
-        {/* Journey Map */}
-        {mapLocations.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Journey Map
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[600px]">
-                <JourneyMap locations={mapLocations} />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Budget Breakdown and Visual */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Budget Breakdown */}
@@ -534,6 +517,23 @@ export default function SharedTrip() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Journey Map */}
+        {mapLocations.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Journey Map
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[600px]">
+                <JourneyMap locations={mapLocations} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
