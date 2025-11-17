@@ -340,7 +340,7 @@ export default function PublicProfile() {
         {/* User's Travel Map */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-6">
-            {isOwnProfile ? "My Map" : `${getUserDisplayName(user)}'s Map`}
+            My Map
           </h2>
           <Card className="overflow-hidden">
             <MapDisplay 
