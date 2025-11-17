@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plus, X, Image as ImageIcon, Tag, FileText } from "lucide-react";
+import { ArrowLeft, Plus, X, Image as ImageIcon, Tag, FileText, MapPin, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import Header from "@/components/Header";
 
 const postTripSchema = z.object({
+  tripType: z.enum(["plan", "traveled"]),
   description: z.string().max(5000, "Description must be less than 5000 characters").optional(),
   headerImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   tags: z.array(z.string()).optional(),
@@ -28,6 +29,7 @@ type PostTripFormData = z.infer<typeof postTripSchema>;
 type Trip = {
   id: string;
   name: string;
+  tripType?: string;
   description?: string;
   headerImageUrl?: string;
   tags?: string[];
@@ -52,6 +54,7 @@ export default function PostTrip() {
   const form = useForm<PostTripFormData>({
     resolver: zodResolver(postTripSchema),
     defaultValues: {
+      tripType: "plan",
       description: "",
       headerImageUrl: "",
       tags: [],
@@ -63,6 +66,7 @@ export default function PostTrip() {
   useEffect(() => {
     if (trip) {
       form.reset({
+        tripType: (trip.tripType as "plan" | "traveled") || "plan",
         description: trip.description || "",
         headerImageUrl: trip.headerImageUrl || "",
         tags: trip.tags || [],
@@ -183,6 +187,60 @@ export default function PostTrip() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Trip Type */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <CardTitle>Trip Status</CardTitle>
+                </div>
+                <CardDescription>
+                  Is this a plan for a future trip or a trip you've already completed?
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="tripType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Button
+                            type="button"
+                            variant={field.value === "plan" ? "default" : "outline"}
+                            className="h-auto py-6 flex flex-col gap-2"
+                            onClick={() => field.onChange("plan")}
+                            data-testid="button-trip-type-plan"
+                          >
+                            <MapPin className="h-6 w-6" />
+                            <div>
+                              <div className="font-semibold text-base">Planning</div>
+                              <div className="text-xs opacity-80 font-normal">Future trip idea</div>
+                            </div>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={field.value === "traveled" ? "default" : "outline"}
+                            className="h-auto py-6 flex flex-col gap-2"
+                            onClick={() => field.onChange("traveled")}
+                            data-testid="button-trip-type-traveled"
+                          >
+                            <CheckCircle2 className="h-6 w-6" />
+                            <div>
+                              <div className="font-semibold text-base">Traveled</div>
+                              <div className="text-xs opacity-80 font-normal">Completed journey</div>
+                            </div>
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
             {/* Header Image */}
             <Card>
               <CardHeader>
