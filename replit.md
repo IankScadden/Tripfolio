@@ -27,7 +27,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Post Trip**: Social media-style publishing feature where users add cover images, trip stories, hashtags, and photo galleries to share trips with the community. Trips remain in My Trips and become visible in Explore.
 - **Expense Tracking**: Detailed expense entry across 7 categories with descriptions, costs, optional links, and dates.
 - **Budget Visualization**: Interactive pie charts for clear expense breakdown by category.
-- **Trip Sharing**: Generation of shareable, read-only links for trip budgets.
+- **Trip Sharing**: Generation of shareable, read-only links for trip budgets (shared links display trip details without social engagement features).
 - **Day-by-Day Planning**: Detailed itinerary planning with automatic expense synchronization, including multi-day lodging (supports both date-based and nights-based entry for flexible trip planning) and flexible transportation entries.
 - **Community Exploration**: Browse public trip budgets by destination/name as a practical research tool for planning. Features beautiful cards with hero images, descriptions, and hashtags.
 - **Trip Cloning**: Copy entire trip structures (expenses + itinerary) as templates for personal planning.
