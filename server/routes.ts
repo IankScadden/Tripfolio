@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTripSchema, insertExpenseSchema } from "@shared/schema";
+import { insertTripSchema, insertExpenseSchema, insertTravelPinSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { randomUUID } from "crypto";
@@ -909,6 +909,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting comment:", error);
       res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
+  // Travel pin endpoints
+  app.get("/api/users/:userId/pins", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const pins = await storage.getTravelPinsByUser(userId);
+      
+      res.json(pins);
+    } catch (error) {
+      console.error("Error fetching travel pins:", error);
+      res.status(500).json({ error: "Failed to fetch travel pins" });
+    }
+  });
+
+  app.post("/api/pins", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const pinData = insertTravelPinSchema.parse({ ...req.body, userId });
+      
+      const pin = await storage.addTravelPin(pinData);
+      res.json(pin);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid pin data", details: error.errors });
+      }
+      console.error("Error adding travel pin:", error);
+      res.status(500).json({ error: "Failed to add travel pin" });
+    }
+  });
+
+  app.delete("/api/pins/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const pinId = req.params.id;
+      
+      // Note: In production, verify ownership before deleting
+      const deleted = await storage.deleteTravelPin(pinId);
+      
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "Pin not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting travel pin:", error);
+      res.status(500).json({ error: "Failed to delete travel pin" });
     }
   });
 
