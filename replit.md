@@ -34,6 +34,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **User Profiles**: Customizable display names, bios, and profile pictures shown on public trips, manageable via Profile Settings page.
 - **Public Profiles**: View other users' profiles showing their name, bio, profile picture, and all their public trips. Accessible by clicking usernames throughout the app.
 - **Social Engagement**: Like and comment system for public trips. Users can like trips (with toggle functionality), post comments, and view engagement counts. All interactions require authentication.
+- **Admin Moderation**: Designated admin users can delete any public trip from the Explore page. Delete button appears only for admins in the top-left corner of trip cards. Authorization enforced at both UI and API levels.
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model

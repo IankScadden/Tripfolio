@@ -46,7 +46,7 @@ export default function Explore() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const isAdmin = user && (user as any).isAdmin === 1;
+  const isAdmin = user && user.isAdmin === 1;
 
   const { data: trips = [], isLoading } = useQuery<TripWithUser[]>({
     queryKey: ["/api/explore/trips", searchQuery],
