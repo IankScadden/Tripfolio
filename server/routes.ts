@@ -421,63 +421,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const { checkInDate, checkOutDate, lodgingName, totalCost, url, startDayNumber, dayNumbersToDelete } = req.body;
+      const { checkInDate, checkOutDate, nights: nightsParam, lodgingName, totalCost, url, startDayNumber, dayNumbersToDelete } = req.body;
 
       // Validate required fields
-      if (!checkInDate || !checkOutDate || !lodgingName || !totalCost) {
+      if (!lodgingName || !totalCost) {
         return res.status(400).json({ error: "Missing required fields" });
       }
       
-      // For trips without startDate, startDayNumber is required
-      if (!trip.startDate && !startDayNumber) {
-        return res.status(400).json({ error: "startDayNumber is required for trips without a start date" });
+      // Validate that either dates OR nights are provided
+      if (trip.startDate) {
+        // Trip has dates - require check-in/check-out
+        if (!checkInDate || !checkOutDate) {
+          return res.status(400).json({ error: "Check-in and check-out dates are required for trips with dates" });
+        }
+      } else {
+        // Trip has no dates - require nights and startDayNumber
+        if (!nightsParam || nightsParam <= 0) {
+          return res.status(400).json({ error: "Number of nights is required for trips without dates" });
+        }
+        if (!startDayNumber) {
+          return res.status(400).json({ error: "startDayNumber is required for trips without dates" });
+        }
       }
 
-      // Parse dates in local timezone
-      const [checkInYear, checkInMonth, checkInDay] = checkInDate.split('-').map(Number);
-      const [checkOutYear, checkOutMonth, checkOutDay] = checkOutDate.split('-').map(Number);
-      const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
-      const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
+      let nights: number;
+      let nightlyRate: string;
 
-      // Calculate number of nights (check-out day is not included in stay)
-      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (nights <= 0) {
-        return res.status(400).json({ error: "Check-out date must be after check-in date" });
+      if (trip.startDate && checkInDate && checkOutDate) {
+        // Calculate nights from dates
+        const [checkInYear, checkInMonth, checkInDay] = checkInDate.split('-').map(Number);
+        const [checkOutYear, checkOutMonth, checkOutDay] = checkOutDate.split('-').map(Number);
+        const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
+        const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
+
+        nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (nights <= 0) {
+          return res.status(400).json({ error: "Check-out date must be after check-in date" });
+        }
+      } else {
+        // Use provided nights parameter
+        nights = parseInt(nightsParam);
       }
 
       // Calculate nightly rate
-      const nightlyRate = (parseFloat(totalCost) / nights).toFixed(2);
+      nightlyRate = (parseFloat(totalCost) / nights).toFixed(2);
 
       // Calculate day numbers and dates for each night
       const nightsData: Array<{ dayNumber: number; dateString: string }> = [];
       
-      for (let i = 0; i < nights; i++) {
-        const currentDate = new Date(checkInYear, checkInMonth - 1, checkInDay + i);
+      if (trip.startDate && checkInDate) {
+        // Trip has dates - calculate from check-in date
+        const [checkInYear, checkInMonth, checkInDay] = checkInDate.split('-').map(Number);
         
-        // Format date correctly using the Date object (handles month/year rollovers)
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1; // getMonth() is 0-indexed
-        const day = currentDate.getDate();
-        const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
-        // Calculate day number
-        let dayNumber: number;
-        if (trip.startDate) {
+        for (let i = 0; i < nights; i++) {
+          const currentDate = new Date(checkInYear, checkInMonth - 1, checkInDay + i);
+          
+          // Format date correctly using the Date object (handles month/year rollovers)
+          const year = currentDate.getFullYear();
+          const month = currentDate.getMonth() + 1; // getMonth() is 0-indexed
+          const day = currentDate.getDate();
+          const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          
+          // Calculate day number
           const [tripYear, tripMonth, tripDay] = trip.startDate.split('-').map(Number);
           const tripStart = new Date(tripYear, tripMonth - 1, tripDay);
           const daysDiff = Math.ceil((currentDate.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
-          dayNumber = daysDiff + 1; // Day 1 is the first day
-        } else {
-          // For trips without startDate, use the provided startDayNumber
-          dayNumber = parseInt(startDayNumber) + i;
+          const dayNumber = daysDiff + 1; // Day 1 is the first day
+          
+          // Only include nights within the trip duration
+          if (dayNumber >= 1 && (!trip.days || dayNumber <= trip.days)) {
+            nightsData.push({ dayNumber, dateString });
+          }
         }
-        
-        // Only include nights within the trip duration
-        if (dayNumber >= 1 && (!trip.days || dayNumber <= trip.days)) {
-          nightsData.push({ dayNumber, dateString });
+      } else {
+        // Trip has no dates - use day numbers only
+        for (let i = 0; i < nights; i++) {
+          const dayNumber = parseInt(startDayNumber) + i;
+          
+          // For trips without dates, we can't calculate actual dates
+          // Use a placeholder date format (won't be displayed)
+          const dateString = `2024-01-${String(dayNumber).padStart(2, '0')}`;
+          
+          // Only include nights within the trip duration
+          if (dayNumber >= 1 && (!trip.days || dayNumber <= trip.days)) {
+            nightsData.push({ dayNumber, dateString });
+          }
         }
-        // Skip nights that exceed trip duration
       }
 
       // Delete existing accommodation expenses

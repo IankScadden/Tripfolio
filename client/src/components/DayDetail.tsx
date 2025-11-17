@@ -77,6 +77,7 @@ export default function DayDetail({
   const [isEditingMultiDayLodging, setIsEditingMultiDayLodging] = useState(false);
   const [multiDayCheckIn, setMultiDayCheckIn] = useState("");
   const [multiDayCheckOut, setMultiDayCheckOut] = useState("");
+  const [multiDayNights, setMultiDayNights] = useState(""); // For trips without dates
   const [multiDayLodgingName, setMultiDayLodgingName] = useState("");
   const [multiDayTotalCost, setMultiDayTotalCost] = useState("");
   const [multiDayLodgingUrl, setMultiDayLodgingUrl] = useState("");
@@ -333,7 +334,16 @@ export default function DayDetail({
   });
 
   const bulkLodgingMutation = useMutation({
-    mutationFn: async (data: { checkInDate: string; checkOutDate: string; lodgingName: string; totalCost: string; url?: string; startDayNumber: number; dayNumbersToDelete?: number[] }) => {
+    mutationFn: async (data: { 
+      checkInDate?: string; 
+      checkOutDate?: string; 
+      nights?: number;
+      lodgingName: string; 
+      totalCost: string; 
+      url?: string; 
+      startDayNumber: number; 
+      dayNumbersToDelete?: number[] 
+    }) => {
       const response = await apiRequest("POST", `/api/trips/${tripId}/lodging/bulk`, data);
       return await response.json();
     },
@@ -346,19 +356,43 @@ export default function DayDetail({
 
   // Calculate nightly rate for multi-day lodging
   const calculateNightlyRate = () => {
-    if (!multiDayCheckIn || !multiDayCheckOut || !multiDayTotalCost) return null;
-    const [checkInYear, checkInMonth, checkInDay] = multiDayCheckIn.split('-').map(Number);
-    const [checkOutYear, checkOutMonth, checkOutDay] = multiDayCheckOut.split('-').map(Number);
-    const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
-    const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
-    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    if (nights <= 0) return null;
-    return (parseFloat(multiDayTotalCost) / nights).toFixed(2);
+    if (!multiDayTotalCost) return null;
+    
+    // If trip has dates, calculate from check-in/check-out
+    if (date) {
+      if (!multiDayCheckIn || !multiDayCheckOut) return null;
+      const [checkInYear, checkInMonth, checkInDay] = multiDayCheckIn.split('-').map(Number);
+      const [checkOutYear, checkOutMonth, checkOutDay] = multiDayCheckOut.split('-').map(Number);
+      const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
+      const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
+      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      if (nights <= 0) return null;
+      return (parseFloat(multiDayTotalCost) / nights).toFixed(2);
+    } else {
+      // If trip has no dates, calculate from nights
+      if (!multiDayNights) return null;
+      const nights = parseInt(multiDayNights);
+      if (nights <= 0) return null;
+      return (parseFloat(multiDayTotalCost) / nights).toFixed(2);
+    }
   };
 
   const handleSaveMultiDayLodging = async () => {
-    if (!multiDayCheckIn || !multiDayCheckOut || !multiDayLodgingName || !multiDayTotalCost) {
+    // Validate based on whether trip has dates or not
+    if (!multiDayLodgingName || !multiDayTotalCost) {
       return;
+    }
+    
+    if (date) {
+      // Trip has dates - require check-in/check-out
+      if (!multiDayCheckIn || !multiDayCheckOut) {
+        return;
+      }
+    } else {
+      // Trip has no dates - require nights
+      if (!multiDayNights || parseInt(multiDayNights) <= 0) {
+        return;
+      }
     }
     
     // When editing, pass the day numbers to delete from the original booking
@@ -367,8 +401,9 @@ export default function DayDetail({
       : undefined;
     
     await bulkLodgingMutation.mutateAsync({
-      checkInDate: multiDayCheckIn,
-      checkOutDate: multiDayCheckOut,
+      checkInDate: date ? multiDayCheckIn : undefined,
+      checkOutDate: date ? multiDayCheckOut : undefined,
+      nights: date ? undefined : parseInt(multiDayNights),
       lodgingName: multiDayLodgingName,
       totalCost: multiDayTotalCost,
       url: multiDayLodgingUrl || undefined,
@@ -380,6 +415,7 @@ export default function DayDetail({
     setIsEditingMultiDayLodging(false);
     setMultiDayCheckIn("");
     setMultiDayCheckOut("");
+    setMultiDayNights("");
     setMultiDayLodgingName("");
     setMultiDayTotalCost("");
     setMultiDayLodgingUrl("");
@@ -937,6 +973,7 @@ export default function DayDetail({
         setIsEditingMultiDayLodging(false);
         setMultiDayCheckIn("");
         setMultiDayCheckOut("");
+        setMultiDayNights("");
         setMultiDayLodgingName("");
         setMultiDayTotalCost("");
         setMultiDayLodgingUrl("");
@@ -959,26 +996,43 @@ export default function DayDetail({
               data-testid="input-multiday-lodging-name"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          
+          {date ? (
+            // Trip has dates - show check-in/check-out date inputs
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Check-In Date</Label>
+                <Input
+                  type="date"
+                  value={multiDayCheckIn}
+                  onChange={(e) => setMultiDayCheckIn(e.target.value)}
+                  data-testid="input-multiday-checkin"
+                />
+              </div>
+              <div>
+                <Label>Check-Out Date</Label>
+                <Input
+                  type="date"
+                  value={multiDayCheckOut}
+                  onChange={(e) => setMultiDayCheckOut(e.target.value)}
+                  data-testid="input-multiday-checkout"
+                />
+              </div>
+            </div>
+          ) : (
+            // Trip has no dates - show number of nights input
             <div>
-              <Label>Check-In Date</Label>
+              <Label>Number of Nights</Label>
               <Input
-                type="date"
-                value={multiDayCheckIn}
-                onChange={(e) => setMultiDayCheckIn(e.target.value)}
-                data-testid="input-multiday-checkin"
+                type="number"
+                min="1"
+                placeholder="How many nights?"
+                value={multiDayNights}
+                onChange={(e) => setMultiDayNights(e.target.value)}
+                data-testid="input-multiday-nights"
               />
             </div>
-            <div>
-              <Label>Check-Out Date</Label>
-              <Input
-                type="date"
-                value={multiDayCheckOut}
-                onChange={(e) => setMultiDayCheckOut(e.target.value)}
-                data-testid="input-multiday-checkout"
-              />
-            </div>
-          </div>
+          )}
           <div>
             <Label>Total Cost ($)</Label>
             <Input
@@ -1018,7 +1072,12 @@ export default function DayDetail({
           <Button
             onClick={handleSaveMultiDayLodging}
             className="flex-1"
-            disabled={bulkLodgingMutation.isPending || !multiDayCheckIn || !multiDayCheckOut || !multiDayLodgingName || !multiDayTotalCost}
+            disabled={
+              bulkLodgingMutation.isPending || 
+              !multiDayLodgingName || 
+              !multiDayTotalCost ||
+              (date ? (!multiDayCheckIn || !multiDayCheckOut) : (!multiDayNights || parseInt(multiDayNights) <= 0))
+            }
             data-testid="button-save-multiday-lodging"
           >
             {bulkLodgingMutation.isPending ? "Saving..." : (isEditingMultiDayLodging ? "Update Lodging" : "Save Lodging")}
