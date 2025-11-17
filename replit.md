@@ -36,6 +36,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Social Engagement**: Like and comment system for public trips. Users can like trips (with toggle functionality), post comments, and view engagement counts. All interactions require authentication.
 - **Unpost Feature**: Users can unpublish their own trips from their public profile. Unpost button appears in top-left of trip cards on the user's own profile. Unpublishing sets isPublic to false, removing the trip from Explore and public view while keeping it in My Trips.
 - **Admin Moderation**: Designated admin users can delete any public trip from the Explore page. Delete button appears only for admins in the top-left corner of trip cards. Authorization enforced at both UI and API levels.
+- **My Map**: Interactive 2D map feature showing user's traveled locations via pins. Users can click anywhere on their map to drop pins marking places they've visited. All maps are publicly viewable for travel inspiration. Features Leaflet integration with OpenStreetMap tiles, reverse geocoding via LocationIQ API, and full CRUD operations with ownership verification.
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model
@@ -45,6 +46,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **DayDetails**: Captures daily itinerary specifics, destinations, and local notes.
 - **Likes**: Tracks user likes on public trips with unique constraint preventing duplicate likes (tripId, userId).
 - **Comments**: Stores user comments on public trips with content, timestamps, and user attribution.
+- **TravelPins**: Stores user-dropped map pins with latitude/longitude (decimal precision), location names (via reverse geocoding), and user attribution. Publicly viewable for all users.
 - **Sessions**: Handles user session management for authentication.
 
 ### Categories
@@ -62,3 +64,5 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Shadcn UI**: Provides pre-built, accessible UI components.
 - **Tailwind CSS**: Utility-first CSS framework for styling.
 - **Recharts**: JavaScript charting library for data visualization.
+- **Leaflet**: Interactive mapping library with OpenStreetMap tiles for the My Map feature.
+- **LocationIQ API**: Reverse geocoding service to convert coordinates into location names.
