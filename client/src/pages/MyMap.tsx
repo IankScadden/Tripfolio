@@ -114,7 +114,7 @@ export default function MyMap() {
       if (apiKey) {
         try {
           const response = await fetch(
-            `https://us1.locationiq.com/v1/reverse?key=${apiKey}&lat=${lat}&lon=${lng}&format=json`
+            `https://us1.locationiq.com/v1/reverse?key=${apiKey}&lat=${lat}&lon=${lng}&format=json&accept-language=en`
           );
           if (response.ok) {
             const data = await response.json();
@@ -150,6 +150,12 @@ export default function MyMap() {
 
   const defaultCenter: LatLngExpression = [20, 0]; // World view
   const defaultZoom = 2;
+  
+  // Set map bounds to prevent infinite horizontal wrapping
+  const worldBounds: [[number, number], [number, number]] = [
+    [-90, -180], // Southwest coordinates
+    [90, 180]    // Northeast coordinates
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,10 +195,15 @@ export default function MyMap() {
               zoom={defaultZoom}
               style={{ height: "100%", width: "100%" }}
               scrollWheelZoom={true}
+              worldCopyJump={false}
+              maxBounds={worldBounds}
+              maxBoundsViscosity={1.0}
+              minZoom={2}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                noWrap={true}
               />
               
               <MapClickHandler onMapClick={handleMapClick} isOwnMap={isOwnMap} />
