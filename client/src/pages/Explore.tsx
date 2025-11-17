@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle } from "lucide-react";
+import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useAuth } from "@/hooks/useAuth";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type Trip = {
   id: string;
@@ -39,6 +43,10 @@ const DEFAULT_HEADER_IMAGE = "https://images.unsplash.com/photo-1469854523086-cc
 export default function Explore() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const isAdmin = user && (user as any).isAdmin === 1;
 
   const { data: trips = [], isLoading } = useQuery<TripWithUser[]>({
     queryKey: ["/api/explore/trips", searchQuery],
@@ -62,6 +70,26 @@ export default function Explore() {
         return false;
       }
       return failureCount < 3;
+    },
+  });
+
+  const deleteTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      await apiRequest("DELETE", `/api/trips/${tripId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+      toast({
+        title: "Trip deleted",
+        description: "The trip has been removed from the community.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete trip. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -164,6 +192,26 @@ export default function Explore() {
                       </p>
                     )}
                   </div>
+
+                  {/* Admin Delete Button */}
+                  {isAdmin && (
+                    <div className="absolute top-4 left-4">
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8 backdrop-blur bg-red-500/95 hover:bg-red-600/95"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Are you sure you want to delete "${trip.name}"?`)) {
+                            deleteTripMutation.mutate(trip.id);
+                          }
+                        }}
+                        data-testid={`button-delete-trip-${trip.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Badges */}
                   <div className="absolute top-4 right-4 flex flex-row gap-2 items-start">

@@ -131,14 +131,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/trips/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      // Verify ownership before deleting
+      const user = await storage.getUser(userId);
+      
+      // Check if user is admin
+      const isAdmin = user?.isAdmin === 1;
+      
+      // Verify ownership or admin status before deleting
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
       }
-      if (trip.userId !== userId) {
+      
+      // Allow deletion if user owns the trip or is admin
+      if (trip.userId !== userId && !isAdmin) {
         return res.status(403).json({ error: "Forbidden" });
       }
+      
       const success = await storage.deleteTrip(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Trip not found" });
