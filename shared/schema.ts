@@ -37,6 +37,7 @@ export const trips = pgTable("trips", {
   shareId: varchar("share_id").unique(),
   favorite: integer("favorite").default(0).notNull(),
   isPublic: integer("is_public").default(1).notNull(),
+  tripType: text("trip_type").default("plan").notNull(),
   description: text("description"),
   headerImageUrl: text("header_image_url"),
   tags: text("tags").array(),
