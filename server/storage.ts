@@ -1,4 +1,4 @@
-import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, trips, expenses, users, dayDetails } from "@shared/schema";
+import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, trips, expenses, users, dayDetails, likes, comments } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, or, ilike, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -34,6 +34,20 @@ export interface IStorage {
   
   // Recalculate dayNumbers for expenses based on their dates when trip dates change
   recalculateExpenseDayNumbers(tripId: string, newStartDate: string): Promise<void>;
+  
+  // Like operations
+  addLike(tripId: string, userId: string): Promise<Like>;
+  removeLike(tripId: string, userId: string): Promise<boolean>;
+  getLikeCount(tripId: string): Promise<number>;
+  hasUserLiked(tripId: string, userId: string): Promise<boolean>;
+  getLikesByTripIds(tripIds: string[]): Promise<Record<string, number>>;
+  
+  // Comment operations
+  getCommentsByTrip(tripId: string): Promise<Array<Comment & { user: User }>>;
+  addComment(comment: InsertComment): Promise<Comment & { user: User }>;
+  deleteComment(id: string): Promise<boolean>;
+  getCommentCount(tripId: string): Promise<number>;
+  getCommentCountsByTripIds(tripIds: string[]): Promise<Record<string, number>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -341,6 +355,107 @@ export class DatabaseStorage implements IStorage {
         await this.updateExpense(expense.id, { dayNumber: newDayNumber });
       }
     }
+  }
+
+  // Like operations
+  async addLike(tripId: string, userId: string): Promise<Like> {
+    const [like] = await db
+      .insert(likes)
+      .values({ tripId, userId })
+      .onConflictDoNothing()
+      .returning();
+    return like;
+  }
+
+  async removeLike(tripId: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(likes)
+      .where(and(eq(likes.tripId, tripId), eq(likes.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getLikeCount(tripId: string): Promise<number> {
+    const result = await db
+      .select({ count: sqlOperator<number>`count(*)::int` })
+      .from(likes)
+      .where(eq(likes.tripId, tripId));
+    return result[0]?.count || 0;
+  }
+
+  async hasUserLiked(tripId: string, userId: string): Promise<boolean> {
+    const [like] = await db
+      .select()
+      .from(likes)
+      .where(and(eq(likes.tripId, tripId), eq(likes.userId, userId)));
+    return !!like;
+  }
+
+  async getLikesByTripIds(tripIds: string[]): Promise<Record<string, number>> {
+    if (tripIds.length === 0) return {};
+    
+    const results = await db
+      .select({ tripId: likes.tripId, count: sqlOperator<number>`count(*)::int` })
+      .from(likes)
+      .where(inArray(likes.tripId, tripIds))
+      .groupBy(likes.tripId);
+    
+    return results.reduce((acc, r) => {
+      acc[r.tripId] = r.count;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+
+  // Comment operations
+  async getCommentsByTrip(tripId: string): Promise<Array<Comment & { user: User }>> {
+    const results = await db
+      .select()
+      .from(comments)
+      .leftJoin(users, eq(comments.userId, users.id))
+      .where(eq(comments.tripId, tripId))
+      .orderBy(comments.createdAt);
+    
+    return results.map(r => ({
+      ...r.comments,
+      user: r.users!,
+    }));
+  }
+
+  async addComment(insertComment: InsertComment): Promise<Comment & { user: User }> {
+    const [comment] = await db
+      .insert(comments)
+      .values(insertComment)
+      .returning();
+    
+    const user = await this.getUser(insertComment.userId);
+    return { ...comment, user: user! };
+  }
+
+  async deleteComment(id: string): Promise<boolean> {
+    const result = await db.delete(comments).where(eq(comments.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getCommentCount(tripId: string): Promise<number> {
+    const result = await db
+      .select({ count: sqlOperator<number>`count(*)::int` })
+      .from(comments)
+      .where(eq(comments.tripId, tripId));
+    return result[0]?.count || 0;
+  }
+
+  async getCommentCountsByTripIds(tripIds: string[]): Promise<Record<string, number>> {
+    if (tripIds.length === 0) return {};
+    
+    const results = await db
+      .select({ tripId: comments.tripId, count: sqlOperator<number>`count(*)::int` })
+      .from(comments)
+      .where(inArray(comments.tripId, tripIds))
+      .groupBy(comments.tripId);
+    
+    return results.reduce((acc, r) => {
+      acc[r.tripId] = r.count;
+      return acc;
+    }, {} as Record<string, number>);
   }
 }
 

@@ -71,6 +71,23 @@ export const dayDetails = pgTable("day_details", {
   uniqueTripDay: index("unique_trip_day_idx").on(table.tripId, table.dayNumber),
 }));
 
+export const likes = pgTable("likes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tripId: varchar("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueLike: index("unique_like_idx").on(table.tripId, table.userId),
+}));
+
+export const comments = pgTable("comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tripId: varchar("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertTripSchema = createInsertSchema(trips).omit({
   id: true,
   shareId: true,
@@ -85,6 +102,16 @@ export const insertDayDetailSchema = createInsertSchema(dayDetails).omit({
   id: true,
 });
 
+export const insertLikeSchema = createInsertSchema(likes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCommentSchema = createInsertSchema(comments).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
@@ -93,3 +120,7 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertDayDetail = z.infer<typeof insertDayDetailSchema>;
 export type DayDetail = typeof dayDetails.$inferSelect;
+export type InsertLike = z.infer<typeof insertLikeSchema>;
+export type Like = typeof likes.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
