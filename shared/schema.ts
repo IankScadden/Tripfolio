@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, integer, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, integer, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -77,7 +77,7 @@ export const likes = pgTable("likes", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
-  uniqueLike: index("unique_like_idx").on(table.tripId, table.userId),
+  uniqueLike: uniqueIndex("unique_like_idx").on(table.tripId, table.userId),
 }));
 
 export const comments = pgTable("comments", {

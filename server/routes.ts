@@ -663,6 +663,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return acc;
       }, {} as Record<string, typeof allExpenses>);
       
+      // Get likes and comments counts for all trips
+      const likeCounts = await storage.getLikesByTripIds(tripIds);
+      const commentCounts = await storage.getCommentCountsByTripIds(tripIds);
+      
       // Get day details for all trips to show destinations
       const tripsWithDetails = await Promise.all(
         publicTrips.map(async (trip) => {
@@ -692,6 +696,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             costPerDay: trip.days ? total / trip.days : 0,
             destinations,
             expenseCounts,
+            likeCount: likeCounts[trip.id] || 0,
+            commentCount: commentCounts[trip.id] || 0,
           };
         })
       );

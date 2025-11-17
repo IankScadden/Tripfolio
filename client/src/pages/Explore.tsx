@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, TrendingUp, MapPin, CheckCircle2 } from "lucide-react";
+import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ type Trip = {
   headerImageUrl?: string;
   description?: string;
   tags?: string[];
+  likeCount?: number;
+  commentCount?: number;
 };
 
 type User = {
@@ -221,7 +223,7 @@ export default function Explore() {
 
                   {/* Tags */}
                   {trip.tags && trip.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 mb-3">
                       {trip.tags.slice(0, 3).map((tag, index) => (
                         <Badge 
                           key={index} 
@@ -238,6 +240,24 @@ export default function Explore() {
                       )}
                     </div>
                   )}
+
+                  {/* Like and Comment Counts */}
+                  {(trip.likeCount || trip.commentCount) ? (
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                      {trip.likeCount ? (
+                        <div className="flex items-center gap-1" data-testid={`like-count-${trip.id}`}>
+                          <Heart className="h-4 w-4" />
+                          <span>{trip.likeCount}</span>
+                        </div>
+                      ) : null}
+                      {trip.commentCount ? (
+                        <div className="flex items-center gap-1" data-testid={`comment-count-${trip.id}`}>
+                          <MessageCircle className="h-4 w-4" />
+                          <span>{trip.commentCount}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   {/* Per Day Cost */}
                   {trip.days && trip.days > 0 && (
