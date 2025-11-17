@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, MapPin, Calendar, Settings, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Settings, Eye, EyeOff, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -200,18 +200,31 @@ export default function PublicProfile() {
                   {getUserDisplayName(user)}
                 </h1>
                 
-                {isOwnProfile ? (
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setLocation("/profile-settings")}
+                    onClick={() => setLocation(`/map/${userId}`)}
                     className="gap-2"
-                    data-testid="button-edit-profile"
+                    data-testid="button-my-map"
                   >
-                    <Settings className="h-4 w-4" />
-                    Edit Profile
+                    <Map className="h-4 w-4" />
+                    {isOwnProfile ? "My Map" : "View Map"}
                   </Button>
-                ) : null}
+                  
+                  {isOwnProfile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation("/profile-settings")}
+                      className="gap-2"
+                      data-testid="button-edit-profile"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                  )}
+                </div>
               </div>
               
               {user.bio && (
