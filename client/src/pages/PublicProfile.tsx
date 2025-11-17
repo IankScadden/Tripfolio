@@ -258,22 +258,6 @@ export default function PublicProfile() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                     
-                    {/* Unpost Button (Only for own profile) */}
-                    {isOwnProfile && (
-                      <div className="absolute top-3 left-3 z-10">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => handleUnpost(e, trip.id)}
-                          className="gap-1.5 text-xs"
-                          data-testid={`button-unpost-${trip.id}`}
-                        >
-                          <EyeOff className="h-3 w-3" />
-                          Unpost
-                        </Button>
-                      </div>
-                    )}
-                    
                     {/* Trip Name Overlay */}
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-bold text-xl mb-1 line-clamp-2">
@@ -325,10 +309,24 @@ export default function PublicProfile() {
                       </div>
                     )}
 
-                    {/* Per Day Cost */}
+                    {/* Per Day Cost and Unpost Button */}
                     {trip.days && trip.days > 0 && (
-                      <div className="mt-3 pt-3 border-t text-sm font-medium text-foreground">
-                        ${(trip.totalCost / trip.days).toFixed(0)} per day
+                      <div className="mt-3 pt-3 border-t flex items-center justify-between gap-2">
+                        <div className="text-sm font-medium text-foreground">
+                          ${(trip.totalCost / trip.days).toFixed(0)} per day
+                        </div>
+                        {isOwnProfile && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => handleUnpost(e, trip.id)}
+                            className="gap-1.5 text-xs"
+                            data-testid={`button-unpost-${trip.id}`}
+                          >
+                            <EyeOff className="h-3 w-3" />
+                            Unpost
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
