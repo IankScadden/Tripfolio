@@ -1,4 +1,4 @@
-import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, trips, expenses, users, dayDetails, likes, comments } from "@shared/schema";
+import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, type TravelPin, type InsertTravelPin, trips, expenses, users, dayDetails, likes, comments, travelPins } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, or, ilike, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -48,6 +48,11 @@ export interface IStorage {
   deleteComment(id: string): Promise<boolean>;
   getCommentCount(tripId: string): Promise<number>;
   getCommentCountsByTripIds(tripIds: string[]): Promise<Record<string, number>>;
+  
+  // Travel pin operations
+  getTravelPinsByUser(userId: string): Promise<TravelPin[]>;
+  addTravelPin(pin: InsertTravelPin): Promise<TravelPin>;
+  deleteTravelPin(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -456,6 +461,28 @@ export class DatabaseStorage implements IStorage {
       acc[r.tripId] = r.count;
       return acc;
     }, {} as Record<string, number>);
+  }
+
+  // Travel pin operations
+  async getTravelPinsByUser(userId: string): Promise<TravelPin[]> {
+    return await db
+      .select()
+      .from(travelPins)
+      .where(eq(travelPins.userId, userId))
+      .orderBy(travelPins.createdAt);
+  }
+
+  async addTravelPin(insertPin: InsertTravelPin): Promise<TravelPin> {
+    const [pin] = await db
+      .insert(travelPins)
+      .values(insertPin)
+      .returning();
+    return pin;
+  }
+
+  async deleteTravelPin(id: string): Promise<boolean> {
+    const result = await db.delete(travelPins).where(eq(travelPins.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
