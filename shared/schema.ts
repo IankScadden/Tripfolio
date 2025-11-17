@@ -89,6 +89,15 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const travelPins = pgTable("travel_pins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }).notNull(),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
+  locationName: text("location_name"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertTripSchema = createInsertSchema(trips).omit({
   id: true,
   shareId: true,
@@ -113,6 +122,11 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   createdAt: true,
 });
 
+export const insertTravelPinSchema = createInsertSchema(travelPins).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
@@ -125,3 +139,5 @@ export type InsertLike = z.infer<typeof insertLikeSchema>;
 export type Like = typeof likes.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+export type InsertTravelPin = z.infer<typeof insertTravelPinSchema>;
+export type TravelPin = typeof travelPins.$inferSelect;
