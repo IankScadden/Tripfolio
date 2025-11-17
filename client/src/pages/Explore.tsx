@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, TrendingUp } from "lucide-react";
+import { Search, TrendingUp, MapPin, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 type Trip = {
   id: string;
   name: string;
+  tripType?: string;
   startDate?: string;
   endDate?: string;
   days?: number;
@@ -162,11 +163,25 @@ export default function Explore() {
                     )}
                   </div>
 
-                  {/* Cost Badge */}
-                  <div className="absolute top-4 right-4">
+                  {/* Badges */}
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                    {/* Cost Badge */}
                     <Badge className="bg-white/95 dark:bg-gray-900/95 text-gray-900 dark:text-white backdrop-blur font-bold text-base px-3 py-1">
                       ${trip.totalCost.toFixed(0)}
                     </Badge>
+                    
+                    {/* Trip Type Badge */}
+                    {trip.tripType === "traveled" ? (
+                      <Badge className="bg-emerald-500/95 dark:bg-emerald-600/95 text-white backdrop-blur text-sm px-3 py-1 gap-1.5" data-testid={`badge-trip-type-traveled-${trip.id}`}>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Traveled
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-blue-500/95 dark:bg-blue-600/95 text-white backdrop-blur text-sm px-3 py-1 gap-1.5" data-testid={`badge-trip-type-plan-${trip.id}`}>
+                        <MapPin className="h-3.5 w-3.5" />
+                        Planning
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
