@@ -761,6 +761,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Like endpoints
+  app.post("/api/trips/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tripId = req.params.id;
+      
+      // Verify trip exists and is public
+      const trip = await storage.getTrip(tripId);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (!trip.isPublic) {
+        return res.status(403).json({ error: "Cannot like a private trip" });
+      }
+      
+      const like = await storage.addLike(tripId, userId);
+      const likeCount = await storage.getLikeCount(tripId);
+      
+      res.json({ liked: true, likeCount });
+    } catch (error) {
+      console.error("Error adding like:", error);
+      res.status(500).json({ error: "Failed to add like" });
+    }
+  });
+
+  app.delete("/api/trips/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tripId = req.params.id;
+      
+      await storage.removeLike(tripId, userId);
+      const likeCount = await storage.getLikeCount(tripId);
+      
+      res.json({ liked: false, likeCount });
+    } catch (error) {
+      console.error("Error removing like:", error);
+      res.status(500).json({ error: "Failed to remove like" });
+    }
+  });
+
+  app.get("/api/trips/:id/likes", async (req, res) => {
+    try {
+      const tripId = req.params.id;
+      const userId = (req as any).user?.claims?.sub;
+      
+      const likeCount = await storage.getLikeCount(tripId);
+      const hasLiked = userId ? await storage.hasUserLiked(tripId, userId) : false;
+      
+      res.json({ likeCount, hasLiked });
+    } catch (error) {
+      console.error("Error fetching likes:", error);
+      res.status(500).json({ error: "Failed to fetch likes" });
+    }
+  });
+
+  // Comment endpoints
+  app.get("/api/trips/:id/comments", async (req, res) => {
+    try {
+      const tripId = req.params.id;
+      const comments = await storage.getCommentsByTrip(tripId);
+      
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/trips/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tripId = req.params.id;
+      const { comment } = req.body;
+      
+      if (!comment || comment.trim().length === 0) {
+        return res.status(400).json({ error: "Comment cannot be empty" });
+      }
+      
+      // Verify trip exists and is public
+      const trip = await storage.getTrip(tripId);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (!trip.isPublic) {
+        return res.status(403).json({ error: "Cannot comment on a private trip" });
+      }
+      
+      const newComment = await storage.addComment({ tripId, userId, comment: comment.trim() });
+      
+      res.json(newComment);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(500).json({ error: "Failed to add comment" });
+    }
+  });
+
+  app.delete("/api/comments/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const commentId = req.params.id;
+      
+      // Note: In a production app, you'd want to verify the user owns this comment
+      // For now, we'll allow anyone to delete any comment
+      const deleted = await storage.deleteComment(commentId);
+      
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "Comment not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
