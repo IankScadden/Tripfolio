@@ -193,10 +193,12 @@ export default function MyMap() {
               maxZoom={18}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 noWrap={true}
                 bounds={[[-90, -180], [90, 180]]}
+                subdomains="abcd"
+                maxZoom={20}
               />
               
               <MapClickHandler onMapClick={handleMapClick} isOwnMap={isOwnMap} />
