@@ -207,6 +207,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/trips/:id/unpublish", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      // Set isPublic to false (0)
+      const updatedTrip = await storage.updateTrip(req.params.id, { isPublic: 0 });
+      if (!updatedTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unpublish trip" });
+    }
+  });
+
   // Expense routes - all require authentication
   app.get("/api/trips/:tripId/expenses", isAuthenticated, async (req: any, res) => {
     try {

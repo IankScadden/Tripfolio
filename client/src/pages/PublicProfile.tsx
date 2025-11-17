@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, MapPin, Calendar, Settings } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Settings, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Header from "@/components/Header";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type User = {
   id: string;
@@ -44,13 +46,16 @@ export default function PublicProfile() {
   const [, setLocation] = useLocation();
   const userId = params?.userId;
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
   
   const isOwnProfile = currentUser && (currentUser as any).id === userId;
 
   const { data: profileData, isLoading } = useQuery<ProfileData>({
     queryKey: ["/api/users", userId],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${userId}`);
+      const response = await fetch(`/api/users/${userId}`, {
+        credentials: "include",
+      });
       if (!response.ok) {
         const error = new Error("Failed to fetch user profile");
         if (response.status === 401) {
@@ -69,6 +74,53 @@ export default function PublicProfile() {
       return failureCount < 3;
     },
   });
+
+  const unpublishMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const response = await apiRequest("PATCH", `/api/trips/${tripId}/unpublish`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Invalidate all relevant caches
+      queryClient.invalidateQueries({ queryKey: ["/api/users", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      toast({
+        title: "Trip unpublished",
+        description: "Your trip has been removed from public view",
+      });
+    },
+    onError: (error: Error) => {
+      const is401 = error.message.includes("401");
+      const is403 = error.message.includes("403");
+      
+      let description = "Failed to unpublish trip";
+      if (is401) {
+        description = "Your session has expired. Please log in again.";
+      } else if (is403) {
+        description = "You don't have permission to unpublish this trip";
+      }
+      
+      toast({
+        title: "Error",
+        description,
+        variant: "destructive",
+      });
+      
+      if (is401) {
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 2000);
+      }
+    },
+  });
+
+  const handleUnpost = (e: React.MouseEvent, tripId: string) => {
+    e.stopPropagation();
+    if (confirm("Remove this trip from public view? It will still be in your My Trips.")) {
+      unpublishMutation.mutate(tripId);
+    }
+  };
 
   const getUserDisplayName = (user: User) => {
     if (user.displayName) return user.displayName;
@@ -205,6 +257,22 @@ export default function PublicProfile() {
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    
+                    {/* Unpost Button (Only for own profile) */}
+                    {isOwnProfile && (
+                      <div className="absolute top-3 left-3 z-10">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={(e) => handleUnpost(e, trip.id)}
+                          className="gap-1.5 text-xs"
+                          data-testid={`button-unpost-${trip.id}`}
+                        >
+                          <EyeOff className="h-3 w-3" />
+                          Unpost
+                        </Button>
+                      </div>
+                    )}
                     
                     {/* Trip Name Overlay */}
                     <div className="absolute bottom-4 left-4 right-4">
