@@ -194,7 +194,7 @@ export default function MyMap() {
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png"
                 noWrap={true}
                 bounds={[[-90, -180], [90, 180]]}
               />
