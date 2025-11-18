@@ -771,60 +771,82 @@ export default function TripDetail() {
                 })}
               </div>
             ) : chartData.length > 0 ? (
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPie>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                        const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
-                        const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
-                        return (
-                          <text
-                            x={x}
-                            y={y}
-                            fill="white"
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            className="text-sm font-bold"
-                          >
-                            {`${(percent * 100).toFixed(0)}%`}
-                          </text>
-                        );
-                      }}
-                      outerRadius={120}
-                      innerRadius={70}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }: any) => {
-                        if (active && payload && payload.length) {
-                          const item = payload[0];
-                          const total = chartData.reduce((sum, d) => sum + d.value, 0);
-                          const percentage = ((item.value / total) * 100).toFixed(1);
+              <div className="flex items-center gap-8 h-[400px]">
+                {/* Legend on the left */}
+                <div className="flex-shrink-0 space-y-3 w-56">
+                  {chartData.map((item, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-sm flex-shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ${item.value.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Pie chart on the right */}
+                <div className="flex-1 h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPie>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                          const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
                           return (
-                            <div className="bg-card border border-border rounded-md p-3 shadow-lg">
-                              <p className="font-semibold text-foreground text-sm">{item.name}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                ${item.value.toLocaleString()} ({percentage}%)
-                              </p>
-                            </div>
+                            <text
+                              x={x}
+                              y={y}
+                              fill="white"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              className="text-sm font-bold"
+                            >
+                              {`${(percent * 100).toFixed(0)}%`}
+                            </text>
                           );
-                        }
-                        return null;
-                      }}
-                    />
-                  </RechartsPie>
-                </ResponsiveContainer>
+                        }}
+                        outerRadius={120}
+                        innerRadius={70}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const item = payload[0];
+                            const total = chartData.reduce((sum, d) => sum + d.value, 0);
+                            const percentage = ((item.value / total) * 100).toFixed(1);
+                            return (
+                              <div className="bg-card border border-border rounded-md p-3 shadow-lg">
+                                <p className="font-semibold text-foreground text-sm">{item.name}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  ${item.value.toLocaleString()} ({percentage}%)
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </RechartsPie>
+                  </ResponsiveContainer>
+                </div>
               </div>
             ) : (
               <div className="h-[400px] flex items-center justify-center text-muted-foreground">
