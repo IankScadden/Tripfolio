@@ -502,6 +502,96 @@ export default function SharedTrip() {
           </Card>
         </div>
 
+        {/* Detailed Category Breakdown */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {CATEGORIES.map((category) => {
+            const categoryExpenses = expensesByCategory[category.id] || [];
+            const total = categoryExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+            if (total === 0) return null;
+
+            const Icon = category.icon;
+            const visibleExpenses = getVisibleExpenses(category.id);
+            const hasMore = categoryExpenses.length > 3;
+            const isExpanded = expandedCategories.has(category.id);
+
+            return (
+              <Card key={category.id}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <Icon className="h-4 w-4" style={{ color: category.color }} />
+                    {category.title}
+                  </CardTitle>
+                  <span className="font-semibold text-lg" data-testid={`text-category-detail-total-${category.id}`}>
+                    ${total.toFixed(0)}
+                  </span>
+                </CardHeader>
+                <CardContent>
+                  {categoryExpenses.length > 0 ? (
+                    <>
+                      <div className="space-y-2">
+                        {visibleExpenses.map((expense) => (
+                          <div
+                            key={expense.id}
+                            className="flex items-start justify-between py-2 border-b last:border-0"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium">{expense.description}</p>
+                                {expense.url && (
+                                  <a
+                                    href={expense.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                    data-testid={`link-expense-url-${expense.id}`}
+                                  >
+                                    <Link2 className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                              {expense.date && (
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDate(expense.date)}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-sm font-medium ml-2">
+                              ${parseFloat(expense.cost).toFixed(0)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {hasMore && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 gap-1 w-full"
+                          onClick={() => toggleCategory(category.id)}
+                          data-testid={`button-toggle-${category.id}`}
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="h-3 w-3" />
+                              Show Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3" />
+                              Show More ({categoryExpenses.length - 3} more)
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No expenses added</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
         {/* Journey Map */}
         {mapLocations.length > 0 && (
           <Card className="mb-8">
