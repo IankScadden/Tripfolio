@@ -38,6 +38,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Unpost Feature**: Users can unpublish their own trips from their public profile. Unpost button appears in top-left of trip cards on the user's own profile. Unpublishing sets isPublic to false, removing the trip from Explore and public view while keeping it in My Trips.
 - **Admin Moderation**: Designated admin users can delete any public trip from the Explore page. Delete button appears only for admins in the top-left corner of trip cards. Authorization enforced at both UI and API levels.
 - **My Map**: Interactive 2D map embedded directly on profile pages showing user's traveled locations via pins. Users can click anywhere on their own map to drop pins marking places they've visited. All maps are publicly viewable (read-only for others) for travel inspiration. Features Leaflet integration with CartoDB Voyager tiles (English labels), reverse geocoding via LocationIQ API, simplified location names (US: "City, State, USA", International: "City, Country"), no infinite horizontal wrapping, and full CRUD operations with ownership verification.
+- **File Upload**: Comprehensive file upload system for profile pictures and trip images. Users can upload images from their local drive using the Uppy file uploader interface. Upload buttons appear next to URL inputs in Profile Settings (for profile pictures) and Post Trip page (for header images and photo gallery). Backend uses Replit App Storage with ACL policies for secure, authenticated file storage. Uploaded files are stored as object paths (/objects/<uuid>) and served via dedicated API routes.
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model
@@ -62,8 +63,10 @@ The application is built with a modern web stack, emphasizing a rich user experi
 ## External Dependencies
 - **Replit Auth**: Utilized for secure user authentication via OpenID Connect.
 - **Neon (PostgreSQL)**: Serves as the primary relational database for persistent data storage.
+- **Replit App Storage**: Cloud object storage for uploaded images with ACL policy management.
 - **Shadcn UI**: Provides pre-built, accessible UI components.
 - **Tailwind CSS**: Utility-first CSS framework for styling.
 - **Recharts**: JavaScript charting library for data visualization.
 - **Leaflet**: Interactive mapping library with OpenStreetMap tiles for the My Map feature.
 - **LocationIQ API**: Reverse geocoding service to convert coordinates into location names.
+- **Uppy**: File uploader library for client-side file selection and upload with progress tracking.
