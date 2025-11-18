@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -13,6 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 const profileSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(50, "Display name must be less than 50 characters"),
@@ -87,6 +89,36 @@ export default function ProfileSettings() {
 
   const onSubmit = (data: ProfileFormData) => {
     updateProfileMutation.mutate(data);
+  };
+
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload", {});
+    const { uploadURL } = await response.json();
+    return {
+      method: "PUT" as const,
+      url: uploadURL,
+    };
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedUrl = result.successful[0].uploadURL;
+      
+      const response = await apiRequest("PUT", "/api/users/profile-picture", {
+        profilePictureUrl: uploadedUrl,
+      });
+      const { objectPath } = await response.json();
+      
+      form.setValue("profileImageUrl", objectPath);
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      toast({
+        title: "Success",
+        description: "Profile picture uploaded successfully",
+      });
+    }
   };
 
   if (isLoading) {
@@ -172,16 +204,28 @@ export default function ProfileSettings() {
                   name="profileImageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Profile Picture URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/your-photo.jpg"
-                          {...field}
-                          data-testid="input-profile-image-url"
-                        />
-                      </FormControl>
+                      <FormLabel>Profile Picture</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com/your-photo.jpg"
+                            {...field}
+                            data-testid="input-profile-image-url"
+                          />
+                        </FormControl>
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={5242880}
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={handleUploadComplete}
+                          buttonVariant="outline"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload
+                        </ObjectUploader>
+                      </div>
                       <FormDescription>
-                        Enter a URL to an image for your profile picture
+                        Enter a URL or upload an image from your computer (max 5MB)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
