@@ -162,6 +162,25 @@ export default function TripDetail() {
     }
   }, [trip?.budget]);
 
+  // Debounced auto-save for budget
+  useEffect(() => {
+    if (!trip) return;
+    
+    // Don't trigger on initial load when budgetInput matches trip.budget
+    if (budgetInput === (trip.budget || "")) return;
+    
+    const timeoutId = setTimeout(() => {
+      const numericValue = parseFloat(budgetInput);
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        updateBudgetMutation.mutate(numericValue.toString());
+      } else if (budgetInput === "") {
+        updateBudgetMutation.mutate("");
+      }
+    }, 500); // Save 500ms after user stops typing
+    
+    return () => clearTimeout(timeoutId);
+  }, [budgetInput, trip?.budget]);
+
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
       const response = await apiRequest("POST", "/api/expenses", { ...expenseData, tripId });
@@ -407,12 +426,13 @@ export default function TripDetail() {
   };
 
   const handleBudgetBlur = () => {
+    // Blur handler is now just a fallback - debounced auto-save handles most cases
+    // This ensures immediate save if user leaves field before 500ms debounce completes
     if (budgetInput !== (trip?.budget || "")) {
       const numericValue = parseFloat(budgetInput);
       if (!isNaN(numericValue) && numericValue >= 0) {
         updateBudgetMutation.mutate(numericValue.toString());
       } else if (budgetInput === "") {
-        // Allow clearing the budget
         updateBudgetMutation.mutate("");
       }
     }
