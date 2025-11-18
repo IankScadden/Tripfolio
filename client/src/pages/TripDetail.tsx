@@ -681,7 +681,7 @@ export default function TripDetail() {
         </div>
 
         {/* Combined Budget Overview and Breakdown */}
-        <div className="grid md:grid-cols-[300px_1fr] gap-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Left: Budget Summary */}
           <Card>
             <CardHeader className="flex flex-row items-center space-y-0 pb-3">
