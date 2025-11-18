@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2, Share2 } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2, Share2, PieChart, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -13,7 +13,7 @@ import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
-import BudgetChart from "@/components/BudgetChart";
+import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -120,6 +120,7 @@ export default function TripDetail() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [budgetInput, setBudgetInput] = useState<string>("");
+  const [breakdownView, setBreakdownView] = useState<"list" | "chart">("list");
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -735,48 +736,103 @@ export default function TripDetail() {
           </Card>
         </div>
 
-        {/* Budget Breakdown and Visual Breakdown */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Budget Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Budget Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {CATEGORIES.map((category) => {
-                const IconComponent = category.icon;
-                const total = getCategoryTotal(category.id);
-                return (
-                  <div key={category.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <IconComponent className="h-4 w-4" style={{ color: category.color }} />
-                      <span className="text-sm">{category.title}</span>
+        {/* Budget Breakdown */}
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle>Budget Breakdown</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setBreakdownView(breakdownView === "list" ? "chart" : "list")}
+              data-testid="button-toggle-breakdown-view"
+              className="gap-2"
+            >
+              <PieChart className="h-4 w-4" />
+              {breakdownView === "list" ? "Pie Chart" : "List View"}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {breakdownView === "list" ? (
+              <div className="space-y-3">
+                {CATEGORIES.map((category) => {
+                  const IconComponent = category.icon;
+                  const total = getCategoryTotal(category.id);
+                  return (
+                    <div key={category.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                        <span className="text-sm">{category.title}</span>
+                      </div>
+                      <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
+                        ${total.toFixed(0)}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
-                      ${total.toFixed(0)}
-                    </span>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Visual Breakdown with BudgetChart */}
-          {chartData.length > 0 ? (
-            <BudgetChart data={chartData} />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Visual Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  No expenses added yet
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            ) : chartData.length > 0 ? (
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPie>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                        const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                        const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="white"
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            className="text-sm font-bold"
+                          >
+                            {`${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        );
+                      }}
+                      outerRadius={120}
+                      innerRadius={70}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }: any) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0];
+                          const total = chartData.reduce((sum, d) => sum + d.value, 0);
+                          const percentage = ((item.value / total) * 100).toFixed(1);
+                          return (
+                            <div className="bg-card border border-border rounded-md p-3 shadow-lg">
+                              <p className="font-semibold text-foreground text-sm">{item.name}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                ${item.value.toLocaleString()} ({percentage}%)
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                  </RechartsPie>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                No expenses added yet
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Category Cards */}
         <div className="grid md:grid-cols-2 gap-6">
