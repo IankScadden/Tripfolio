@@ -684,7 +684,7 @@ export default function TripDetail() {
         <div className="grid md:grid-cols-[300px_1fr] gap-6 mb-8">
           {/* Left: Budget Summary */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="flex flex-row items-center space-y-0 pb-3">
               <CardTitle className="text-base">Budget Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
