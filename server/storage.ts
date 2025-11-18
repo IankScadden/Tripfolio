@@ -322,6 +322,7 @@ export class DatabaseStorage implements IStorage {
           foodBudgetAdjustment: insertDayDetail.foodBudgetAdjustment,
           stayingInSameCity: insertDayDetail.stayingInSameCity,
           intercityTransportType: insertDayDetail.intercityTransportType,
+          notes: insertDayDetail.notes,
         })
         .where(and(eq(dayDetails.tripId, insertDayDetail.tripId), eq(dayDetails.dayNumber, insertDayDetail.dayNumber)))
         .returning();

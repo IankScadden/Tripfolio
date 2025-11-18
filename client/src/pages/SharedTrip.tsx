@@ -368,6 +368,12 @@ export default function SharedTrip() {
                                 <p className="text-sm">{dayDetail.localTransportNotes}</p>
                               </div>
                             )}
+                            {dayDetail?.notes && (
+                              <div className="mt-3 pt-3 border-t">
+                                <p className="text-xs text-muted-foreground mb-1">Notes for the Day:</p>
+                                <p className="text-sm whitespace-pre-wrap">{dayDetail.notes}</p>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       );

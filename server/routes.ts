@@ -402,6 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         foodBudgetAdjustment: req.body.foodBudgetAdjustment,
         stayingInSameCity: req.body.stayingInSameCity,
         intercityTransportType: req.body.intercityTransportType,
+        notes: req.body.notes,
       });
       res.json(dayDetail);
     } catch (error) {

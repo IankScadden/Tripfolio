@@ -54,6 +54,7 @@ export default function DayDetail({
   const [lodgingUrl, setLodgingUrl] = useState("");
   const [activities, setActivities] = useState<Activity[]>([]);
   const [foodBudgetAdjustment, setFoodBudgetAdjustment] = useState("");
+  const [notes, setNotes] = useState("");
   
   // Transportation state - supports multiple entries
   const [transportation, setTransportation] = useState<{
@@ -177,6 +178,7 @@ export default function DayDetail({
     // Always set values, clearing them if no data exists for this day
     setDestination(dayDetailData?.destination || "");
     setFoodBudgetAdjustment(dayDetailData?.foodBudgetAdjustment || "");
+    setNotes(dayDetailData?.notes || "");
   }, [dayDetailData, dayNumber]);
 
   useEffect(() => {
@@ -445,6 +447,7 @@ export default function DayDetail({
       foodBudgetAdjustment: foodBudgetAdjustment || "0",
       stayingInSameCity: 0,
       intercityTransportType: null,
+      notes: notes || undefined,
     });
 
     // Save/update lodging expense
@@ -957,6 +960,22 @@ export default function DayDetail({
                   value={foodBudgetAdjustment}
                   onChange={(e) => setFoodBudgetAdjustment(e.target.value)}
                   data-testid="input-food-adjustment"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-3">
+            <div className="pl-7 space-y-3">
+              <div>
+                <Label>Notes for the Day</Label>
+                <Textarea
+                  placeholder="Add any notes or reminders for this day..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  data-testid="input-notes"
                 />
               </div>
             </div>
