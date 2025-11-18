@@ -26,6 +26,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Trip Management**: Comprehensive tools for creating, viewing, and organizing user-specific trip projects.
 - **Post Trip**: Social media-style publishing feature where users add cover images, trip stories, hashtags, and photo galleries to share trips with the community. Trips remain in My Trips and become visible in Explore.
 - **Expense Tracking**: Detailed expense entry across 7 categories with descriptions, costs, optional links, and dates.
+- **Budget Tracking**: Trip budget input with automatic remaining budget calculation (budget - total cost) visible only in My Trips. Color-coded display (green for positive, red for negative) helps users monitor their spending. Budget data is private and not shown in shared links or public views.
 - **Budget Visualization**: Interactive pie charts for clear expense breakdown by category.
 - **Trip Sharing**: Generation of shareable, read-only links for trip budgets (shared links display trip details without social engagement features).
 - **Day-by-Day Planning**: Detailed itinerary planning with automatic expense synchronization, including multi-day lodging (supports both date-based and nights-based entry for flexible trip planning), flexible transportation entries, and daily notes section for personal reminders and trip planning thoughts.
@@ -41,7 +42,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 
 ### Data Model
 - **Users**: Stores essential user information for authentication and personalization.
-- **Trips**: Manages trip details, associated user, dates, and shareable IDs.
+- **Trips**: Manages trip details, associated user, dates, shareable IDs, and budget (optional, private).
 - **Expenses**: Records individual expenses with category, cost, description, and linkage to specific trip days.
 - **DayDetails**: Captures daily itinerary specifics, destinations, local transport notes, and daily notes for personal reminders.
 - **Likes**: Tracks user likes on public trips with unique constraint preventing duplicate likes (tripId, userId).
