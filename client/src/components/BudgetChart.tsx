@@ -107,24 +107,6 @@ export default function BudgetChart({ data }: BudgetChartProps) {
           <div className="h-80">
             <ChartComponent size="normal" />
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            {data.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-sm"
-                  style={{ backgroundColor: item.color }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {item.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    ${item.value.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
