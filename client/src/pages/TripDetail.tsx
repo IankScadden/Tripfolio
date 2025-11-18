@@ -680,12 +680,12 @@ export default function TripDetail() {
         </div>
 
         {/* Budget Tracking and Total Cost */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
           {/* Total Trip Cost */}
           <Card className="bg-muted/30">
-            <CardContent className="py-6 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
-              <div className="text-4xl font-bold" data-testid="text-total-cost">
+            <CardContent className="py-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Total Trip Cost</div>
+              <div className="text-2xl font-bold" data-testid="text-total-cost">
                 ${trip.totalCost.toFixed(0)}
               </div>
             </CardContent>
@@ -693,14 +693,14 @@ export default function TripDetail() {
 
           {/* Budget Tracking */}
           <Card className="bg-muted/30">
-            <CardContent className="py-6">
-              <div className="space-y-4">
+            <CardContent className="py-3">
+              <div className="space-y-2">
                 <div>
-                  <label htmlFor="trip-budget" className="text-sm text-muted-foreground mb-1 block">
+                  <label htmlFor="trip-budget" className="text-xs text-muted-foreground mb-1 block text-center">
                     Trip Budget
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                     <Input
                       id="trip-budget"
                       type="number"
@@ -708,7 +708,7 @@ export default function TripDetail() {
                       value={budgetInput}
                       onChange={(e) => handleBudgetChange(e.target.value)}
                       onBlur={handleBudgetBlur}
-                      className="pl-7 text-center"
+                      className="pl-7 text-center h-8"
                       data-testid="input-trip-budget"
                       min="0"
                       step="1"
@@ -717,9 +717,9 @@ export default function TripDetail() {
                 </div>
                 {trip.budget && parseFloat(trip.budget) > 0 && (
                   <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Remaining Budget</div>
+                    <div className="text-xs text-muted-foreground">Remaining Budget</div>
                     <div 
-                      className={`text-2xl font-bold ${
+                      className={`text-xl font-bold ${
                         parseFloat(trip.budget) - trip.totalCost >= 0 
                           ? "text-green-600 dark:text-green-400" 
                           : "text-red-600 dark:text-red-400"
