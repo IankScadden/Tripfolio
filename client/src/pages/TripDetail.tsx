@@ -689,28 +689,28 @@ export default function TripDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Total Trip Cost */}
-              <div className="text-center py-2">
-                <div className="text-xs text-muted-foreground mb-1">Total Trip Cost</div>
-                <div className="text-2xl font-bold" data-testid="text-total-cost">
+              <div className="text-center py-3">
+                <div className="text-sm text-muted-foreground mb-2">Total Trip Cost</div>
+                <div className="text-5xl font-bold" data-testid="text-total-cost">
                   ${trip.totalCost.toFixed(0)}
                 </div>
               </div>
 
               {/* Budget Input */}
-              <div>
-                <label htmlFor="trip-budget" className="text-xs text-muted-foreground mb-1 block text-center">
+              <div className="pt-2">
+                <label htmlFor="trip-budget" className="text-[11px] text-muted-foreground mb-1 block text-center">
                   Trip Budget
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
                   <Input
                     id="trip-budget"
                     type="number"
-                    placeholder="Enter budget"
+                    placeholder="0.00"
                     value={budgetInput}
                     onChange={(e) => handleBudgetChange(e.target.value)}
                     onBlur={handleBudgetBlur}
-                    className="pl-7 text-center h-9"
+                    className="pl-7 text-center h-8 text-sm"
                     data-testid="input-trip-budget"
                     min="0"
                     step="1"
