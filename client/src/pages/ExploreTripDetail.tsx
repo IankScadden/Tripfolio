@@ -91,6 +91,7 @@ export default function ExploreTripDetail() {
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState("");
+  const [breakdownView, setBreakdownView] = useState<"list" | "chart">("list");
 
   const toggleCategoryExpanded = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -567,58 +568,118 @@ export default function ExploreTripDetail() {
 
               {!showItinerary && (
                 <>
-                  {/* Total Trip Cost Card - EXACT from TripDetail */}
-                  <Card className="bg-muted/30">
-                    <CardContent className="py-6 text-center">
-                      <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
-                      <div className="text-4xl font-bold">
-                        ${trip.totalCost.toFixed(0)}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-              {/* Budget Breakdown and Visual Breakdown - EXACT from TripDetail */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Budget Breakdown */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Budget Breakdown</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {CATEGORIES.map((category) => {
-                      const IconComponent = category.icon;
-                      const total = getCategoryTotal(category.id);
-                      return (
-                        <div key={category.id} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <IconComponent className="h-4 w-4" style={{ color: category.color }} />
-                            <span className="text-sm">{category.title}</span>
+                  {/* Combined Budget Overview and Breakdown */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    {/* Left: Total Trip Cost Only (no budget input - private) */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center space-y-0 pb-3">
+                        <CardTitle className="text-base">Budget Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Total Trip Cost */}
+                        <div className="text-center py-3">
+                          <div className="text-sm text-muted-foreground mb-2">Total Trip Cost</div>
+                          <div className="text-5xl font-bold" data-testid="text-total-cost">
+                            ${trip.totalCost.toFixed(0)}
                           </div>
-                          <span className="text-sm font-medium">
-                            ${total.toFixed(0)}
-                          </span>
                         </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
 
-                {/* Visual Breakdown with BudgetChart - EXACT from TripDetail */}
-                {chartData.length > 0 ? (
-                  <BudgetChart data={chartData} />
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Visual Breakdown</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                        No expenses added yet
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+                    {/* Right: Budget Breakdown with Toggle */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-base">Budget Breakdown</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setBreakdownView(breakdownView === "list" ? "chart" : "list")}
+                          data-testid="button-toggle-breakdown-view"
+                          className="gap-2"
+                        >
+                          <PieChart className="h-4 w-4" />
+                          {breakdownView === "list" ? "Pie Chart" : "List View"}
+                        </Button>
+                      </CardHeader>
+                      <CardContent>
+                        {breakdownView === "list" ? (
+                          <div className="space-y-3">
+                            {CATEGORIES.map((category) => {
+                              const IconComponent = category.icon;
+                              const total = getCategoryTotal(category.id);
+                              return (
+                                <div key={category.id} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                                    <span className="text-sm">{category.title}</span>
+                                  </div>
+                                  <span className="text-sm font-medium">
+                                    ${total.toFixed(0)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : chartData.length > 0 ? (
+                          <div className="h-[280px]">
+                            <div className="flex items-center gap-6 h-full">
+                              <div className="flex-1">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <RechartsPie>
+                                    <Pie
+                                      data={chartData}
+                                      cx="50%"
+                                      cy="50%"
+                                      labelLine={false}
+                                      outerRadius={80}
+                                      fill="#8884d8"
+                                      dataKey="value"
+                                    >
+                                      {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                      ))}
+                                    </Pie>
+                                    <Tooltip
+                                      content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                          const item = payload[0].payload;
+                                          const percentage = ((item.value / trip.totalCost) * 100).toFixed(1);
+                                          return (
+                                            <div className="bg-card border border-border rounded-md p-2 shadow-lg">
+                                              <p className="font-semibold text-foreground text-xs">{item.name}</p>
+                                              <p className="text-xs text-muted-foreground">
+                                                ${item.value.toLocaleString()} ({percentage}%)
+                                              </p>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      }}
+                                    />
+                                  </RechartsPie>
+                                </ResponsiveContainer>
+                              </div>
+                              <div className="space-y-2">
+                                {chartData.map((entry, index) => (
+                                  <div key={index} className="flex items-center gap-2">
+                                    <div
+                                      className="w-3 h-3 rounded-sm"
+                                      style={{ backgroundColor: entry.color }}
+                                    />
+                                    <span className="text-xs">{entry.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+                            No expenses added yet
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
 
               {/* Category Cards - EXACT from TripDetail */}
               <div className="grid md:grid-cols-2 gap-6">
