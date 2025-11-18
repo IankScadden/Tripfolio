@@ -1001,7 +1001,7 @@ export default function ExploreTripDetail() {
                 commentsData.map((comment) => (
                   <div key={comment.id} className="flex gap-3 p-4 rounded-lg bg-muted/50">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={comment.user.profileImageUrl} />
+                      <AvatarImage src={comment.user.profileImageUrl || undefined} />
                       <AvatarFallback>
                         {comment.user.displayName?.[0] || comment.user.firstName?.[0] || comment.user.lastName?.[0] || 'U'}
                       </AvatarFallback>
@@ -1016,13 +1016,13 @@ export default function ExploreTripDetail() {
                           {comment.user.displayName || `${comment.user.firstName || ''} ${comment.user.lastName || ''}`.trim() || 'Anonymous'}
                         </button>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(comment.createdAt).toLocaleDateString('en-US', { 
+                          {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric',
                             year: 'numeric',
                             hour: 'numeric',
                             minute: '2-digit'
-                          })}
+                          }) : ''}
                         </span>
                       </div>
                       <p className="text-sm text-foreground whitespace-pre-wrap">

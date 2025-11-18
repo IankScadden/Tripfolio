@@ -680,181 +680,185 @@ export default function TripDetail() {
           </div>
         </div>
 
-        {/* Budget Tracking and Total Cost */}
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
-          {/* Total Trip Cost */}
-          <Card className="bg-muted/30">
-            <CardContent className="py-3 text-center">
-              <div className="text-xs text-muted-foreground mb-1">Total Trip Cost</div>
-              <div className="text-2xl font-bold" data-testid="text-total-cost">
-                ${trip.totalCost.toFixed(0)}
+        {/* Combined Budget Overview and Breakdown */}
+        <div className="grid md:grid-cols-[300px_1fr] gap-6 mb-8">
+          {/* Left: Budget Summary */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Budget Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Total Trip Cost */}
+              <div className="text-center py-2">
+                <div className="text-xs text-muted-foreground mb-1">Total Trip Cost</div>
+                <div className="text-2xl font-bold" data-testid="text-total-cost">
+                  ${trip.totalCost.toFixed(0)}
+                </div>
               </div>
+
+              {/* Budget Input */}
+              <div>
+                <label htmlFor="trip-budget" className="text-xs text-muted-foreground mb-1 block text-center">
+                  Trip Budget
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    id="trip-budget"
+                    type="number"
+                    placeholder="Enter budget"
+                    value={budgetInput}
+                    onChange={(e) => handleBudgetChange(e.target.value)}
+                    onBlur={handleBudgetBlur}
+                    className="pl-7 text-center h-9"
+                    data-testid="input-trip-budget"
+                    min="0"
+                    step="1"
+                  />
+                </div>
+              </div>
+
+              {/* Remaining Budget */}
+              {trip.budget && parseFloat(trip.budget) > 0 && (
+                <div className="text-center py-2">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {parseFloat(trip.budget) - trip.totalCost >= 0 ? "Under Budget" : "Over Budget"}
+                  </div>
+                  <div 
+                    className={`text-2xl font-bold ${
+                      parseFloat(trip.budget) - trip.totalCost >= 0 
+                        ? "text-green-600 dark:text-green-400" 
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                    data-testid="text-remaining-budget"
+                  >
+                    ${Math.abs(parseFloat(trip.budget) - trip.totalCost).toFixed(0)}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Budget Tracking */}
-          <Card className="bg-muted/30">
-            <CardContent className="py-3">
-              <div className="space-y-2">
-                <div>
-                  <label htmlFor="trip-budget" className="text-xs text-muted-foreground mb-1 block text-center">
-                    Trip Budget
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                    <Input
-                      id="trip-budget"
-                      type="number"
-                      placeholder="Enter budget"
-                      value={budgetInput}
-                      onChange={(e) => handleBudgetChange(e.target.value)}
-                      onBlur={handleBudgetBlur}
-                      className="pl-7 text-center h-8"
-                      data-testid="input-trip-budget"
-                      min="0"
-                      step="1"
-                    />
+          {/* Right: Budget Breakdown */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base">Budget Breakdown</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setBreakdownView(breakdownView === "list" ? "chart" : "list")}
+                data-testid="button-toggle-breakdown-view"
+                className="gap-2"
+              >
+                <PieChart className="h-4 w-4" />
+                {breakdownView === "list" ? "Pie Chart" : "List View"}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {breakdownView === "list" ? (
+                <div className="space-y-3">
+                  {CATEGORIES.map((category) => {
+                    const IconComponent = category.icon;
+                    const total = getCategoryTotal(category.id);
+                    return (
+                      <div key={category.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4" style={{ color: category.color }} />
+                          <span className="text-sm">{category.title}</span>
+                        </div>
+                        <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
+                          ${total.toFixed(0)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : chartData.length > 0 ? (
+                <div className="flex items-center gap-6 h-[280px]">
+                  {/* Legend on the left */}
+                  <div className="flex-shrink-0 space-y-2 w-48">
+                    {chartData.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-sm flex-shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            ${item.value.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pie chart on the right */}
+                  <div className="flex-1 h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPie>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                            const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                            const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                fill="white"
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                className="text-xs font-bold"
+                              >
+                                {`${(percent * 100).toFixed(0)}%`}
+                              </text>
+                            );
+                          }}
+                          outerRadius={90}
+                          innerRadius={50}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }: any) => {
+                            if (active && payload && payload.length) {
+                              const item = payload[0];
+                              const total = chartData.reduce((sum, d) => sum + d.value, 0);
+                              const percentage = ((item.value / total) * 100).toFixed(1);
+                              return (
+                                <div className="bg-card border border-border rounded-md p-2 shadow-lg">
+                                  <p className="font-semibold text-foreground text-xs">{item.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    ${item.value.toLocaleString()} ({percentage}%)
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </RechartsPie>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                {trip.budget && parseFloat(trip.budget) > 0 && (
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground">Remaining Budget</div>
-                    <div 
-                      className={`text-xl font-bold ${
-                        parseFloat(trip.budget) - trip.totalCost >= 0 
-                          ? "text-green-600 dark:text-green-400" 
-                          : "text-red-600 dark:text-red-400"
-                      }`}
-                      data-testid="text-remaining-budget"
-                    >
-                      ${(parseFloat(trip.budget) - trip.totalCost).toFixed(0)}
-                    </div>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+                  No expenses added yet
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-
-        {/* Budget Breakdown */}
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Budget Breakdown</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setBreakdownView(breakdownView === "list" ? "chart" : "list")}
-              data-testid="button-toggle-breakdown-view"
-              className="gap-2"
-            >
-              <PieChart className="h-4 w-4" />
-              {breakdownView === "list" ? "Pie Chart" : "List View"}
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {breakdownView === "list" ? (
-              <div className="space-y-3">
-                {CATEGORIES.map((category) => {
-                  const IconComponent = category.icon;
-                  const total = getCategoryTotal(category.id);
-                  return (
-                    <div key={category.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <IconComponent className="h-4 w-4" style={{ color: category.color }} />
-                        <span className="text-sm">{category.title}</span>
-                      </div>
-                      <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
-                        ${total.toFixed(0)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : chartData.length > 0 ? (
-              <div className="flex items-center gap-8 h-[400px]">
-                {/* Legend on the left */}
-                <div className="flex-shrink-0 space-y-3 w-56">
-                  {chartData.map((item, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded-sm flex-shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ${item.value.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Pie chart on the right */}
-                <div className="flex-1 h-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPie>
-                      <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                          const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
-                          const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
-                          return (
-                            <text
-                              x={x}
-                              y={y}
-                              fill="white"
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              className="text-sm font-bold"
-                            >
-                              {`${(percent * 100).toFixed(0)}%`}
-                            </text>
-                          );
-                        }}
-                        outerRadius={120}
-                        innerRadius={70}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const item = payload[0];
-                            const total = chartData.reduce((sum, d) => sum + d.value, 0);
-                            const percentage = ((item.value / total) * 100).toFixed(1);
-                            return (
-                              <div className="bg-card border border-border rounded-md p-3 shadow-lg">
-                                <p className="font-semibold text-foreground text-sm">{item.name}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  ${item.value.toLocaleString()} ({percentage}%)
-                                </p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </RechartsPie>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            ) : (
-              <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                No expenses added yet
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Category Cards */}
         <div className="grid md:grid-cols-2 gap-6">
