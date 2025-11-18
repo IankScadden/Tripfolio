@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Maximize2, X } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 
 interface ChartData {
   name: string;
@@ -112,13 +112,8 @@ export default function BudgetChart({ data }: BudgetChartProps) {
 
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
         <DialogContent className="max-w-6xl h-[90vh]" data-testid="dialog-expanded-chart">
-          <DialogHeader className="flex flex-row items-center justify-between">
+          <DialogHeader>
             <DialogTitle>Budget Breakdown</DialogTitle>
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" data-testid="button-close-chart">
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogClose>
           </DialogHeader>
           <div className="flex-1 h-full pb-8">
             <ChartComponent size="large" />
