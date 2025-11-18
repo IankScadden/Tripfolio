@@ -404,14 +404,16 @@ export default function TripDetail() {
     if (!trip) return;
     
     // Don't trigger on initial load when budgetInput matches trip.budget
-    if (budgetInput === (trip.budget || "")) return;
+    if (budgetInput === (trip.budget || "0")) return;
     
     const timeoutId = setTimeout(() => {
+      // If field is empty or invalid, save as "0"
       const numericValue = parseFloat(budgetInput);
       if (!isNaN(numericValue) && numericValue >= 0) {
         updateBudgetMutation.mutate(numericValue.toString());
-      } else if (budgetInput === "") {
-        updateBudgetMutation.mutate("");
+      } else {
+        // Empty or invalid input defaults to "0"
+        updateBudgetMutation.mutate("0");
       }
     }, 500); // Save 500ms after user stops typing
     
