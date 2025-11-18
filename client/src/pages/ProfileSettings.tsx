@@ -19,7 +19,10 @@ import type { UploadResult } from "@uppy/core";
 const profileSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(50, "Display name must be less than 50 characters"),
   bio: z.string().max(300, "Bio must be less than 300 characters").optional(),
-  profileImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  profileImageUrl: z.string().refine(
+    (val) => !val || val === "" || val.startsWith("/objects/") || val.startsWith("http://") || val.startsWith("https://"),
+    { message: "Must be a valid URL or object path" }
+  ).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;

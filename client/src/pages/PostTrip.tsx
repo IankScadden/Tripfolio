@@ -21,7 +21,10 @@ import type { UploadResult } from "@uppy/core";
 const postTripSchema = z.object({
   tripType: z.enum(["plan", "traveled"]),
   description: z.string().max(5000, "Description must be less than 5000 characters").optional(),
-  headerImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  headerImageUrl: z.string().refine(
+    (val) => !val || val === "" || val.startsWith("/objects/") || val.startsWith("http://") || val.startsWith("https://"),
+    { message: "Must be a valid URL or object path" }
+  ).optional(),
   tags: z.array(z.string()).optional(),
   photos: z.array(z.string()).optional(),
 });
