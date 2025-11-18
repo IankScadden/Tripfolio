@@ -575,7 +575,7 @@ export default function TripDetail() {
   const getVisibleExpenses = (categoryId: string) => {
     const categoryExpenses = getExpensesByCategory(categoryId);
     const isExpanded = expandedCategories.has(categoryId);
-    return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 3);
+    return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 1);
   };
 
   const chartData = CATEGORIES.map((cat) => ({
@@ -967,7 +967,7 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("flights").length > 3 && (
+                  {getExpensesByCategory("flights").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -975,7 +975,7 @@ export default function TripDetail() {
                       onClick={() => toggleCategoryExpanded("flights")}
                       data-testid="button-toggle-flights"
                     >
-                      {expandedCategories.has("flights") ? "Show Less" : `Show More (${getExpensesByCategory("flights").length - 3} more)`}
+                      {expandedCategories.has("flights") ? "Show Less" : `Show More (${getExpensesByCategory("flights").length - 1} more)`}
                     </Button>
                   )}
                 </>
@@ -1079,7 +1079,7 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("intercity").length > 3 && (
+                  {getExpensesByCategory("intercity").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1087,7 +1087,7 @@ export default function TripDetail() {
                       onClick={() => toggleCategoryExpanded("intercity")}
                       data-testid="button-toggle-intercity"
                     >
-                      {expandedCategories.has("intercity") ? "Show Less" : `Show More (${getExpensesByCategory("intercity").length - 3} more)`}
+                      {expandedCategories.has("intercity") ? "Show Less" : `Show More (${getExpensesByCategory("intercity").length - 1} more)`}
                     </Button>
                   )}
                 </>
@@ -1191,7 +1191,7 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("local").length > 3 && (
+                  {getExpensesByCategory("local").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1199,7 +1199,7 @@ export default function TripDetail() {
                       onClick={() => toggleCategoryExpanded("local")}
                       data-testid="button-toggle-local"
                     >
-                      {expandedCategories.has("local") ? "Show Less" : `Show More (${getExpensesByCategory("local").length - 3} more)`}
+                      {expandedCategories.has("local") ? "Show Less" : `Show More (${getExpensesByCategory("local").length - 1} more)`}
                     </Button>
                   )}
                 </>
@@ -1303,7 +1303,7 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("accommodation").length > 3 && (
+                  {getExpensesByCategory("accommodation").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1311,7 +1311,7 @@ export default function TripDetail() {
                       onClick={() => toggleCategoryExpanded("accommodation")}
                       data-testid="button-toggle-accommodation"
                     >
-                      {expandedCategories.has("accommodation") ? "Show Less" : `Show More (${getExpensesByCategory("accommodation").length - 3} more)`}
+                      {expandedCategories.has("accommodation") ? "Show Less" : `Show More (${getExpensesByCategory("accommodation").length - 1} more)`}
                     </Button>
                   )}
                 </>
@@ -1415,7 +1415,7 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("activities").length > 3 && (
+                  {getExpensesByCategory("activities").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1423,7 +1423,7 @@ export default function TripDetail() {
                       onClick={() => toggleCategoryExpanded("activities")}
                       data-testid="button-toggle-activities"
                     >
-                      {expandedCategories.has("activities") ? "Show Less" : `Show More (${getExpensesByCategory("activities").length - 3} more)`}
+                      {expandedCategories.has("activities") ? "Show Less" : `Show More (${getExpensesByCategory("activities").length - 1} more)`}
                     </Button>
                   )}
                 </>
@@ -1527,7 +1527,7 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("other").length > 3 && (
+                  {getExpensesByCategory("other").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1535,7 +1535,7 @@ export default function TripDetail() {
                       onClick={() => toggleCategoryExpanded("other")}
                       data-testid="button-toggle-other"
                     >
-                      {expandedCategories.has("other") ? "Show Less" : `Show More (${getExpensesByCategory("other").length - 3} more)`}
+                      {expandedCategories.has("other") ? "Show Less" : `Show More (${getExpensesByCategory("other").length - 1} more)`}
                     </Button>
                   )}
                 </>

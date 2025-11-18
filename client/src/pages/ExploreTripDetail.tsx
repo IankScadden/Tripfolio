@@ -105,10 +105,10 @@ export default function ExploreTripDetail() {
 
   const getVisibleExpenses = (categoryId: string) => {
     const allExpenses = getExpensesByCategory(categoryId);
-    if (expandedCategories.has(categoryId) || allExpenses.length <= 3) {
+    if (expandedCategories.has(categoryId) || allExpenses.length <= 1) {
       return allExpenses;
     }
-    return allExpenses.slice(0, 3);
+    return allExpenses.slice(0, 1);
   };
 
   const { data, isLoading } = useQuery<TripDetailResponse>({
@@ -770,7 +770,7 @@ export default function ExploreTripDetail() {
                                 </div>
                               ))}
                             </div>
-                            {categoryExpenses.length > 3 && (
+                            {categoryExpenses.length > 1 && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -778,7 +778,7 @@ export default function ExploreTripDetail() {
                                 onClick={() => toggleCategoryExpanded(category.id)}
                                 data-testid={`button-toggle-${category.id}`}
                               >
-                                {expandedCategories.has(category.id) ? "Show Less" : `Show More (${categoryExpenses.length - 3} more)`}
+                                {expandedCategories.has(category.id) ? "Show Less" : `Show More (${categoryExpenses.length - 1} more)`}
                               </Button>
                             )}
                           </>

@@ -204,7 +204,7 @@ export default function SharedTrip() {
   const getVisibleExpenses = (categoryId: string) => {
     const categoryExpenses = expensesByCategory[categoryId] || [];
     const isExpanded = expandedCategories.has(categoryId);
-    return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 3);
+    return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 1);
   };
 
   const formatDate = (dateStr?: string) => {
@@ -511,7 +511,7 @@ export default function SharedTrip() {
 
             const Icon = category.icon;
             const visibleExpenses = getVisibleExpenses(category.id);
-            const hasMore = categoryExpenses.length > 3;
+            const hasMore = categoryExpenses.length > 1;
             const isExpanded = expandedCategories.has(category.id);
 
             return (
@@ -577,7 +577,7 @@ export default function SharedTrip() {
                           ) : (
                             <>
                               <ChevronDown className="h-3 w-3" />
-                              Show More ({categoryExpenses.length - 3} more)
+                              Show More ({categoryExpenses.length - 1} more)
                             </>
                           )}
                         </Button>
