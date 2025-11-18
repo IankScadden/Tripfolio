@@ -6,6 +6,8 @@ import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { randomUUID } from "crypto";
 import { geocodeDestination } from "./geocoding";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -1007,6 +1009,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting travel pin:", error);
       res.status(500).json({ error: "Failed to delete travel pin" });
+    }
+  });
+
+  // Object Storage routes - for file uploads
+  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
+    const userId = req.user?.claims?.sub;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: userId,
+        requestedPermission: ObjectPermission.READ,
+      });
+      if (!canAccess) {
+        return res.sendStatus(401);
+      }
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error checking object access:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.put("/api/users/profile-picture", isAuthenticated, async (req: any, res) => {
+    if (!req.body.profilePictureUrl) {
+      return res.status(400).json({ error: "profilePictureUrl is required" });
+    }
+
+    const userId = req.user.claims.sub;
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.profilePictureUrl,
+        {
+          owner: userId,
+          visibility: "public",
+        },
+      );
+
+      await storage.updateUser(userId, { profilePictureUrl: objectPath });
+
+      res.status(200).json({ objectPath });
+    } catch (error) {
+      console.error("Error setting profile picture:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/trips/:id/header-image", isAuthenticated, async (req: any, res) => {
+    if (!req.body.headerImageUrl) {
+      return res.status(400).json({ error: "headerImageUrl is required" });
+    }
+
+    const userId = req.user.claims.sub;
+
+    try {
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.headerImageUrl,
+        {
+          owner: userId,
+          visibility: "public",
+        },
+      );
+
+      await storage.updateTrip(req.params.id, { headerImageUrl: objectPath });
+
+      res.status(200).json({ objectPath });
+    } catch (error) {
+      console.error("Error setting header image:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/trips/:id/photos", isAuthenticated, async (req: any, res) => {
+    if (!req.body.photoUrl) {
+      return res.status(400).json({ error: "photoUrl is required" });
+    }
+
+    const userId = req.user.claims.sub;
+
+    try {
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.photoUrl,
+        {
+          owner: userId,
+          visibility: "public",
+        },
+      );
+
+      const currentPhotos = trip.photoUrls || [];
+      const updatedPhotos = [...currentPhotos, objectPath];
+      await storage.updateTrip(req.params.id, { photoUrls: updatedPhotos });
+
+      res.status(200).json({ objectPath, photos: updatedPhotos });
+    } catch (error) {
+      console.error("Error adding photo:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
