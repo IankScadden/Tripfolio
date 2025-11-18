@@ -119,7 +119,7 @@ export default function Explore() {
       
       {/* Hero Section */}
       <div 
-        className="relative h-[400px] bg-cover bg-center flex items-center justify-center"
+        className="relative h-[350px] bg-cover bg-center flex items-center justify-center"
         style={{
           backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=400&fit=crop')`,
         }}
