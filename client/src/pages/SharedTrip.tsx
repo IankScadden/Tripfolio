@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
-import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp, Copy, PieChart as PieChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { JourneyMap } from "@/components/JourneyMap";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -89,6 +89,7 @@ type DayDetail = {
   latitude?: string;
   longitude?: string;
   localTransportNotes?: string;
+  notes?: string;
 };
 
 type SharedTripData = {
@@ -103,6 +104,7 @@ export default function SharedTrip() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [breakdownView, setBreakdownView] = useState<"list" | "chart">("list");
 
   const { data, isLoading } = useQuery<SharedTripData>({
     queryKey: ["/api/share", shareId],
@@ -385,138 +387,114 @@ export default function SharedTrip() {
           </div>
         </div>
 
-        {/* Total Cost */}
-        <div className="mb-8 text-center">
-          <p className="text-sm text-muted-foreground mb-2">Total Trip Cost</p>
-          <p className="text-6xl font-bold text-primary mb-2" data-testid="text-total-cost">
-            ${trip.totalCost.toFixed(0)}
-          </p>
-        </div>
-
-        {/* Budget Breakdown and Visual */}
+        {/* Budget Overview */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Budget Breakdown */}
+          {/* Left: Total Trip Cost */}
           <Card>
-            <CardHeader>
-              <CardTitle>Budget Breakdown</CardTitle>
+            <CardHeader className="flex flex-row items-center space-y-0 pb-3">
+              <CardTitle className="text-base">Budget Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {CATEGORIES.map((category) => {
-                const categoryExpenses = expensesByCategory[category.id] || [];
-                const total = categoryExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-                if (total === 0) return null;
-
-                const Icon = category.icon;
-                const visibleExpenses = getVisibleExpenses(category.id);
-                const hasMore = categoryExpenses.length > 3;
-                const isExpanded = expandedCategories.has(category.id);
-
-                return (
-                  <div key={category.id}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" style={{ color: category.color }} />
-                        <span className="font-medium">{category.title}</span>
-                      </div>
-                      <span className="font-semibold" data-testid={`text-category-total-${category.id}`}>
-                        ${total.toFixed(0)}
-                      </span>
-                    </div>
-
-                    {categoryExpenses.length > 0 && (
-                      <>
-                        <div className="ml-6 space-y-2">
-                          {visibleExpenses.map((expense) => (
-                            <div
-                              key={expense.id}
-                              className="flex items-start justify-between text-sm"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-foreground">{expense.description}</p>
-                                  {expense.url && (
-                                    <a
-                                      href={expense.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-primary hover:underline"
-                                      data-testid={`link-expense-url-${expense.id}`}
-                                    >
-                                      <Link2 className="h-3 w-3" />
-                                    </a>
-                                  )}
-                                </div>
-                                {expense.date && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatDate(expense.date)}
-                                  </p>
-                                )}
-                              </div>
-                              <span className="text-muted-foreground ml-2">
-                                ${parseFloat(expense.cost).toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        {hasMore && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="ml-6 mt-2 gap-1"
-                            onClick={() => toggleCategory(category.id)}
-                            data-testid={`button-toggle-${category.id}`}
-                          >
-                            {isExpanded ? (
-                              <>
-                                <ChevronUp className="h-3 w-3" />
-                                Show Less
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="h-3 w-3" />
-                                Show More ({categoryExpenses.length - 3} more)
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Total Trip Cost */}
+              <div className="text-center py-3">
+                <div className="text-sm text-muted-foreground mb-2">Total Trip Cost</div>
+                <div className="text-5xl font-bold" data-testid="text-total-cost">
+                  ${trip.totalCost.toFixed(0)}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Visual Breakdown */}
+          {/* Right: Budget Breakdown with Toggle */}
           <Card>
-            <CardHeader>
-              <CardTitle>Visual Breakdown</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base">Budget Breakdown</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setBreakdownView(breakdownView === "list" ? "chart" : "list")}
+                data-testid="button-toggle-breakdown-view"
+                className="gap-2"
+              >
+                <PieChartIcon className="h-4 w-4" />
+                {breakdownView === "list" ? "Pie Chart" : "List View"}
+              </Button>
             </CardHeader>
             <CardContent>
-              {categoryTotals.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={categoryTotals}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) =>
-                        `${name} ${(percent * 100).toFixed(0)}%`
-                      }
-                    >
+              {breakdownView === "list" ? (
+                <div className="space-y-3">
+                  {CATEGORIES.map((category) => {
+                    const categoryExpenses = expensesByCategory[category.id] || [];
+                    const total = categoryExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+                    if (total === 0) return null;
+                    const Icon = category.icon;
+                    return (
+                      <div key={category.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" style={{ color: category.color }} />
+                          <span className="text-sm">{category.title}</span>
+                        </div>
+                        <span className="text-sm font-medium" data-testid={`text-category-total-${category.id}`}>
+                          ${total.toFixed(0)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : categoryTotals.length > 0 ? (
+                <div className="h-[280px]">
+                  <div className="flex items-center gap-6 h-full">
+                    <div className="flex-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={categoryTotals}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {categoryTotals.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const item = payload[0].payload;
+                                const percentage = ((item.value / trip.totalCost) * 100).toFixed(1);
+                                return (
+                                  <div className="bg-card border border-border rounded-md p-2 shadow-lg">
+                                    <p className="font-semibold text-foreground text-xs">{item.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      ${item.value.toLocaleString()} ({percentage}%)
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-2">
                       {categoryTotals.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <div key={index} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-sm"
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <span className="text-xs">{entry.name}</span>
+                        </div>
                       ))}
-                    </Pie>
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                <div className="h-[280px] flex items-center justify-center text-muted-foreground">
                   No expenses added yet
                 </div>
               )}
