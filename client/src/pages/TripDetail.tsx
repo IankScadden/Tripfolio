@@ -89,6 +89,7 @@ type Trip = {
   days?: number;
   totalCost: number;
   shareId?: string;
+  budget?: string | null;
 };
 
 type Expense = {
@@ -118,6 +119,7 @@ export default function TripDetail() {
   const [selectedDay, setSelectedDay] = useState<{ dayNumber: number; date?: string } | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [budgetInput, setBudgetInput] = useState<string>("");
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -152,6 +154,12 @@ export default function TripDetail() {
       }, 500);
     }
   }, [tripError, expensesError, toast]);
+
+  useEffect(() => {
+    if (trip?.budget) {
+      setBudgetInput(trip.budget);
+    }
+  }, [trip?.budget]);
 
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
@@ -360,6 +368,54 @@ export default function TripDetail() {
       }
     },
   });
+
+  const updateBudgetMutation = useMutation({
+    mutationFn: async (budget: string) => {
+      const response = await apiRequest("PATCH", `/api/trips/${tripId}`, { budget });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      toast({
+        title: "Success",
+        description: "Budget updated successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update budget. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const handleBudgetChange = (value: string) => {
+    setBudgetInput(value);
+  };
+
+  const handleBudgetBlur = () => {
+    if (budgetInput !== (trip?.budget || "")) {
+      const numericValue = parseFloat(budgetInput);
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        updateBudgetMutation.mutate(numericValue.toString());
+      } else if (budgetInput === "") {
+        // Allow clearing the budget
+        updateBudgetMutation.mutate("");
+      }
+    }
+  };
 
   const handleAddExpense = (category: string) => {
     if (category === "food") {
@@ -623,15 +679,61 @@ export default function TripDetail() {
           </div>
         </div>
 
-        {/* Total Trip Cost Card */}
-        <Card className="mb-8 bg-muted/30">
-          <CardContent className="py-6 text-center">
-            <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
-            <div className="text-4xl font-bold" data-testid="text-total-cost">
-              ${trip.totalCost.toFixed(0)}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Budget Tracking and Total Cost */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Total Trip Cost */}
+          <Card className="bg-muted/30">
+            <CardContent className="py-6 text-center">
+              <div className="text-sm text-muted-foreground mb-1">Total Trip Cost</div>
+              <div className="text-4xl font-bold" data-testid="text-total-cost">
+                ${trip.totalCost.toFixed(0)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Budget Tracking */}
+          <Card className="bg-muted/30">
+            <CardContent className="py-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="trip-budget" className="text-sm text-muted-foreground mb-1 block">
+                    Trip Budget
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="trip-budget"
+                      type="number"
+                      placeholder="Enter budget"
+                      value={budgetInput}
+                      onChange={(e) => handleBudgetChange(e.target.value)}
+                      onBlur={handleBudgetBlur}
+                      className="pl-7 text-center"
+                      data-testid="input-trip-budget"
+                      min="0"
+                      step="1"
+                    />
+                  </div>
+                </div>
+                {trip.budget && parseFloat(trip.budget) > 0 && (
+                  <div className="text-center">
+                    <div className="text-sm text-muted-foreground mb-1">Remaining Budget</div>
+                    <div 
+                      className={`text-2xl font-bold ${
+                        parseFloat(trip.budget) - trip.totalCost >= 0 
+                          ? "text-green-600 dark:text-green-400" 
+                          : "text-red-600 dark:text-red-400"
+                      }`}
+                      data-testid="text-remaining-budget"
+                    >
+                      ${(parseFloat(trip.budget) - trip.totalCost).toFixed(0)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Budget Breakdown and Visual Breakdown */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
