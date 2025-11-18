@@ -162,25 +162,6 @@ export default function TripDetail() {
     }
   }, [trip?.budget]);
 
-  // Debounced auto-save for budget
-  useEffect(() => {
-    if (!trip) return;
-    
-    // Don't trigger on initial load when budgetInput matches trip.budget
-    if (budgetInput === (trip.budget || "")) return;
-    
-    const timeoutId = setTimeout(() => {
-      const numericValue = parseFloat(budgetInput);
-      if (!isNaN(numericValue) && numericValue >= 0) {
-        updateBudgetMutation.mutate(numericValue.toString());
-      } else if (budgetInput === "") {
-        updateBudgetMutation.mutate("");
-      }
-    }, 500); // Save 500ms after user stops typing
-    
-    return () => clearTimeout(timeoutId);
-  }, [budgetInput, trip?.budget]);
-
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
       const response = await apiRequest("POST", "/api/expenses", { ...expenseData, tripId });
@@ -396,10 +377,7 @@ export default function TripDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      toast({
-        title: "Success",
-        description: "Budget updated successfully",
-      });
+      // Silent success - no toast for auto-save
     },
     onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
@@ -421,21 +399,32 @@ export default function TripDetail() {
     },
   });
 
-  const handleBudgetChange = (value: string) => {
-    setBudgetInput(value);
-  };
-
-  const handleBudgetBlur = () => {
-    // Blur handler is now just a fallback - debounced auto-save handles most cases
-    // This ensures immediate save if user leaves field before 500ms debounce completes
-    if (budgetInput !== (trip?.budget || "")) {
+  // Debounced auto-save for budget - placed AFTER mutation declaration
+  useEffect(() => {
+    if (!trip) return;
+    
+    // Don't trigger on initial load when budgetInput matches trip.budget
+    if (budgetInput === (trip.budget || "")) return;
+    
+    const timeoutId = setTimeout(() => {
       const numericValue = parseFloat(budgetInput);
       if (!isNaN(numericValue) && numericValue >= 0) {
         updateBudgetMutation.mutate(numericValue.toString());
       } else if (budgetInput === "") {
         updateBudgetMutation.mutate("");
       }
-    }
+    }, 500); // Save 500ms after user stops typing
+    
+    return () => clearTimeout(timeoutId);
+  }, [budgetInput, trip?.budget]);
+
+  const handleBudgetChange = (value: string) => {
+    setBudgetInput(value);
+  };
+
+  const handleBudgetBlur = () => {
+    // Blur handler disabled - debounced auto-save handles everything
+    // No action needed - this prevents duplicate saves
   };
 
   const handleAddExpense = (category: string) => {
