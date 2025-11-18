@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plus, X, Image as ImageIcon, Tag, FileText, MapPin, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Plus, X, Image as ImageIcon, Tag, FileText, MapPin, CheckCircle2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Header from "@/components/Header";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 const postTripSchema = z.object({
   tripType: z.enum(["plan", "traveled"]),
@@ -138,6 +140,15 @@ export default function PostTrip() {
     postTripMutation.mutate(data);
   };
 
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload", {});
+    const { uploadURL } = await response.json();
+    return {
+      method: "PUT" as const,
+      url: uploadURL,
+    };
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -259,13 +270,39 @@ export default function PostTrip() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Image URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/image.jpg"
-                          {...field}
-                          data-testid="input-header-image"
-                        />
-                      </FormControl>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com/image.jpg"
+                            {...field}
+                            data-testid="input-header-image"
+                          />
+                        </FormControl>
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={5 * 1024 * 1024}
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                            if (result.successful && result.successful.length > 0) {
+                              const uploadedUrl = result.successful[0].uploadURL;
+                              if (uploadedUrl) {
+                                const response = await apiRequest("PUT", `/api/trips/${tripId}/header-image`, {
+                                  headerImageUrl: uploadedUrl,
+                                });
+                                const { objectPath } = await response.json();
+                                field.onChange(objectPath);
+                                toast({
+                                  title: "Image uploaded",
+                                  description: "Header image uploaded successfully",
+                                });
+                              }
+                            }
+                          }}
+                          buttonVariant="secondary"
+                        >
+                          <Upload className="h-4 w-4" />
+                        </ObjectUploader>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -409,6 +446,36 @@ export default function PostTrip() {
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
+                  <ObjectUploader
+                    maxNumberOfFiles={10}
+                    maxFileSize={5 * 1024 * 1024}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                      if (result.successful && result.successful.length > 0) {
+                        const currentPhotos = form.getValues("photos") || [];
+                        const newPhotoUrls: string[] = [];
+                        
+                        for (const file of result.successful) {
+                          if (file.uploadURL) {
+                            const response = await apiRequest("PUT", `/api/trips/${tripId}/photos`, {
+                              photoUrl: file.uploadURL,
+                            });
+                            const { objectPath } = await response.json();
+                            newPhotoUrls.push(objectPath);
+                          }
+                        }
+                        
+                        form.setValue("photos", [...currentPhotos, ...newPhotoUrls]);
+                        toast({
+                          title: `${newPhotoUrls.length} photo(s) uploaded`,
+                          description: "Photos added to gallery successfully",
+                        });
+                      }
+                    }}
+                    buttonVariant="secondary"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </ObjectUploader>
                 </div>
 
                 {photos.length > 0 && (
