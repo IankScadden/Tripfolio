@@ -271,6 +271,24 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Footer with Contact Information */}
+      <footer className="border-t bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="text-center text-sm text-muted-foreground">
+            <p>
+              For bugs, recommendations, or concerns, reach out to{" "}
+              <a 
+                href="mailto:Ian@tripfolio.ai" 
+                className="text-primary hover:underline font-medium"
+                data-testid="link-contact-email"
+              >
+                Ian@tripfolio.ai
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
+
       <CreateTripDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
