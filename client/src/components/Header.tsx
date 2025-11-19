@@ -12,7 +12,7 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity" data-testid="link-home">
-            <img src={logoImage} alt="Tripfolio" className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0" />
+            <img src={logoImage} alt="Tripfolio" className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0" style={{ mixBlendMode: 'multiply' }} />
             <span className="text-base sm:text-xl font-semibold whitespace-nowrap">Tripfolio</span>
           </Link>
           
