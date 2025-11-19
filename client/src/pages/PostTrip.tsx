@@ -139,12 +139,39 @@ export default function PostTrip() {
     form.setValue("photos", currentPhotos.filter(photo => photo !== photoToRemove));
   };
 
-  const handleRemoveHeaderImage = () => {
-    form.setValue("headerImageUrl", "");
-    toast({
-      title: "Image removed",
-      description: "Header image has been removed",
-    });
+  const handleRemoveHeaderImage = async () => {
+    const previousValue = form.getValues("headerImageUrl");
+    
+    try {
+      // Optimistically update the form immediately for instant UI feedback
+      form.setValue("headerImageUrl", "");
+      
+      // Persist to database
+      await apiRequest("PATCH", `/api/trips/${tripId}`, {
+        headerImageUrl: null,
+      });
+      
+      // Invalidate all relevant caches to refetch with updated data
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+      
+      toast({
+        title: "Image removed",
+        description: "Header image has been removed",
+      });
+    } catch (error) {
+      // Revert form state on error
+      form.setValue("headerImageUrl", previousValue);
+      form.trigger("headerImageUrl");
+      
+      console.error("Failed to remove header image:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to remove image",
+        variant: "destructive",
+      });
+    }
   };
 
   const onSubmit = (data: PostTripFormData) => {
