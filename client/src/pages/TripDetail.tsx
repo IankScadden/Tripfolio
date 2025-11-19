@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2, Share2, PieChart, List } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2, Share2, PieChart, List, FileText, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/Header";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
@@ -90,6 +91,7 @@ type Trip = {
   totalCost: number;
   shareId?: string;
   budget?: string | null;
+  privateNotes?: string | null;
 };
 
 type Expense = {
@@ -121,6 +123,8 @@ export default function TripDetail() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [budgetInput, setBudgetInput] = useState<string>("");
   const [breakdownView, setBreakdownView] = useState<"list" | "chart">("list");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesInput, setNotesInput] = useState<string>("");
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -161,6 +165,12 @@ export default function TripDetail() {
       setBudgetInput(trip.budget);
     }
   }, [trip?.budget]);
+
+  useEffect(() => {
+    if (trip?.privateNotes !== undefined) {
+      setNotesInput(trip.privateNotes || "");
+    }
+  }, [trip?.privateNotes]);
 
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
@@ -427,6 +437,48 @@ export default function TripDetail() {
   const handleBudgetBlur = () => {
     // Blur handler disabled - debounced auto-save handles everything
     // No action needed - this prevents duplicate saves
+  };
+
+  const updateNotesMutation = useMutation({
+    mutationFn: async (privateNotes: string) => {
+      const response = await apiRequest("PATCH", `/api/trips/${tripId}`, { privateNotes });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      setIsEditingNotes(false);
+      toast({
+        title: "Notes saved",
+        description: "Your private notes have been saved",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save notes. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const handleSaveNotes = () => {
+    updateNotesMutation.mutate(notesInput);
+  };
+
+  const handleCancelEditNotes = () => {
+    setNotesInput(trip?.privateNotes || "");
+    setIsEditingNotes(false);
   };
 
   const handleAddExpense = (category: string) => {
@@ -1590,6 +1642,73 @@ export default function TripDetail() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Private Notes Section */}
+        <Card className="mt-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Private Notes
+            </CardTitle>
+            {!isEditingNotes && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => setIsEditingNotes(true)}
+                data-testid="button-edit-notes"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {isEditingNotes ? (
+              <div className="space-y-3">
+                <Textarea
+                  value={notesInput}
+                  onChange={(e) => setNotesInput(e.target.value)}
+                  placeholder="Add private notes for your trip planning... These notes will only be visible to you and won't be shared when you post or share your trip."
+                  className="min-h-[150px] resize-none"
+                  data-testid="input-private-notes"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSaveNotes}
+                    disabled={updateNotesMutation.isPending}
+                    className="gap-2"
+                    data-testid="button-save-notes"
+                  >
+                    <Save className="h-4 w-4" />
+                    {updateNotesMutation.isPending ? "Saving..." : "Save Notes"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEditNotes}
+                    disabled={updateNotesMutation.isPending}
+                    data-testid="button-cancel-notes"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {trip?.privateNotes ? (
+                  <p className="text-sm whitespace-pre-wrap" data-testid="text-private-notes">
+                    {trip.privateNotes}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic" data-testid="text-no-notes">
+                    No private notes yet. Click "Edit" to add notes for your trip planning.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <AddExpenseDialog
