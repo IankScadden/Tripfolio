@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
 import BudgetChart from "@/components/BudgetChart";
@@ -630,7 +630,7 @@ export default function ExploreTripDetail() {
                                       ))}
                                     </Pie>
                                     <Tooltip
-                                      content={({ active, payload }) => {
+                                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
                                         if (active && payload && payload.length) {
                                           const item = payload[0].payload;
                                           const percentage = ((item.value / trip.totalCost) * 100).toFixed(1);

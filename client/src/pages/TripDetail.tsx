@@ -720,6 +720,7 @@ export default function TripDetail() {
                     placeholder="0.00"
                     value={budgetInput}
                     onChange={(e) => handleBudgetChange(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     onBlur={handleBudgetBlur}
                     className="pl-7 text-center h-8 text-sm"
                     data-testid="input-trip-budget"
