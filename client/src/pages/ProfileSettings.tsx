@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ArrowLeft, Upload } from "lucide-react";
@@ -13,8 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { ImageCropper } from "@/components/ImageCropper";
 
 const profileSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(50, "Display name must be less than 50 characters"),
@@ -40,6 +39,9 @@ type User = {
 export default function ProfileSettings() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/profile"],
@@ -94,34 +96,95 @@ export default function ProfileSettings() {
     updateProfileMutation.mutate(data);
   };
 
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const { uploadURL } = await response.json();
-    return {
-      method: "PUT" as const,
-      url: uploadURL,
-    };
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setSelectedImage(reader.result as string);
+        setShowCropper(true);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedUrl = result.successful[0].uploadURL;
-      
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setShowCropper(false);
+    setIsUploading(true);
+
+    try {
+      // Get upload URL
+      const uploadResponse = await apiRequest("POST", "/api/objects/upload", {});
+      const { uploadURL } = await uploadResponse.json();
+
+      // Upload the cropped image
+      const uploadResult = await fetch(uploadURL, {
+        method: "PUT",
+        body: croppedBlob,
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error("Upload failed");
+      }
+
+      // Set ACL and save to profile
       const response = await apiRequest("PUT", "/api/users/profile-picture", {
-        profilePictureUrl: uploadedUrl,
+        profilePictureUrl: uploadURL,
       });
       const { objectPath } = await response.json();
-      
+
+      // Update form state immediately
       form.setValue("profileImageUrl", objectPath);
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      
+
+      // Optimistically update all relevant query caches
+      if (user) {
+        // Update profile cache
+        queryClient.setQueryData(["/api/profile"], { ...user, profileImageUrl: objectPath });
+
+        // Update auth user cache
+        queryClient.setQueryData(["/api/auth/user"], (old: any) =>
+          old ? { ...old, profileImageUrl: objectPath } : old
+        );
+
+        // Update public profile cache
+        queryClient.setQueryData(["/api/users", user.id], (old: any) =>
+          old ? { ...old, user: { ...old.user, profileImageUrl: objectPath } } : old
+        );
+      }
+
+      // Invalidate and refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      if (user) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/users", user.id] });
+      }
+
+      // Force immediate refetch
+      await queryClient.refetchQueries({ queryKey: ["/api/profile"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+
       toast({
         title: "Success",
         description: "Profile picture uploaded successfully",
       });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload profile picture",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      setSelectedImage(null);
     }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImage(null);
   };
 
   if (isLoading) {
@@ -216,16 +279,24 @@ export default function ProfileSettings() {
                             data-testid="input-profile-image-url"
                           />
                         </FormControl>
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={5242880}
-                          onGetUploadParameters={handleGetUploadParameters}
-                          onComplete={handleUploadComplete}
-                          buttonVariant="outline"
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="profile-picture-input"
+                          data-testid="input-file-profile-picture"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById("profile-picture-input")?.click()}
+                          disabled={isUploading}
+                          data-testid="button-upload-profile-picture"
                         >
                           <Upload className="h-4 w-4 mr-2" />
-                          Upload
-                        </ObjectUploader>
+                          {isUploading ? "Uploading..." : "Upload"}
+                        </Button>
                       </div>
                       <FormDescription>
                         Enter a URL or upload an image from your computer (max 5MB)
@@ -275,6 +346,15 @@ export default function ProfileSettings() {
           </CardContent>
         </Card>
       </div>
+
+      {selectedImage && (
+        <ImageCropper
+          imageSrc={selectedImage}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          open={showCropper}
+        />
+      )}
     </div>
   );
 }
