@@ -12,7 +12,7 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-1.5 sm:gap-2 hover:opacity-80 transition-opacity" data-testid="link-home">
-            <img src={logoImage} alt="Tripfolio" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+            <img src={logoImage} alt="Tripfolio" className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
             <span className="text-base sm:text-xl font-semibold whitespace-nowrap">Tripfolio</span>
           </Link>
           
