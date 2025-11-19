@@ -2,7 +2,14 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
-import logoImage from "@assets/ChatGPT Image Nov 19, 2025, 01_55_15 PM_1763585721040.png";
+
+const CompassLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="45" fill="none" stroke="#1e88e5" strokeWidth="8"/>
+    <path d="M50 15 L55 40 L50 35 L45 40 Z M85 50 L60 55 L65 50 L60 45 Z M50 85 L45 60 L50 65 L55 60 Z M15 50 L40 45 L35 50 L40 55 Z" fill="#1e88e5"/>
+    <path d="M50 20 L57 45 L50 38 L43 45 Z M80 50 L55 57 L62 50 L55 43 Z M50 80 L43 55 L50 62 L57 55 Z M20 50 L45 43 L38 50 L45 57 Z" fill="#1e88e5" opacity="0.6"/>
+  </svg>
+);
 
 export default function Header() {
   const { isAuthenticated, user } = useAuth();
@@ -12,7 +19,7 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity" data-testid="link-home">
-            <img src={logoImage} alt="Tripfolio" className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0" style={{ mixBlendMode: 'multiply' }} />
+            <CompassLogo className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0" />
             <span className="text-base sm:text-xl font-semibold whitespace-nowrap">Tripfolio</span>
           </Link>
           
