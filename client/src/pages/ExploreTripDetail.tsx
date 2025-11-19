@@ -338,7 +338,7 @@ export default function ExploreTripDetail() {
       <Header />
       
       {/* Hero Image */}
-      <div className="relative h-[500px] bg-muted">
+      <div className="relative h-[400px] bg-muted">
         <img 
           src={trip.headerImageUrl || DEFAULT_HEADER_IMAGE}
           alt={trip.name}
@@ -361,19 +361,9 @@ export default function ExploreTripDetail() {
             Back
           </Button>
         </div>
-
-        {/* Location Badge */}
-        {destinations.length > 0 && (
-          <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
-            <Badge className="bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white backdrop-blur px-4 py-2 text-base font-medium">
-              <MapPin className="h-4 w-4 mr-1" />
-              {destinations[0]}
-            </Badge>
-          </div>
-        )}
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-32 relative z-10 pb-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-64 relative z-10 pb-12">
         {/* Author Card */}
         <Card className="mb-6 bg-card/95 backdrop-blur">
           <CardContent className="pt-6">
