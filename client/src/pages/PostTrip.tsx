@@ -139,6 +139,14 @@ export default function PostTrip() {
     form.setValue("photos", currentPhotos.filter(photo => photo !== photoToRemove));
   };
 
+  const handleRemoveHeaderImage = () => {
+    form.setValue("headerImageUrl", "");
+    toast({
+      title: "Image removed",
+      description: "Header image has been removed",
+    });
+  };
+
   const onSubmit = (data: PostTripFormData) => {
     postTripMutation.mutate(data);
   };
@@ -312,7 +320,7 @@ export default function PostTrip() {
                 />
                 
                 {headerImageUrl && (
-                  <div className="relative aspect-[3/1] rounded-lg overflow-hidden bg-muted">
+                  <div className="relative group aspect-[3/1] rounded-lg overflow-hidden bg-muted">
                     <img
                       src={headerImageUrl}
                       alt="Header preview"
@@ -321,6 +329,14 @@ export default function PostTrip() {
                         e.currentTarget.style.display = 'none';
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={handleRemoveHeaderImage}
+                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid="button-remove-header-image"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
               </CardContent>
