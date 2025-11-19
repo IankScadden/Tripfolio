@@ -44,6 +44,7 @@ export const trips = pgTable("trips", {
   tags: text("tags").array(),
   photos: text("photos").array(),
   budget: decimal("budget", { precision: 10, scale: 2 }).default("0"),
+  privateNotes: text("private_notes"),
 });
 
 export const expenses = pgTable("expenses", {
