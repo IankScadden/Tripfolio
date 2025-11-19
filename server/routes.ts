@@ -1064,7 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       );
 
-      await storage.updateUser(userId, { profilePictureUrl: objectPath });
+      await storage.updateUserProfile(userId, { profileImageUrl: objectPath });
 
       res.status(200).json({ objectPath });
     } catch (error) {
