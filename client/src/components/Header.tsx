@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
-import { Compass } from "lucide-react";
+import logoImage from "@assets/ChatGPT Image Nov 19, 2025, 01_55_15 PM_1763585721040.png";
 
 export default function Header() {
   const { isAuthenticated, user } = useAuth();
@@ -12,7 +12,7 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-1.5 sm:gap-2 hover:opacity-80 transition-opacity" data-testid="link-home">
-            <Compass className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+            <img src={logoImage} alt="Tripfolio" className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
             <span className="text-base sm:text-xl font-semibold whitespace-nowrap">Tripfolio</span>
           </Link>
           
