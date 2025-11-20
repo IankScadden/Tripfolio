@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, Link2, Map } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, Link2, Map, PieChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
