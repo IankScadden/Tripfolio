@@ -1,4 +1,4 @@
-import { clerkMiddleware, requireAuth, getAuth } from "@clerk/express";
+import { clerkMiddleware, getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
@@ -6,27 +6,45 @@ export const setupClerkAuth = () => {
   return clerkMiddleware();
 };
 
-export const requireClerkAuth = requireAuth({
-  signInUrl: '/',
-});
+export function requireClerkAuth(req: Request, res: Response, next: NextFunction) {
+  const auth = getAuth(req);
+  
+  if (!auth.userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  
+  next();
+}
 
 export async function ensureUserInDb(req: Request, res: Response, next: NextFunction) {
   try {
     const auth = getAuth(req);
     
     if (!auth.userId) {
-      return next();
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const clerkId = auth.userId;
     let user = await storage.getUserByClerkId(clerkId);
     
     if (!user) {
-      const clerkUser = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
+      if (!process.env.CLERK_SECRET_KEY) {
+        console.error("CLERK_SECRET_KEY is not set");
+        return res.status(500).json({ error: "Server configuration error" });
+      }
+
+      const response = await fetch(`https://api.clerk.com/v1/users/${clerkId}`, {
         headers: {
           Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
         },
-      }).then(res => res.json());
+      });
+
+      if (!response.ok) {
+        console.error(`Clerk API error: ${response.status} ${response.statusText}`);
+        return res.status(500).json({ error: "Failed to fetch user data" });
+      }
+
+      const clerkUser = await response.json();
 
       user = await storage.createUserFromClerk({
         clerkId,
@@ -43,6 +61,6 @@ export async function ensureUserInDb(req: Request, res: Response, next: NextFunc
     next();
   } catch (error) {
     console.error("Error ensuring user in DB:", error);
-    next(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 }

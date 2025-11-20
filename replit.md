@@ -16,8 +16,8 @@ Tripfolio is a web application designed for planning and tracking backpacking tr
 The application is built with a modern web stack, emphasizing a rich user experience and robust data management.
 
 ### Tech Stack
-- **Frontend**: React, TypeScript, Wouter (routing), TanStack Query (data fetching), Shadcn UI, Tailwind CSS, Recharts
-- **Backend**: Express.js, TypeScript, Passport.js (Replit Auth)
+- **Frontend**: React, TypeScript, Wouter (routing), TanStack Query (data fetching), Shadcn UI, Tailwind CSS, Recharts, Clerk (authentication)
+- **Backend**: Express.js, TypeScript, Clerk Express SDK (authentication)
 - **Database**: PostgreSQL (Neon)
 
 ### Core Features
@@ -42,14 +42,13 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Dark Mode**: Full support for light and dark themes.
 
 ### Data Model
-- **Users**: Stores essential user information for authentication and personalization.
+- **Users**: Stores essential user information with Clerk ID linkage for authentication and personalization.
 - **Trips**: Manages trip details, associated user, dates, shareable IDs, and budget (optional, private).
 - **Expenses**: Records individual expenses with category, cost, description, and linkage to specific trip days.
 - **DayDetails**: Captures daily itinerary specifics, destinations, local transport notes, and daily notes for personal reminders.
 - **Likes**: Tracks user likes on public trips with unique constraint preventing duplicate likes (tripId, userId).
 - **Comments**: Stores user comments on public trips with content, timestamps, and user attribution.
 - **TravelPins**: Stores user-dropped map pins with latitude/longitude (decimal precision), location names (via reverse geocoding), and user attribution. Publicly viewable for all users.
-- **Sessions**: Handles user session management for authentication.
 
 ### Categories
 - Flights
@@ -61,7 +60,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - Other Costs
 
 ## External Dependencies
-- **Replit Auth**: Utilized for secure user authentication via OpenID Connect.
+- **Clerk**: Production-grade authentication platform for user management with webhook support.
 - **Neon (PostgreSQL)**: Serves as the primary relational database for persistent data storage.
 - **Replit App Storage**: Cloud object storage for uploaded images with ACL policy management.
 - **Shadcn UI**: Provides pre-built, accessible UI components.
