@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -50,27 +49,6 @@ export default function Explore() {
 
   const { data: trips = [], isLoading } = useQuery<TripWithUser[]>({
     queryKey: ["/api/explore/trips", searchQuery],
-    queryFn: async () => {
-      const url = searchQuery.trim() 
-        ? `/api/explore/trips?search=${encodeURIComponent(searchQuery.trim())}`
-        : "/api/explore/trips";
-      const response = await fetch(url);
-      if (!response.ok) {
-        const error = new Error("Failed to fetch trips");
-        if (response.status === 401) {
-          (error as any).statusCode = 401;
-        }
-        throw error;
-      }
-      return response.json();
-    },
-    retry: (failureCount, error) => {
-      if (isUnauthorizedError(error as Error)) {
-        window.location.href = "/api/login";
-        return false;
-      }
-      return failureCount < 3;
-    },
   });
 
   const deleteTripMutation = useMutation({

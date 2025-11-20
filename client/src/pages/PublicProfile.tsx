@@ -6,7 +6,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Header from "@/components/Header";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -53,27 +52,7 @@ export default function PublicProfile() {
 
   const { data: profileData, isLoading } = useQuery<ProfileData>({
     queryKey: ["/api/users", userId],
-    queryFn: async () => {
-      const response = await fetch(`/api/users/${userId}`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const error = new Error("Failed to fetch user profile");
-        if (response.status === 401) {
-          (error as any).statusCode = 401;
-        }
-        throw error;
-      }
-      return response.json();
-    },
     enabled: !!userId,
-    retry: (failureCount, error) => {
-      if (isUnauthorizedError(error as Error)) {
-        window.location.href = "/api/login";
-        return false;
-      }
-      return failureCount < 3;
-    },
   });
 
   const unpublishMutation = useMutation({

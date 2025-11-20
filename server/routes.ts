@@ -658,7 +658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public user profile endpoint
-  app.get("/api/users/:userId", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+  app.get("/api/users/:userId", async (req: any, res) => {
     try {
       const userId = req.params.userId;
       
@@ -706,8 +706,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Explore routes - require authentication
-  app.get("/api/explore/trips", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+  // Explore routes - public access
+  app.get("/api/explore/trips", async (req: any, res) => {
     try {
       const searchQuery = req.query.search as string | undefined;
       const publicTrips = await storage.getPublicTrips(searchQuery);
@@ -771,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/explore/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+  app.get("/api/explore/trips/:id", async (req: any, res) => {
     try {
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
