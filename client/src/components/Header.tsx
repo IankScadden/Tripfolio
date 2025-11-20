@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/hooks/useAuth";
+import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 
 const CompassLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -12,7 +12,7 @@ const CompassLogo = ({ className }: { className?: string }) => (
 );
 
 export default function Header() {
-  const { isAuthenticated, user } = useAuth();
+  const { isSignedIn, user } = useUser();
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -24,7 +24,7 @@ export default function Header() {
           </Link>
           
           <nav className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            {isAuthenticated && (
+            {isSignedIn && user && (
               <>
                 <Link href="/my-trips" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
                   My Trips
@@ -32,33 +32,28 @@ export default function Header() {
                 <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                   Explore
                 </Link>
-                {user && (
-                  <Link href={`/profile/${(user as any).id}`} className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
-                    Profile
-                  </Link>
-                )}
               </>
             )}
-            {isAuthenticated ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.location.href = "/api/logout"}
-                data-testid="button-header-logout"
-                className="text-xs sm:text-sm px-2 sm:px-3"
-              >
-                Logout
-              </Button>
+            {isSignedIn ? (
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8"
+                  }
+                }}
+              />
             ) : (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => window.location.href = "/api/login"}
-                data-testid="button-header-login"
-                className="text-xs sm:text-sm px-2 sm:px-3"
-              >
-                Sign In
-              </Button>
+              <SignInButton mode="modal">
+                <Button
+                  variant="default"
+                  size="sm"
+                  data-testid="button-header-login"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Sign In
+                </Button>
+              </SignInButton>
             )}
             <ThemeToggle />
           </nav>
