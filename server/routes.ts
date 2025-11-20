@@ -11,6 +11,17 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { Webhook } from "svix";
 
+// Helper function to sanitize user data for public endpoints
+// Only returns public profile information, filtering out sensitive data
+function sanitizeUserData(user: any) {
+  return {
+    id: user.id,
+    displayName: user.displayName,
+    bio: user.bio,
+    profileImageUrl: user.profileImageUrl,
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth endpoint to get current user
@@ -668,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Get user's public trips
+      // Get user's public trips (user data is sanitized in storage layer)
       const publicTrips = await storage.getPublicTrips();
       const userPublicTrips = publicTrips.filter(t => t.user.id === userId);
       
@@ -697,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json({
-        user,
+        user: sanitizeUserData(user),
         trips: tripsWithTotals,
       });
     } catch (error) {
@@ -752,6 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             activities: tripExpenses.filter(e => e.category === 'activities').length,
           };
           
+          // User data is sanitized in storage layer
           return {
             ...trip,
             totalCost: total,
@@ -890,6 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tripId = req.params.id;
       const comments = await storage.getCommentsByTrip(tripId);
       
+      // User data is sanitized in storage layer
       res.json(comments);
     } catch (error) {
       console.error("Error fetching comments:", error);

@@ -3,6 +3,20 @@ import { db } from "./db";
 import { eq, inArray, and, or, ilike, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
+// Public user type - only includes fields safe for public endpoints
+export type PublicUser = Pick<User, 'id' | 'displayName' | 'bio' | 'profileImageUrl'>;
+
+// Helper function to sanitize user data for public endpoints
+// Filters out sensitive fields (email, clerkId, isAdmin, etc.)
+function sanitizeUserForPublic(user: User): PublicUser {
+  return {
+    id: user.id,
+    displayName: user.displayName,
+    bio: user.bio,
+    profileImageUrl: user.profileImageUrl,
+  };
+}
+
 export interface IStorage {
   // User operations (required for Clerk Auth)
   getUser(id: string): Promise<User | undefined>;
@@ -18,7 +32,7 @@ export interface IStorage {
   createTrip(trip: InsertTrip, userId: string): Promise<Trip>;
   updateTrip(id: string, trip: Partial<InsertTrip> & { shareId?: string | null }): Promise<Trip | undefined>;
   deleteTrip(id: string): Promise<boolean>;
-  getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: User }>>;
+  getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: PublicUser }>>;
   cloneTripStructure(originalTripId: string, newUserId: string): Promise<Trip>;
   
   // Expense operations
@@ -45,8 +59,8 @@ export interface IStorage {
   getLikesByTripIds(tripIds: string[]): Promise<Record<string, number>>;
   
   // Comment operations
-  getCommentsByTrip(tripId: string): Promise<Array<Comment & { user: User }>>;
-  addComment(comment: InsertComment): Promise<Comment & { user: User }>;
+  getCommentsByTrip(tripId: string): Promise<Array<Comment & { user: PublicUser }>>;
+  addComment(comment: InsertComment): Promise<Comment & { user: PublicUser }>;
   deleteComment(id: string): Promise<boolean>;
   getCommentCount(tripId: string): Promise<number>;
   getCommentCountsByTripIds(tripIds: string[]): Promise<Record<string, number>>;
@@ -154,7 +168,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  async getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: User }>> {
+  async getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: PublicUser }>> {
     if (searchQuery && searchQuery.trim()) {
       // Search in trip names and day detail destinations
       const searchPattern = `%${searchQuery.trim()}%`;
@@ -197,11 +211,11 @@ export class DatabaseStorage implements IStorage {
           );
       }
       
-      // Transform results to include user data with trip
+      // Transform results to include sanitized user data with trip
       return results.map(result => ({
         ...result.trips,
-        user: result.users,
-      }));
+        user: sanitizeUserForPublic(result.users),
+      } as Trip & { user: PublicUser }));
     }
 
     // No search query - return all public trips
@@ -211,11 +225,11 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(trips.userId, users.id))
       .where(eq(trips.isPublic, 1));
     
-    // Transform results to include user data with trip
+    // Transform results to include sanitized user data with trip
     return results.map(result => ({
       ...result.trips,
-      user: result.users,
-    }));
+      user: sanitizeUserForPublic(result.users),
+    } as Trip & { user: PublicUser }));
   }
 
   async cloneTripStructure(originalTripId: string, newUserId: string): Promise<Trip> {
@@ -436,7 +450,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Comment operations
-  async getCommentsByTrip(tripId: string): Promise<Array<Comment & { user: User }>> {
+  async getCommentsByTrip(tripId: string): Promise<Array<Comment & { user: PublicUser }>> {
     const results = await db
       .select()
       .from(comments)
@@ -446,18 +460,18 @@ export class DatabaseStorage implements IStorage {
     
     return results.map(r => ({
       ...r.comments,
-      user: r.users!,
+      user: sanitizeUserForPublic(r.users!),
     }));
   }
 
-  async addComment(insertComment: InsertComment): Promise<Comment & { user: User }> {
+  async addComment(insertComment: InsertComment): Promise<Comment & { user: PublicUser }> {
     const [comment] = await db
       .insert(comments)
       .values(insertComment)
       .returning();
     
     const user = await this.getUser(insertComment.userId);
-    return { ...comment, user: user! };
+    return { ...comment, user: sanitizeUserForPublic(user!) };
   }
 
   async deleteComment(id: string): Promise<boolean> {
