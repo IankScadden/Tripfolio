@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const CompassLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -12,7 +13,8 @@ const CompassLogo = ({ className }: { className?: string }) => (
 );
 
 export default function Header() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
+  const { user: dbUser } = useAuth();
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -24,13 +26,16 @@ export default function Header() {
           </Link>
           
           <nav className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            {isSignedIn && user && (
+            {isSignedIn && dbUser && (
               <>
                 <Link href="/my-trips" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
                   My Trips
                 </Link>
                 <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                   Explore
+                </Link>
+                <Link href={`/profile/${dbUser.id}`} className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                  Profile
                 </Link>
               </>
             )}
