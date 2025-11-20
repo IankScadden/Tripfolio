@@ -3,20 +3,19 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTripSchema, insertExpenseSchema, insertTravelPinSchema } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { requireClerkAuth, ensureUserInDb } from "./clerkAuth";
+import { getAuth } from "@clerk/express";
 import { randomUUID } from "crypto";
 import { geocodeDestination } from "./geocoding";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication
-  await setupAuth(app);
 
   // Auth endpoint to get current user
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -26,9 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Trip routes - all require authentication
-  app.get("/api/trips", isAuthenticated, async (req: any, res) => {
+  app.get("/api/trips", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trips = await storage.getAllTrips(userId);
       
       // Optimize: Get all expenses for all trips in a single query
@@ -64,9 +63,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/trips/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -83,9 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/trips", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trips", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const tripData = insertTripSchema.parse(req.body);
       const trip = await storage.createTrip(tripData, userId);
       res.json({ ...trip, totalCost: 0 });
@@ -97,9 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/trips/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       // Verify ownership before updating
       const existingTrip = await storage.getTrip(req.params.id);
       if (!existingTrip) {
@@ -130,9 +129,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/trips/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const user = await storage.getUser(userId);
       
       // Check if user is admin
@@ -159,9 +158,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/trips/:id/favorite", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/trips/:id/favorite", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -183,9 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/trips/:id/share", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trips/:id/share", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -209,9 +208,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/trips/:id/unpublish", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/trips/:id/unpublish", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -231,9 +230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Expense routes - all require authentication
-  app.get("/api/trips/:tripId/expenses", isAuthenticated, async (req: any, res) => {
+  app.get("/api/trips/:tripId/expenses", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       // Verify trip ownership
       const trip = await storage.getTrip(req.params.tripId);
       if (!trip) {
@@ -249,9 +248,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/expenses", isAuthenticated, async (req: any, res) => {
+  app.post("/api/expenses", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const expenseData = insertExpenseSchema.parse(req.body);
       // Verify trip ownership before creating expense
       const trip = await storage.getTrip(expenseData.tripId);
@@ -271,9 +270,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/expenses/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/expenses/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       // Get existing expense to verify trip ownership
       const existingExpense = await storage.getExpense(req.params.id);
       if (!existingExpense) {
@@ -300,9 +299,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/expenses/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/expenses/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       // Get existing expense to verify trip ownership
       const existingExpense = await storage.getExpense(req.params.id);
       if (!existingExpense) {
@@ -326,9 +325,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Day details routes
-  app.get("/api/trips/:tripId/all-day-details", isAuthenticated, async (req: any, res) => {
+  app.get("/api/trips/:tripId/all-day-details", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.tripId);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -343,9 +342,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/trips/:tripId/day-details/:dayNumber", isAuthenticated, async (req: any, res) => {
+  app.get("/api/trips/:tripId/day-details/:dayNumber", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.tripId);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -360,9 +359,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/trips/:tripId/day-details", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trips/:tripId/day-details", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.tripId);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -413,9 +412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk lodging creation for multi-day stays
-  app.post("/api/trips/:tripId/lodging/bulk", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trips/:tripId/lodging/bulk", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const trip = await storage.getTrip(req.params.tripId);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
@@ -586,9 +585,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clone a shared trip as a template (requires auth)
-  app.post("/api/share/:shareId/clone", isAuthenticated, async (req: any, res) => {
+  app.post("/api/share/:shareId/clone", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const shareId = req.params.shareId;
       
       // Get the original trip by shareId
@@ -612,9 +611,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile routes
-  app.get("/api/profile", isAuthenticated, async (req: any, res) => {
+  app.get("/api/profile", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -625,9 +624,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/profile", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const { displayName, bio, profileImageUrl } = req.body;
       
       if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
@@ -658,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public user profile endpoint
-  app.get("/api/users/:userId", isAuthenticated, async (req: any, res) => {
+  app.get("/api/users/:userId", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const userId = req.params.userId;
       
@@ -707,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Explore routes - require authentication
-  app.get("/api/explore/trips", isAuthenticated, async (req: any, res) => {
+  app.get("/api/explore/trips", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const searchQuery = req.query.search as string | undefined;
       const publicTrips = await storage.getPublicTrips(searchQuery);
@@ -771,7 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/explore/trips/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/explore/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const trip = await storage.getTrip(req.params.id);
       if (!trip) {
@@ -801,9 +800,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/explore/trips/:id/clone", isAuthenticated, async (req: any, res) => {
+  app.post("/api/explore/trips/:id/clone", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const originalTripId = req.params.id;
       
       // Verify original trip exists and is public
@@ -830,9 +829,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Like endpoints
-  app.post("/api/trips/:id/like", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trips/:id/like", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const tripId = req.params.id;
       
       // Verify trip exists and is public
@@ -854,9 +853,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/trips/:id/like", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/trips/:id/like", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const tripId = req.params.id;
       
       await storage.removeLike(tripId, userId);
@@ -897,9 +896,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/trips/:id/comments", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trips/:id/comments", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const tripId = req.params.id;
       const { content } = req.body;
       
@@ -925,9 +924,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/comments/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/comments/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const commentId = req.params.id;
       
       // Note: In a production app, you'd want to verify the user owns this comment
@@ -961,9 +960,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pins", isAuthenticated, async (req: any, res) => {
+  app.post("/api/pins", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       // Always use authenticated user's ID, ignore any client-provided userId
       const { latitude, longitude, locationName } = req.body;
       const pinData = insertTravelPinSchema.parse({ 
@@ -984,9 +983,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/pins/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/pins/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req as any).userId;
       const pinId = req.params.id;
       
       // Verify ownership before deleting
@@ -1013,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object Storage routes - for file uploads
-  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+  app.post("/api/objects/upload", requireClerkAuth, ensureUserInDb, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -1024,8 +1023,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
-    const userId = req.user?.claims?.sub;
+  app.get("/objects/:objectPath(*)", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    const userId = (req as any).userId;
     const objectStorageService = new ObjectStorageService();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
@@ -1047,12 +1046,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/profile-picture", isAuthenticated, async (req: any, res) => {
+  app.put("/api/users/profile-picture", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     if (!req.body.profilePictureUrl) {
       return res.status(400).json({ error: "profilePictureUrl is required" });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = (req as any).userId;
 
     try {
       const objectStorageService = new ObjectStorageService();
@@ -1073,12 +1072,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/trips/:id/header-image", isAuthenticated, async (req: any, res) => {
+  app.put("/api/trips/:id/header-image", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     if (!req.body.headerImageUrl) {
       return res.status(400).json({ error: "headerImageUrl is required" });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = (req as any).userId;
 
     try {
       const trip = await storage.getTrip(req.params.id);
@@ -1107,12 +1106,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/trips/:id/photos", isAuthenticated, async (req: any, res) => {
+  app.put("/api/trips/:id/photos", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     if (!req.body.photoUrl) {
       return res.status(400).json({ error: "photoUrl is required" });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = (req as any).userId;
 
     try {
       const trip = await storage.getTrip(req.params.id);
@@ -1132,9 +1131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       );
 
-      const currentPhotos = trip.photoUrls || [];
+      const currentPhotos = trip.photos || [];
       const updatedPhotos = [...currentPhotos, objectPath];
-      await storage.updateTrip(req.params.id, { photoUrls: updatedPhotos });
+      await storage.updateTrip(req.params.id, { photos: updatedPhotos });
 
       res.status(200).json({ objectPath, photos: updatedPhotos });
     } catch (error) {

@@ -4,9 +4,11 @@ import { eq, inArray, and, or, ilike, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations (required for Clerk Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserByClerkId(clerkId: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string }): Promise<User>;
   updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string }): Promise<User | undefined>;
   
   // Trip operations
@@ -63,6 +65,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByClerkId(clerkId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.clerkId, clerkId));
+    return user;
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     // Upsert based on id (OIDC sub) - the stable identifier from Replit Auth
     // In production, OIDC sub is stable per user and won't change
@@ -78,6 +85,22 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
         },
+      })
+      .returning();
+    return user;
+  }
+
+  async createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: randomUUID(),
+        clerkId: data.clerkId,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        profileImageUrl: data.profileImageUrl,
+        isAdmin: 0,
       })
       .returning();
     return user;
