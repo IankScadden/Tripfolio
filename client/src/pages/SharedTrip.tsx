@@ -131,8 +131,11 @@ export default function SharedTrip() {
     },
     onError: (error: any) => {
       if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
-        // Not logged in - redirect to login
-        window.location.href = `/api/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to clone this trip as a template.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error",

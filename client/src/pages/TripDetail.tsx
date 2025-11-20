@@ -155,7 +155,7 @@ export default function TripDetail() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        // Sign in required - Clerk will handle authentication
       }, 500);
     }
   }, [tripError, expensesError, toast]);
@@ -190,7 +190,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -224,7 +224,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -254,7 +254,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -282,7 +282,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -325,7 +325,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -368,7 +368,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -397,7 +397,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({
@@ -460,7 +460,7 @@ export default function TripDetail() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          // Sign in required - Clerk will handle authentication
         }, 500);
       } else {
         toast({

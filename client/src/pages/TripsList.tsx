@@ -48,7 +48,7 @@ export default function TripsList() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        // Sign in required - Clerk will handle authentication
       }, 500);
     }
   }, [error, toast]);

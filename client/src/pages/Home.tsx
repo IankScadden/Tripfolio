@@ -51,18 +51,14 @@ export default function Home() {
 
   const handleCreateTrip = () => {
     if (!isAuthenticated) {
-      window.location.href = "/api/login";
+      setShowCreateDialog(true);
     } else {
       setShowCreateDialog(true);
     }
   };
 
   const handleExplore = () => {
-    if (!isAuthenticated) {
-      window.location.href = "/api/login";
-    } else {
-      setLocation("/explore");
-    }
+    setLocation("/explore");
   };
 
   const handleCreateTripSubmit = (trip: any) => {
@@ -127,7 +123,7 @@ export default function Home() {
           {/* Feature 1 */}
           <Card 
             className="relative overflow-hidden h-[400px] hover-elevate transition-all cursor-pointer group"
-            onClick={() => isAuthenticated ? setLocation("/my-trips") : window.location.href = "/api/login"}
+            onClick={() => setLocation("/my-trips")}
           >
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
@@ -150,7 +146,7 @@ export default function Home() {
           {/* Feature 2 */}
           <Card 
             className="relative overflow-hidden h-[400px] hover-elevate transition-all cursor-pointer group"
-            onClick={() => isAuthenticated ? setLocation("/my-trips") : window.location.href = "/api/login"}
+            onClick={() => setLocation("/my-trips")}
           >
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"

@@ -89,7 +89,7 @@ export default function PublicProfile() {
       
       if (is401) {
         setTimeout(() => {
-          window.location.href = "/api/login";
+          setLocation("/");
         }, 2000);
       }
     },
