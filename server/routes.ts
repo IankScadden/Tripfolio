@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import { geocodeDestination } from "./geocoding";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { Webhook } from "svix";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -1140,6 +1141,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error adding photo:", error);
       res.status(500).json({ error: "Internal server error" });
     }
+  });
+
+  // Clerk webhook endpoint for user sync
+  app.post("/api/webhooks/clerk", async (req, res) => {
+    const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+
+    if (!WEBHOOK_SECRET) {
+      return res.status(500).json({ error: "Missing webhook secret" });
+    }
+
+    const headers = req.headers;
+    const payload = JSON.stringify(req.body);
+
+    const svix_id = headers["svix-id"] as string;
+    const svix_timestamp = headers["svix-timestamp"] as string;
+    const svix_signature = headers["svix-signature"] as string;
+
+    if (!svix_id || !svix_timestamp || !svix_signature) {
+      return res.status(400).json({ error: "Missing svix headers" });
+    }
+
+    const wh = new Webhook(WEBHOOK_SECRET);
+    let evt: any;
+
+    try {
+      evt = wh.verify(payload, {
+        "svix-id": svix_id,
+        "svix-timestamp": svix_timestamp,
+        "svix-signature": svix_signature,
+      });
+    } catch (err) {
+      console.error("Error verifying webhook:", err);
+      return res.status(400).json({ error: "Invalid webhook signature" });
+    }
+
+    const eventType = evt.type;
+
+    if (eventType === "user.created" || eventType === "user.updated") {
+      const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+
+      try {
+        const existingUser = await storage.getUserByClerkId(id);
+
+        if (!existingUser) {
+          await storage.createUserFromClerk({
+            clerkId: id,
+            email: email_addresses?.[0]?.email_address || "",
+            firstName: first_name || "",
+            lastName: last_name || "",
+            profileImageUrl: image_url || "",
+          });
+        } else {
+          await storage.updateUserProfile(existingUser.id, {
+            profileImageUrl: image_url || existingUser.profileImageUrl,
+          });
+        }
+      } catch (error) {
+        console.error("Error syncing user from webhook:", error);
+        return res.status(500).json({ error: "Failed to sync user" });
+      }
+    }
+
+    res.status(200).json({ success: true });
   });
 
   const httpServer = createServer(app);
