@@ -26,7 +26,7 @@ export default function Header() {
           </Link>
           
           <nav className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            {isSignedIn && dbUser && (
+            {isSignedIn && dbUser ? (
               <>
                 <Link href="/my-trips" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
                   My Trips
@@ -37,6 +37,24 @@ export default function Header() {
                 <Link href={`/profile/${dbUser.id}`} className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
                   Profile
                 </Link>
+              </>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <button className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
+                    My Trips
+                  </button>
+                </SignInButton>
+                <SignInButton mode="modal">
+                  <button className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
+                    Explore
+                  </button>
+                </SignInButton>
+                <SignInButton mode="modal">
+                  <button className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                    Profile
+                  </button>
+                </SignInButton>
               </>
             )}
             {isSignedIn ? (
