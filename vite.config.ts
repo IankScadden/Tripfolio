@@ -7,30 +7,35 @@ export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
+    ...(process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
+            m.cartographer()
           ),
           await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
+            m.devBanner()
           ),
         ]
       : []),
   ],
-   resolve: {
+
+  resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
+
+  // Your React app lives in /client
   root: path.resolve(import.meta.dirname, "client"),
+
   build: {
+    // ⬇️ Build React app into dist/client — this MUST match server/vite.ts
     outDir: path.resolve(import.meta.dirname, "dist/client"),
     emptyOutDir: true,
   },
+
   server: {
     fs: {
       strict: true,
@@ -38,4 +43,3 @@ export default defineConfig({
     },
   },
 });
-

@@ -1,9 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, setupProduction } from "./vite";
 import { setupClerkAuth } from "./clerkAuth";
 
 const app = express();
+
+function log(message: string) {
+  const formattedTime = new Date().toLocaleTimeString("en-US", { hour12: false });
+  console.log(`${formattedTime} [express] ${message}`);
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -55,9 +60,9 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    await setupVite(app);
   } else {
-    serveStatic(app);
+    setupProduction(app);
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
