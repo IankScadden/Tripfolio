@@ -141,6 +141,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to hide trip from Explore (sets isPublic to false)
+  app.patch("/api/trips/:id/hide", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      // Only admins can hide trips
+      const isAdmin = user?.isAdmin === 1;
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Forbidden - Admin only" });
+      }
+      
+      const trip = await storage.getTrip(req.params.id);
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      
+      // Set isPublic to false to hide from Explore
+      const updatedTrip = await storage.updateTrip(req.params.id, { isPublic: false });
+      if (!updatedTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      
+      res.json({ success: true, message: "Trip hidden from Explore" });
+    } catch (error) {
+      console.error("Error hiding trip:", error);
+      res.status(500).json({ error: "Failed to hide trip" });
+    }
+  });
+
   app.delete("/api/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const userId = (req as any).userId;
