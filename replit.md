@@ -22,7 +22,11 @@ The application is built with a modern web stack, emphasizing a rich user experi
 
 ### Admin Configuration
 - **Admin Email**: ian@tripfolio.ai is automatically granted admin privileges via Clerk webhook
-- Admin users can delete any public trip from the Explore page
+- **Admin Moderation**: Admin users can hide trips from the Explore page using the "Remove from Explore" button
+  - Hidden trips are removed from public view (Explore page) but remain in the owner's My Trips
+  - Uses PATCH /api/trips/:id/hide endpoint (sets isPublic=0)
+  - Trip owners retain all their data and can re-post if desired
+  - This is a non-destructive moderation action that protects user data
 - Admin status is set automatically when a user with the admin email signs in (both new and existing accounts)
 
 ### Core Features
@@ -41,7 +45,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Public Profiles**: View other users' profiles showing their name, bio, profile picture, and all their public trips. Accessible by clicking usernames throughout the app.
 - **Social Engagement**: Like and comment system for public trips. Users can like trips (with toggle functionality), post comments, and view engagement counts. All interactions require authentication.
 - **Unpost Feature**: Users can unpublish their own trips from their public profile. Unpost button appears in top-left of trip cards on the user's own profile. Unpublishing sets isPublic to false, removing the trip from Explore and public view while keeping it in My Trips.
-- **Admin Moderation**: Designated admin users can delete any public trip from the Explore page. Delete button appears only for admins in the top-left corner of trip cards. Authorization enforced at both UI and API levels.
+- **Admin Moderation**: Designated admin users can hide any public trip from the Explore page. Hide button appears only for admins in the top-left corner of trip cards. Hidden trips remain in the owner's My Trips but are removed from public view. Authorization enforced at both UI and API levels.
 - **My Map**: Interactive 2D map embedded directly on profile pages showing user's traveled locations via pins. Users can click anywhere on their own map to drop pins marking places they've visited. All maps are publicly viewable (read-only for others) for travel inspiration. Features Leaflet integration with CartoDB Voyager tiles (English labels), reverse geocoding via LocationIQ API, simplified location names (US: "City, State, USA", International: "City, Country"), no infinite horizontal wrapping, and full CRUD operations with ownership verification.
 - **File Upload**: Comprehensive file upload system for profile pictures and trip images. Users can upload images from their local drive using the Uppy file uploader interface. Upload buttons appear next to URL inputs in Profile Settings (for profile pictures) and Post Trip page (for header images and photo gallery). Backend uses Replit App Storage with ACL policies for secure, authenticated file storage. Uploaded files are stored as object paths (/objects/<uuid>) and served via dedicated API routes.
 - **Dark Mode**: Full support for light and dark themes.
