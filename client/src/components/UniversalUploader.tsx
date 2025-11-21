@@ -77,7 +77,7 @@ export function UniversalUploader({
   useEffect(() => {
     if (!uploadType || !uploadParams) return;
 
-    const handleUploadSuccess = (file: any, response: any) => {
+    const handleUploadSuccess = async (file: any, response: any) => {
       console.log('[UniversalUploader] Upload success:', file, response);
       let finalUrl = '';
       
@@ -90,7 +90,12 @@ export function UniversalUploader({
       
       console.log('[UniversalUploader] Final URL:', finalUrl);
       if (finalUrl && onCompleteRef.current) {
-        onCompleteRef.current(finalUrl);
+        try {
+          await onCompleteRef.current(finalUrl);
+        } catch (error) {
+          console.error('[UniversalUploader] onComplete callback error:', error);
+          // Don't rethrow - we already have error handling in place
+        }
       }
     };
 

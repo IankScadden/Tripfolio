@@ -310,15 +310,24 @@ export default function PostTrip() {
                           maxNumberOfFiles={1}
                           maxFileSize={5 * 1024 * 1024}
                           onComplete={async (uploadedUrl: string) => {
-                            if (uploadedUrl) {
-                              const response = await apiRequest("PUT", `/api/trips/${tripId}/header-image`, {
-                                headerImageUrl: uploadedUrl,
-                              });
-                              const { objectPath } = await response.json();
-                              field.onChange(objectPath);
+                            try {
+                              if (uploadedUrl) {
+                                const response = await apiRequest("PUT", `/api/trips/${tripId}/header-image`, {
+                                  headerImageUrl: uploadedUrl,
+                                });
+                                const { objectPath } = await response.json();
+                                field.onChange(objectPath);
+                                toast({
+                                  title: "Image uploaded",
+                                  description: "Header image uploaded successfully",
+                                });
+                              }
+                            } catch (error) {
+                              console.error("Failed to save header image:", error);
                               toast({
-                                title: "Image uploaded",
-                                description: "Header image uploaded successfully",
+                                title: "Error",
+                                description: "Failed to save image. Please try again.",
+                                variant: "destructive",
                               });
                             }
                           }}
@@ -482,16 +491,25 @@ export default function PostTrip() {
                     maxNumberOfFiles={10}
                     maxFileSize={5 * 1024 * 1024}
                     onComplete={async (uploadedUrl: string) => {
-                      if (uploadedUrl) {
-                        const response = await apiRequest("PUT", `/api/trips/${tripId}/photos`, {
-                          photoUrl: uploadedUrl,
-                        });
-                        const { objectPath } = await response.json();
-                        const currentPhotos = form.getValues("photos") || [];
-                        form.setValue("photos", [...currentPhotos, objectPath]);
+                      try {
+                        if (uploadedUrl) {
+                          const response = await apiRequest("PUT", `/api/trips/${tripId}/photos`, {
+                            photoUrl: uploadedUrl,
+                          });
+                          const { objectPath } = await response.json();
+                          const currentPhotos = form.getValues("photos") || [];
+                          form.setValue("photos", [...currentPhotos, objectPath]);
+                          toast({
+                            title: "Photo uploaded",
+                            description: "Photo added to gallery successfully",
+                          });
+                        }
+                      } catch (error) {
+                        console.error("Failed to save photo:", error);
                         toast({
-                          title: "Photo uploaded",
-                          description: "Photo added to gallery successfully",
+                          title: "Error",
+                          description: "Failed to save photo. Please try again.",
+                          variant: "destructive",
                         });
                       }
                     }}
