@@ -69,20 +69,28 @@ export function UniversalUploader({
         },
       })
       .on("complete", async (result) => {
+        console.log('[UniversalUploader] Upload complete:', result);
+        
         if (result.successful && result.successful.length > 0) {
           // Process all uploaded files
           for (const upload of result.successful) {
+            console.log('[UniversalUploader] Processing upload:', upload);
             let finalUrl = '';
 
             // Handle Cloudinary POST upload response
             if (upload.response?.body) {
+              console.log('[UniversalUploader] Response body type:', typeof upload.response.body);
+              console.log('[UniversalUploader] Response body:', upload.response.body);
+              
               // Parse response body if it's a string
               let responseBody = upload.response.body;
               if (typeof responseBody === 'string') {
                 try {
                   responseBody = JSON.parse(responseBody);
+                  console.log('[UniversalUploader] Parsed response:', responseBody);
                 } catch (e) {
-                  console.error('Failed to parse Cloudinary response:', e);
+                  console.error('[UniversalUploader] Failed to parse response:', e);
+                  console.error('[UniversalUploader] Raw response:', responseBody);
                   continue;
                 }
               }
@@ -90,16 +98,21 @@ export function UniversalUploader({
               // Extract Cloudinary URL from parsed response
               if (responseBody.secure_url || responseBody.url) {
                 finalUrl = responseBody.secure_url || responseBody.url;
+                console.log('[UniversalUploader] Extracted Cloudinary URL:', finalUrl);
               }
             }
             
             // Handle Replit PUT upload response
             if (!finalUrl && upload.response?.uploadURL) {
               finalUrl = upload.response.uploadURL;
+              console.log('[UniversalUploader] Using Replit URL:', finalUrl);
             }
 
             if (finalUrl) {
+              console.log('[UniversalUploader] Calling onComplete with:', finalUrl);
               onComplete?.(finalUrl);
+            } else {
+              console.error('[UniversalUploader] No URL found in response!');
             }
           }
         }
