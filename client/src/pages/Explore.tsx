@@ -56,7 +56,7 @@ export default function Explore() {
       await apiRequest("PATCH", `/api/trips/${tripId}/hide`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"], exact: false });
       toast({
         title: "Trip hidden",
         description: "The trip has been removed from Explore. It remains in the owner's My Trips.",

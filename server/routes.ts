@@ -158,8 +158,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Trip not found" });
       }
       
-      // Set isPublic to false to hide from Explore
-      const updatedTrip = await storage.updateTrip(req.params.id, { isPublic: false });
+      // Set isPublic to 0 to hide from Explore
+      const updatedTrip = await storage.updateTrip(req.params.id, { isPublic: 0 });
       if (!updatedTrip) {
         return res.status(404).json({ error: "Trip not found" });
       }
