@@ -37,9 +37,10 @@ export default defineConfig({
   },
 
   server: {
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
-    },
+  host: "0.0.0.0",
+  allowedHosts: [".replit.dev", ".repl.co"],
+  fs: {
+    strict: true,
+    deny: ["**/.*"],
   },
-});
+},
