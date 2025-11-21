@@ -113,26 +113,56 @@ export default function ProfileSettings() {
     setIsUploading(true);
 
     try {
-      // Get upload URL
+      // Get upload credentials
       const uploadResponse = await apiRequest("POST", "/api/objects/upload", {});
-      const { uploadURL } = await uploadResponse.json();
+      const uploadData = await uploadResponse.json();
 
-      // Upload the cropped image
-      const uploadResult = await fetch(uploadURL, {
-        method: "PUT",
-        body: croppedBlob,
-        headers: {
-          "Content-Type": "image/jpeg",
-        },
-      });
+      let uploadedUrl = '';
 
-      if (!uploadResult.ok) {
-        throw new Error("Upload failed");
+      if (uploadData.uploadType === 'cloudinary') {
+        // Cloudinary upload
+        const formData = new FormData();
+        formData.append('file', croppedBlob);
+        formData.append('timestamp', uploadData.timestamp.toString());
+        formData.append('signature', uploadData.signature);
+        formData.append('api_key', uploadData.apiKey);
+        formData.append('public_id', uploadData.publicId);
+        formData.append('folder', 'tripfolio');
+
+        const uploadResult = await fetch(
+          `https://api.cloudinary.com/v1_1/${uploadData.cloudName}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!uploadResult.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const cloudinaryResponse = await uploadResult.json();
+        uploadedUrl = cloudinaryResponse.secure_url || cloudinaryResponse.url;
+      } else {
+        // Replit object storage upload
+        const uploadResult = await fetch(uploadData.uploadURL, {
+          method: "PUT",
+          body: croppedBlob,
+          headers: {
+            "Content-Type": "image/jpeg",
+          },
+        });
+
+        if (!uploadResult.ok) {
+          throw new Error("Upload failed");
+        }
+
+        uploadedUrl = uploadData.uploadURL;
       }
 
       // Set ACL and save to profile
       const response = await apiRequest("PUT", "/api/users/profile-picture", {
-        profilePictureUrl: uploadURL,
+        profilePictureUrl: uploadedUrl,
       });
       const { objectPath } = await response.json();
 

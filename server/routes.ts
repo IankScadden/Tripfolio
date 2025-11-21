@@ -10,6 +10,7 @@ import { geocodeDestination } from "./geocoding";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { Webhook } from "svix";
+import { CloudinaryStorageService, shouldUseCloudinary } from "./cloudinaryStorage";
 
 // Helper function to sanitize user data for public endpoints
 // Only returns public profile information, filtering out sensitive data
@@ -1058,9 +1059,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Object Storage routes - for file uploads
   app.post("/api/objects/upload", requireClerkAuth, ensureUserInDb, async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      // Use Cloudinary in production (Railway), Replit object storage in dev
+      if (shouldUseCloudinary()) {
+        const cloudinaryService = new CloudinaryStorageService();
+        const uploadData = await cloudinaryService.getUploadSignature();
+        res.json({ 
+          uploadType: 'cloudinary',
+          ...uploadData 
+        });
+      } else {
+        const objectStorageService = new ObjectStorageService();
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        res.json({ 
+          uploadType: 'replit',
+          uploadURL 
+        });
+      }
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
@@ -1098,14 +1112,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userId = (req as any).userId;
 
     try {
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        req.body.profilePictureUrl,
-        {
-          owner: userId,
-          visibility: "public",
-        },
-      );
+      const cloudinaryService = new CloudinaryStorageService();
+      let objectPath = req.body.profilePictureUrl;
+      
+      // Only set ACL for Replit object storage, Cloudinary URLs are already public
+      if (!cloudinaryService.isCloudinaryUrl(req.body.profilePictureUrl)) {
+        const objectStorageService = new ObjectStorageService();
+        objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+          req.body.profilePictureUrl,
+          {
+            owner: userId,
+            visibility: "public",
+          },
+        );
+      }
 
       await storage.updateUserProfile(userId, { profileImageUrl: objectPath });
 
@@ -1132,14 +1152,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        req.body.headerImageUrl,
-        {
-          owner: userId,
-          visibility: "public",
-        },
-      );
+      const cloudinaryService = new CloudinaryStorageService();
+      let objectPath = req.body.headerImageUrl;
+      
+      // Only set ACL for Replit object storage, Cloudinary URLs are already public
+      if (!cloudinaryService.isCloudinaryUrl(req.body.headerImageUrl)) {
+        const objectStorageService = new ObjectStorageService();
+        objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+          req.body.headerImageUrl,
+          {
+            owner: userId,
+            visibility: "public",
+          },
+        );
+      }
 
       await storage.updateTrip(req.params.id, { headerImageUrl: objectPath });
 
@@ -1166,14 +1192,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        req.body.photoUrl,
-        {
-          owner: userId,
-          visibility: "public",
-        },
-      );
+      const cloudinaryService = new CloudinaryStorageService();
+      let objectPath = req.body.photoUrl;
+      
+      // Only set ACL for Replit object storage, Cloudinary URLs are already public
+      if (!cloudinaryService.isCloudinaryUrl(req.body.photoUrl)) {
+        const objectStorageService = new ObjectStorageService();
+        objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+          req.body.photoUrl,
+          {
+            owner: userId,
+            visibility: "public",
+          },
+        );
+      }
 
       const currentPhotos = trip.photos || [];
       const updatedPhotos = [...currentPhotos, objectPath];

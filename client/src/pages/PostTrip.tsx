@@ -15,8 +15,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Header from "@/components/Header";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { UniversalUploader } from "@/components/UniversalUploader";
 
 const postTripSchema = z.object({
   tripType: z.enum(["plan", "traveled"]),
@@ -178,15 +177,6 @@ export default function PostTrip() {
     postTripMutation.mutate(data);
   };
 
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload", {});
-    const { uploadURL } = await response.json();
-    return {
-      method: "PUT" as const,
-      url: uploadURL,
-    };
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -316,30 +306,26 @@ export default function PostTrip() {
                             data-testid="input-header-image"
                           />
                         </FormControl>
-                        <ObjectUploader
+                        <UniversalUploader
                           maxNumberOfFiles={1}
                           maxFileSize={5 * 1024 * 1024}
-                          onGetUploadParameters={handleGetUploadParameters}
-                          onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-                            if (result.successful && result.successful.length > 0) {
-                              const uploadedUrl = result.successful[0].uploadURL;
-                              if (uploadedUrl) {
-                                const response = await apiRequest("PUT", `/api/trips/${tripId}/header-image`, {
-                                  headerImageUrl: uploadedUrl,
-                                });
-                                const { objectPath } = await response.json();
-                                field.onChange(objectPath);
-                                toast({
-                                  title: "Image uploaded",
-                                  description: "Header image uploaded successfully",
-                                });
-                              }
+                          onComplete={async (uploadedUrl: string) => {
+                            if (uploadedUrl) {
+                              const response = await apiRequest("PUT", `/api/trips/${tripId}/header-image`, {
+                                headerImageUrl: uploadedUrl,
+                              });
+                              const { objectPath } = await response.json();
+                              field.onChange(objectPath);
+                              toast({
+                                title: "Image uploaded",
+                                description: "Header image uploaded successfully",
+                              });
                             }
                           }}
                           buttonVariant="secondary"
                         >
                           <Upload className="h-4 w-4" />
-                        </ObjectUploader>
+                        </UniversalUploader>
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -492,36 +478,27 @@ export default function PostTrip() {
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
-                  <ObjectUploader
+                  <UniversalUploader
                     maxNumberOfFiles={10}
                     maxFileSize={5 * 1024 * 1024}
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-                      if (result.successful && result.successful.length > 0) {
+                    onComplete={async (uploadedUrl: string) => {
+                      if (uploadedUrl) {
+                        const response = await apiRequest("PUT", `/api/trips/${tripId}/photos`, {
+                          photoUrl: uploadedUrl,
+                        });
+                        const { objectPath } = await response.json();
                         const currentPhotos = form.getValues("photos") || [];
-                        const newPhotoUrls: string[] = [];
-                        
-                        for (const file of result.successful) {
-                          if (file.uploadURL) {
-                            const response = await apiRequest("PUT", `/api/trips/${tripId}/photos`, {
-                              photoUrl: file.uploadURL,
-                            });
-                            const { objectPath } = await response.json();
-                            newPhotoUrls.push(objectPath);
-                          }
-                        }
-                        
-                        form.setValue("photos", [...currentPhotos, ...newPhotoUrls]);
+                        form.setValue("photos", [...currentPhotos, objectPath]);
                         toast({
-                          title: `${newPhotoUrls.length} photo(s) uploaded`,
-                          description: "Photos added to gallery successfully",
+                          title: "Photo uploaded",
+                          description: "Photo added to gallery successfully",
                         });
                       }
                     }}
                     buttonVariant="secondary"
                   >
                     <Upload className="h-4 w-4" />
-                  </ObjectUploader>
+                  </UniversalUploader>
                 </div>
 
                 {photos.length > 0 && (
