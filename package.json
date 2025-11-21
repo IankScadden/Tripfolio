@@ -51,6 +51,7 @@
     "@uppy/core": "^5.1.1",
     "@uppy/dashboard": "^5.0.4",
     "@uppy/react": "^5.1.1",
+    "@uppy/xhr-upload": "^5.0.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.8.0",
     "clsx": "^2.1.1",

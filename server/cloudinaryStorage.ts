@@ -22,15 +22,18 @@ export class CloudinaryStorageService {
     cloudName: string;
     apiKey: string;
     publicId: string;
+    folder: string;
   }> {
     const timestamp = Math.round(Date.now() / 1000);
-    const publicId = `tripfolio/${randomUUID()}`;
+    const folder = 'tripfolio';
+    const publicId = `${folder}/${randomUUID()}`;
 
+    // Sign the request with folder parameter
     const signature = cloudinary.utils.api_sign_request(
       {
         timestamp,
         public_id: publicId,
-        folder: 'tripfolio',
+        folder,
       },
       process.env.CLOUDINARY_API_SECRET!
     );
@@ -41,6 +44,7 @@ export class CloudinaryStorageService {
       cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
       apiKey: process.env.CLOUDINARY_API_KEY!,
       publicId,
+      folder,
     };
   }
 
