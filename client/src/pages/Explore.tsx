@@ -51,21 +51,21 @@ export default function Explore() {
     queryKey: ["/api/explore/trips", searchQuery],
   });
 
-  const deleteTripMutation = useMutation({
+  const hideFromExploreMutation = useMutation({
     mutationFn: async (tripId: string) => {
-      await apiRequest("DELETE", `/api/trips/${tripId}`);
+      await apiRequest("PATCH", `/api/trips/${tripId}/hide`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"] });
       toast({
-        title: "Trip deleted",
-        description: "The trip has been removed from the community.",
+        title: "Trip hidden",
+        description: "The trip has been removed from Explore. It remains in the owner's My Trips.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete trip. Please try again.",
+        description: "Failed to hide trip. Please try again.",
         variant: "destructive",
       });
     },
@@ -171,7 +171,7 @@ export default function Explore() {
                     )}
                   </div>
 
-                  {/* Admin Delete Button */}
+                  {/* Admin Hide from Explore Button */}
                   {isAdmin && (
                     <div className="absolute top-4 left-4">
                       <Button
@@ -180,11 +180,11 @@ export default function Explore() {
                         className="h-8 w-8 backdrop-blur bg-red-500/95 hover:bg-red-600/95"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (confirm(`Are you sure you want to delete "${trip.name}"?`)) {
-                            deleteTripMutation.mutate(trip.id);
+                          if (confirm(`Remove "${trip.name}" from Explore?\n\nThe trip will remain in the owner's My Trips.`)) {
+                            hideFromExploreMutation.mutate(trip.id);
                           }
                         }}
-                        data-testid={`button-delete-trip-${trip.id}`}
+                        data-testid={`button-hide-trip-${trip.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
