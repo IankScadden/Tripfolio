@@ -137,7 +137,7 @@ export function UniversalUploader({
         method: 'POST',
         formData: true,
         fieldName: 'file',
-        metaFields: ['timestamp', 'signature', 'api_key', 'public_id', 'folder'],
+        allowedMetaFields: ['timestamp', 'signature', 'api_key', 'public_id', 'folder'],
         getResponseData: (xhr: XMLHttpRequest) => {
           console.log('[UniversalUploader] Cloudinary response:', xhr.responseText);
           const response = JSON.parse(xhr.responseText);
@@ -152,7 +152,7 @@ export function UniversalUploader({
             url: response.secure_url || response.url,
           };
         },
-      } as any);  // Type assertion to allow metaFields
+      } as any);  // Type assertion to allow allowedMetaFields
     } else {
       uppy.use(AwsS3, {
         id: 'AwsS3',
