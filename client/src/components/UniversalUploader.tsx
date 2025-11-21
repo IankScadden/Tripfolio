@@ -49,6 +49,31 @@ export function UniversalUploader({
     })
   );
 
+  // Dedicated effect to apply Cloudinary metadata whenever uploadParams changes
+  // This ensures ALL queued files get the latest signed fields
+  useEffect(() => {
+    if (uploadType === 'cloudinary' && uploadParams) {
+      const metadata = {
+        timestamp: uploadParams.timestamp.toString(),
+        signature: uploadParams.signature,
+        api_key: uploadParams.apiKey,
+        public_id: uploadParams.publicId,
+        folder: uploadParams.folder,
+      };
+      
+      console.log('[UniversalUploader] Applying Cloudinary metadata to ALL files:', metadata);
+      
+      // Set global default for future files
+      uppy.setMeta(metadata);
+      
+      // Backfill all existing queued files
+      uppy.getFiles().forEach(file => {
+        console.log('[UniversalUploader] Backfilling metadata for file:', file.id);
+        uppy.setFileMeta(file.id, metadata);
+      });
+    }
+  }, [uploadType, uploadParams, uppy]);
+
   useEffect(() => {
     if (!uploadType || !uploadParams) return;
 
@@ -78,19 +103,8 @@ export function UniversalUploader({
       });
     };
 
-    const handleFileAdded = (file: any) => {
-      // Apply metadata to newly added files
-      if (uploadType === 'cloudinary' && uploadParams) {
-        console.log('[UniversalUploader] Applying metadata to newly added file:', file.id);
-        uppy.setFileMeta(file.id, {
-          timestamp: uploadParams.timestamp.toString(),
-          signature: uploadParams.signature,
-          api_key: uploadParams.apiKey,
-          public_id: uploadParams.publicId,
-          folder: uploadParams.folder,
-        });
-      }
-    };
+    // Note: file-added listener not needed - the dedicated uploadParams effect
+    // handles both global meta AND per-file backfilling whenever params change
 
     const handleComplete = (result: any) => {
       console.log('[UniversalUploader] All uploads complete:', result);
@@ -134,18 +148,6 @@ export function UniversalUploader({
           };
         },
       } as any);  // Type assertion to allow metaFields
-      
-      // Apply metadata to any existing files in the queue
-      console.log('[UniversalUploader] Applying metadata to existing files in queue');
-      uppy.getFiles().forEach(file => {
-        uppy.setFileMeta(file.id, {
-          timestamp: uploadParams.timestamp.toString(),
-          signature: uploadParams.signature,
-          api_key: uploadParams.apiKey,
-          public_id: uploadParams.publicId,
-          folder: uploadParams.folder,
-        });
-      });
     } else {
       uppy.use(AwsS3, {
         id: 'AwsS3',
@@ -163,13 +165,11 @@ export function UniversalUploader({
     uppy.on("upload-success", handleUploadSuccess);
     uppy.on("upload-error", handleUploadError);
     uppy.on("complete", handleComplete);
-    uppy.on("file-added", handleFileAdded);
 
     return () => {
       uppy.off("upload-success", handleUploadSuccess);
       uppy.off("upload-error", handleUploadError);
       uppy.off("complete", handleComplete);
-      uppy.off("file-added", handleFileAdded);
       // Don't cancel uploads on cleanup - only on component unmount
     };
   }, [uploadType, uploadParams, uppy, toast]);
@@ -190,29 +190,10 @@ export function UniversalUploader({
       const response = await res.json();
       console.log('[UniversalUploader] Got upload params:', response);
       
+      // Set state - this triggers the dedicated uploadParams effect
+      // which will apply metadata to ALL files
       setUploadType(response.uploadType);
       setUploadParams(response);
-      
-      // For Cloudinary, set global metadata BEFORE opening modal
-      // This ensures metadata is present even if files are queued before useEffect runs
-      if (response.uploadType === 'cloudinary') {
-        console.log('[UniversalUploader] Setting global Cloudinary metadata before modal opens');
-        const metadata = {
-          timestamp: response.timestamp.toString(),
-          signature: response.signature,
-          api_key: response.apiKey,
-          public_id: response.publicId,
-          folder: response.folder,
-        };
-        
-        uppy.setMeta(metadata);
-        
-        // Also apply to any existing files in queue
-        uppy.getFiles().forEach(file => {
-          uppy.setFileMeta(file.id, metadata);
-        });
-      }
-      
       setShowModal(true);
     } catch (error) {
       console.error('[UniversalUploader] Failed to get upload params:', error);
