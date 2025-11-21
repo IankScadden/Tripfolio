@@ -1,13 +1,39 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, setupProduction } from "./vite";
+import { setupVite } from "./vite";
 import { setupClerkAuth } from "./clerkAuth";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 const app = express();
 
 function log(message: string) {
   const formattedTime = new Date().toLocaleTimeString("en-US", { hour12: false });
   console.log(`${formattedTime} [express] ${message}`);
+}
+
+// Custom production setup that works correctly when bundled by esbuild
+function setupProductionFixed(app: express.Express) {
+  // Use process.cwd() instead of __dirname to avoid path issues when bundled
+  const distPath = path.join(process.cwd(), "dist", "client");
+  
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `❌ Could not find build directory: ${distPath}. Did you run "npm run build"?`
+    );
+  }
+  
+  log(`Serving static files from: ${distPath}`);
+  
+  // Serve built static files
+  app.use(express.static(distPath));
+  
+  // Fallback to index.html (React Router support)
+  app.use("*", (_req, res) => {
+    const indexPath = path.join(distPath, "index.html");
+    res.sendFile(indexPath);
+  });
 }
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -62,7 +88,7 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app);
   } else {
-    setupProduction(app);
+    setupProductionFixed(app);
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
