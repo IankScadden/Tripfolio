@@ -1195,20 +1195,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
       try {
+        const email = email_addresses?.[0]?.email_address || "";
+        const isAdminEmail = email.toLowerCase() === "ian@tripfolio.ai";
+        
         const existingUser = await storage.getUserByClerkId(id);
 
         if (!existingUser) {
           await storage.createUserFromClerk({
             clerkId: id,
-            email: email_addresses?.[0]?.email_address || "",
+            email,
             firstName: first_name || "",
             lastName: last_name || "",
             profileImageUrl: image_url || "",
+            isAdmin: isAdminEmail,
           });
         } else {
-          await storage.updateUserProfile(existingUser.id, {
+          const updates: { profileImageUrl?: string; isAdmin?: boolean } = {
             profileImageUrl: image_url || existingUser.profileImageUrl,
-          });
+          };
+          
+          if (isAdminEmail && !existingUser.isAdmin) {
+            updates.isAdmin = true;
+          }
+          
+          await storage.updateUserProfile(existingUser.id, updates);
         }
       } catch (error) {
         console.error("Error syncing user from webhook:", error);

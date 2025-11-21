@@ -20,6 +20,11 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Backend**: Express.js, TypeScript, Clerk Express SDK (authentication)
 - **Database**: PostgreSQL (Neon)
 
+### Admin Configuration
+- **Admin Email**: ian@tripfolio.ai is automatically granted admin privileges via Clerk webhook
+- Admin users can delete any public trip from the Explore page
+- Admin status is set automatically when a user with the admin email signs in (both new and existing accounts)
+
 ### Core Features
 - **Public Landing Page**: Engaging entry point for all visitors.
 - **Smart Authentication**: Login required only for privileged actions like trip creation or community exploration.

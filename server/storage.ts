@@ -22,8 +22,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByClerkId(clerkId: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string }): Promise<User>;
-  updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string }): Promise<User | undefined>;
+  createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string; isAdmin?: boolean }): Promise<User>;
+  updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string; isAdmin?: boolean }): Promise<User | undefined>;
   
   // Trip operations
   getAllTrips(userId: string): Promise<Trip[]>;
@@ -104,7 +104,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string }): Promise<User> {
+  async createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string; isAdmin?: boolean }): Promise<User> {
     const [user] = await db
       .insert(users)
       .values({
@@ -114,16 +114,22 @@ export class DatabaseStorage implements IStorage {
         firstName: data.firstName,
         lastName: data.lastName,
         profileImageUrl: data.profileImageUrl,
-        isAdmin: 0,
+        isAdmin: data.isAdmin ? 1 : 0,
       })
       .returning();
     return user;
   }
 
-  async updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string }): Promise<User | undefined> {
+  async updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string; isAdmin?: boolean }): Promise<User | undefined> {
+    const updateData: any = { ...updates, updatedAt: new Date() };
+    
+    if (updates.isAdmin !== undefined) {
+      updateData.isAdmin = updates.isAdmin ? 1 : 0;
+    }
+    
     const [user] = await db
       .update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
     return user;
