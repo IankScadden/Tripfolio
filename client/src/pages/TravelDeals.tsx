@@ -22,51 +22,38 @@ export default function TravelDeals() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section with Gradient */}
-      <div className="relative overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 opacity-90"
-        />
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url(https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=600&fit=crop)`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            mixBlendMode: 'overlay',
-          }}
-        />
-        
-        <div className="relative z-10 px-4 py-16 sm:py-24">
-          <div className="max-w-4xl mx-auto">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setLocation("/")}
-              className="text-white/90 hover:text-white hover:bg-white/20 mb-6"
-              data-testid="button-back"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-                <Tag className="h-6 w-6 text-white" />
-              </div>
-              <Badge className="bg-orange-500 hover:bg-orange-500 text-white border-0 gap-1">
-                <Sparkles className="h-3 w-3" />
-                Coming Soon
-              </Badge>
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4">
-              Travel Deals Marketplace
-            </h1>
-            <p className="text-xl text-white/80 max-w-2xl">
-              Your one-stop destination for incredible travel savings and gear exchange
-            </p>
+      {/* Hero Section - Matching other pages */}
+      <div 
+        className="relative h-[350px] bg-cover bg-center flex items-center"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=1600&h=400&fit=crop')`,
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setLocation("/")}
+            className="text-white/90 hover:text-white hover:bg-white/20 mb-4"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          
+          <div className="flex items-center gap-3 mb-4">
+            <Badge className="bg-primary hover:bg-primary text-primary-foreground border-0 gap-1">
+              <Sparkles className="h-3 w-3" />
+              Coming Soon
+            </Badge>
           </div>
+          
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4">
+            Travel Deals
+          </h1>
+          <p className="text-xl text-white/80 max-w-2xl">
+            Your one-stop destination for incredible travel savings and gear exchange
+          </p>
         </div>
       </div>
 
@@ -74,8 +61,8 @@ export default function TravelDeals() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
         {/* Building Something Special */}
         <div className="text-center mb-20">
-          <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Tag className="h-8 w-8 text-white" />
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Tag className="h-8 w-8 text-primary-foreground" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
             We're Building Something Special
@@ -97,8 +84,8 @@ export default function TravelDeals() {
             {/* Exclusive Travel Deals Card */}
             <Card className="p-6 sm:p-8">
               <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <BadgePercent className="h-6 w-6 text-white" />
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <BadgePercent className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold mb-1">Exclusive Travel Deals</h3>
@@ -127,8 +114,8 @@ export default function TravelDeals() {
             {/* Travel Gear Marketplace Card */}
             <Card className="p-6 sm:p-8">
               <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Backpack className="h-6 w-6 text-white" />
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Backpack className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold mb-1">Travel Gear Marketplace</h3>
@@ -165,7 +152,7 @@ export default function TravelDeals() {
           <div className="grid sm:grid-cols-3 gap-8 sm:gap-6">
             {/* Step 1 */}
             <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground font-bold text-lg">
                 1
               </div>
               <h3 className="font-semibold mb-2">Browse Deals</h3>
@@ -176,7 +163,7 @@ export default function TravelDeals() {
 
             {/* Step 2 */}
             <div className="text-center">
-              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground font-bold text-lg">
                 2
               </div>
               <h3 className="font-semibold mb-2">Compare & Save</h3>
@@ -187,7 +174,7 @@ export default function TravelDeals() {
 
             {/* Step 3 */}
             <div className="text-center">
-              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground font-bold text-lg">
                 3
               </div>
               <h3 className="font-semibold mb-2">Book or Purchase</h3>
