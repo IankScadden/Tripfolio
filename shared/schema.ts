@@ -35,7 +35,10 @@ export const trips = pgTable("trips", {
   photos: text("photos").array(),
   budget: decimal("budget", { precision: 10, scale: 2 }).default("0"),
   privateNotes: text("private_notes"),
-});
+}, (table) => ({
+  userIdIdx: index("trips_user_id_idx").on(table.userId),
+  isPublicIdx: index("trips_is_public_idx").on(table.isPublic),
+}));
 
 export const expenses = pgTable("expenses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -47,7 +50,9 @@ export const expenses = pgTable("expenses", {
   date: text("date"),
   dayNumber: integer("day_number"),
   purchased: integer("purchased").default(0).notNull(),
-});
+}, (table) => ({
+  tripIdIdx: index("expenses_trip_id_idx").on(table.tripId),
+}));
 
 export const dayDetails = pgTable("day_details", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -80,7 +85,9 @@ export const comments = pgTable("comments", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  tripIdIdx: index("comments_trip_id_idx").on(table.tripId),
+}));
 
 export const travelPins = pgTable("travel_pins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

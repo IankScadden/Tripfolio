@@ -754,9 +754,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchQuery = req.query.search as string | undefined;
       const publicTrips = await storage.getPublicTrips(searchQuery);
       
-      // Get expenses for all trips to calculate totals
+      // Get trip IDs for batch queries
       const tripIds = publicTrips.map(t => t.id);
-      const allExpenses = await storage.getExpensesByTripIds(tripIds);
+      
+      // Batch fetch ALL related data in parallel - eliminates N+1 queries
+      const [allExpenses, likeCounts, commentCounts, dayDetailsByTripId] = await Promise.all([
+        storage.getExpensesByTripIds(tripIds),
+        storage.getLikesByTripIds(tripIds),
+        storage.getCommentCountsByTripIds(tripIds),
+        storage.getDayDetailsByTripIds(tripIds),
+      ]);
       
       // Group expenses by trip ID
       const expensesByTripId = allExpenses.reduce((acc, expense) => {
@@ -767,45 +774,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return acc;
       }, {} as Record<string, typeof allExpenses>);
       
-      // Get likes and comments counts for all trips
-      const likeCounts = await storage.getLikesByTripIds(tripIds);
-      const commentCounts = await storage.getCommentCountsByTripIds(tripIds);
-      
-      // Get day details for all trips to show destinations
-      const tripsWithDetails = await Promise.all(
-        publicTrips.map(async (trip) => {
-          const tripExpenses = expensesByTripId[trip.id] || [];
-          const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-          const dayDetails = await storage.getAllDayDetails(trip.id);
-          
-          // Get unique destinations
-          const destinations = Array.from(
-            new Set(
-              dayDetails
-                .filter(d => d.destination)
-                .map(d => d.destination as string)
-            )
-          );
-          
-          // Calculate expense counts by category
-          const expenseCounts = {
-            flights: tripExpenses.filter(e => e.category === 'flights').length,
-            accommodation: tripExpenses.filter(e => e.category === 'accommodation').length,
-            activities: tripExpenses.filter(e => e.category === 'activities').length,
-          };
-          
-          // User data is sanitized in storage layer
-          return {
-            ...trip,
-            totalCost: total,
-            costPerDay: trip.days ? total / trip.days : 0,
-            destinations,
-            expenseCounts,
-            likeCount: likeCounts[trip.id] || 0,
-            commentCount: commentCounts[trip.id] || 0,
-          };
-        })
-      );
+      // Process trips synchronously - all data already fetched
+      const tripsWithDetails = publicTrips.map((trip) => {
+        const tripExpenses = expensesByTripId[trip.id] || [];
+        const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+        const dayDetails = dayDetailsByTripId[trip.id] || [];
+        
+        // Get unique destinations
+        const destinations = Array.from(
+          new Set(
+            dayDetails
+              .filter(d => d.destination)
+              .map(d => d.destination as string)
+          )
+        );
+        
+        // Calculate expense counts by category
+        const expenseCounts = {
+          flights: tripExpenses.filter(e => e.category === 'flights').length,
+          accommodation: tripExpenses.filter(e => e.category === 'accommodation').length,
+          activities: tripExpenses.filter(e => e.category === 'activities').length,
+        };
+        
+        // User data is sanitized in storage layer
+        return {
+          ...trip,
+          totalCost: total,
+          costPerDay: trip.days ? total / trip.days : 0,
+          destinations,
+          expenseCounts,
+          likeCount: likeCounts[trip.id] || 0,
+          commentCount: commentCounts[trip.id] || 0,
+        };
+      });
       
       res.json(tripsWithDetails);
     } catch (error) {

@@ -45,6 +45,7 @@ export interface IStorage {
   
   // Day detail operations
   getAllDayDetails(tripId: string): Promise<DayDetail[]>;
+  getDayDetailsByTripIds(tripIds: string[]): Promise<Record<string, DayDetail[]>>;
   getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined>;
   upsertDayDetail(dayDetail: InsertDayDetail): Promise<DayDetail>;
   
@@ -339,6 +340,25 @@ export class DatabaseStorage implements IStorage {
       .where(eq(dayDetails.tripId, tripId))
       .orderBy(dayDetails.dayNumber);
     return allDayDetails;
+  }
+
+  async getDayDetailsByTripIds(tripIds: string[]): Promise<Record<string, DayDetail[]>> {
+    if (tripIds.length === 0) return {};
+    
+    const allDayDetails = await db
+      .select()
+      .from(dayDetails)
+      .where(inArray(dayDetails.tripId, tripIds))
+      .orderBy(dayDetails.dayNumber);
+    
+    // Group by tripId
+    return allDayDetails.reduce((acc, detail) => {
+      if (!acc[detail.tripId]) {
+        acc[detail.tripId] = [];
+      }
+      acc[detail.tripId].push(detail);
+      return acc;
+    }, {} as Record<string, DayDetail[]>);
   }
 
   async getDayDetail(tripId: string, dayNumber: number): Promise<DayDetail | undefined> {
