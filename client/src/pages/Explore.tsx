@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle, Trash2 } from "lucide-react";
@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 type Trip = {
   id: string;
@@ -149,9 +150,11 @@ export default function Explore() {
                 {/* Header Image */}
                 <div className="relative h-48 bg-muted">
                   <img 
-                    src={trip.headerImageUrl || DEFAULT_HEADER_IMAGE}
+                    src={getOptimizedImageUrl(trip.headerImageUrl || DEFAULT_HEADER_IMAGE, 'card')}
                     alt={trip.name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.src = DEFAULT_HEADER_IMAGE;
                     }}
@@ -220,9 +223,11 @@ export default function Explore() {
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
                       {trip.user.profileImageUrl ? (
                         <img 
-                          src={trip.user.profileImageUrl} 
+                          src={getOptimizedImageUrl(trip.user.profileImageUrl, 'thumbnail')} 
                           alt={getUserDisplayName(trip.user)}
                           className="w-full h-full rounded-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         getUserInitial(trip.user)
