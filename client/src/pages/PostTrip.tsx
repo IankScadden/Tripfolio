@@ -317,6 +317,9 @@ export default function PostTrip() {
                                 });
                                 const { objectPath } = await response.json();
                                 field.onChange(objectPath);
+                                // Invalidate cache so My Trips shows updated image
+                                queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+                                queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
                                 toast({
                                   title: "Image uploaded",
                                   description: "Header image uploaded successfully",
