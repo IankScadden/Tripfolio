@@ -296,11 +296,13 @@ export default function TripDetail() {
 
   const bulkLodgingMutation = useMutation({
     mutationFn: async (data: {
-      checkInDate: string;
-      checkOutDate: string;
+      checkInDate?: string;
+      checkOutDate?: string;
       lodgingName: string;
       totalCost: string;
       url?: string;
+      nights?: number;
+      startDayNumber?: number;
     }) => {
       const response = await apiRequest("POST", `/api/trips/${tripId}/lodging/bulk`, data);
       return await response.json();
@@ -545,10 +547,12 @@ export default function TripDetail() {
     lodgingName: string;
     totalCost: string;
     url?: string;
-    checkInDate: string;
-    checkOutDate: string;
+    checkInDate?: string;
+    checkOutDate?: string;
+    nights?: number;
+    startDayNumber?: number;
   }) => {
-    bulkLodgingMutation.mutate(data);
+    bulkLodgingMutation.mutate(data as any);
   };
 
   const handleEditExpense = (expense: Expense) => {
@@ -1770,6 +1774,8 @@ export default function TripDetail() {
           CATEGORIES.find((c) => c.id === selectedCategory)?.title || ""
         }
         category={selectedCategory || undefined}
+        tripHasDates={!!trip?.startDate}
+        tripDays={trip?.days || 1}
         onAdd={handleSaveExpense}
         onAddMultiNightLodging={handleSaveMultiNightLodging}
         initialData={editingExpense ? {

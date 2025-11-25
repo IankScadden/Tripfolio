@@ -3,12 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AddExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryTitle: string;
   category?: string;
+  tripHasDates?: boolean;
+  tripDays?: number;
   onAdd: (expense: {
     description: string;
     cost: string;
@@ -19,8 +22,10 @@ interface AddExpenseDialogProps {
     lodgingName: string;
     totalCost: string;
     url?: string;
-    checkInDate: string;
-    checkOutDate: string;
+    checkInDate?: string;
+    checkOutDate?: string;
+    nights?: number;
+    startDayNumber?: number;
   }) => void;
   initialData?: {
     description: string;
@@ -36,6 +41,8 @@ export default function AddExpenseDialog({
   onOpenChange,
   categoryTitle,
   category,
+  tripHasDates = true,
+  tripDays = 1,
   onAdd,
   onAddMultiNightLodging,
   initialData,
@@ -47,24 +54,29 @@ export default function AddExpenseDialog({
   const [date, setDate] = useState("");
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
+  const [nights, setNights] = useState("1");
+  const [startDayNumber, setStartDayNumber] = useState("1");
 
   const isAccommodation = category === "accommodation";
-  const isMultiNight = isAccommodation && checkInDate && checkOutDate && mode === "add";
+  const isMultiNightWithDates = isAccommodation && tripHasDates && checkInDate && checkOutDate && mode === "add";
+  const isMultiNightWithoutDates = isAccommodation && !tripHasDates && parseInt(nights) > 0 && mode === "add";
 
-  const nightsCount = useMemo(() => {
+  const nightsCountFromDates = useMemo(() => {
     if (!checkInDate || !checkOutDate) return 0;
     const [checkInYear, checkInMonth, checkInDay] = checkInDate.split('-').map(Number);
     const [checkOutYear, checkOutMonth, checkOutDay] = checkOutDate.split('-').map(Number);
     const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
     const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
-    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    return nights > 0 ? nights : 0;
+    const n = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    return n > 0 ? n : 0;
   }, [checkInDate, checkOutDate]);
 
+  const effectiveNightsCount = tripHasDates ? nightsCountFromDates : parseInt(nights) || 0;
+
   const nightlyRate = useMemo(() => {
-    if (!cost || nightsCount <= 0) return null;
-    return (parseFloat(cost) / nightsCount).toFixed(2);
-  }, [cost, nightsCount]);
+    if (!cost || effectiveNightsCount <= 0) return null;
+    return (parseFloat(cost) / effectiveNightsCount).toFixed(2);
+  }, [cost, effectiveNightsCount]);
 
   useEffect(() => {
     if (initialData && mode === "edit") {
@@ -74,6 +86,8 @@ export default function AddExpenseDialog({
       setDate(initialData.date || "");
       setCheckInDate("");
       setCheckOutDate("");
+      setNights("1");
+      setStartDayNumber("1");
     } else if (!open) {
       setDescription("");
       setCost("");
@@ -81,28 +95,42 @@ export default function AddExpenseDialog({
       setDate("");
       setCheckInDate("");
       setCheckOutDate("");
+      setNights("1");
+      setStartDayNumber("1");
     }
   }, [initialData, mode, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isAccommodation && mode === "add" && checkInDate && checkOutDate && nightsCount > 0) {
-      if (description && cost && onAddMultiNightLodging) {
-        onAddMultiNightLodging({
-          lodgingName: description,
-          totalCost: cost,
-          url: url || undefined,
-          checkInDate,
-          checkOutDate,
-        });
-        setDescription("");
-        setCost("");
-        setUrl("");
-        setCheckInDate("");
-        setCheckOutDate("");
-        onOpenChange(false);
-      }
+    if (isMultiNightWithDates && description && cost && onAddMultiNightLodging) {
+      onAddMultiNightLodging({
+        lodgingName: description,
+        totalCost: cost,
+        url: url || undefined,
+        checkInDate,
+        checkOutDate,
+      });
+      setDescription("");
+      setCost("");
+      setUrl("");
+      setCheckInDate("");
+      setCheckOutDate("");
+      onOpenChange(false);
+    } else if (isMultiNightWithoutDates && description && cost && onAddMultiNightLodging) {
+      onAddMultiNightLodging({
+        lodgingName: description,
+        totalCost: cost,
+        url: url || undefined,
+        nights: parseInt(nights),
+        startDayNumber: parseInt(startDayNumber),
+      });
+      setDescription("");
+      setCost("");
+      setUrl("");
+      setNights("1");
+      setStartDayNumber("1");
+      onOpenChange(false);
     } else if (description && cost) {
       onAdd({
         description,
@@ -141,7 +169,7 @@ export default function AddExpenseDialog({
             />
           </div>
 
-          {isAccommodation && mode === "add" ? (
+          {isAccommodation && mode === "add" && tripHasDates ? (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -167,10 +195,63 @@ export default function AddExpenseDialog({
                 </div>
               </div>
 
-              {nightsCount > 0 && (
+              {nightsCountFromDates > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  {nightsCount} night{nightsCount !== 1 ? 's' : ''}
-                  {nightlyRate && ` (${nightlyRate}/night)`}
+                  {nightsCountFromDates} night{nightsCountFromDates !== 1 ? 's' : ''}
+                  {nightlyRate && ` ($${nightlyRate}/night)`}
+                </p>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="cost">Total Cost ($)</Label>
+                <Input
+                  id="cost"
+                  type="number"
+                  step="0.01"
+                  placeholder="Total for all nights"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                  required
+                  data-testid="input-expense-cost"
+                />
+              </div>
+            </>
+          ) : isAccommodation && mode === "add" && !tripHasDates ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nights">Number of Nights</Label>
+                  <Input
+                    id="nights"
+                    type="number"
+                    min="1"
+                    max={tripDays}
+                    value={nights}
+                    onChange={(e) => setNights(e.target.value)}
+                    data-testid="input-expense-nights"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="startDayNumber">Starting Day</Label>
+                  <Select value={startDayNumber} onValueChange={setStartDayNumber}>
+                    <SelectTrigger data-testid="select-start-day">
+                      <SelectValue placeholder="Select day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: tripDays }, (_, i) => i + 1).map((day) => (
+                        <SelectItem key={day} value={String(day)}>
+                          Day {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {parseInt(nights) > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {parseInt(nights)} night{parseInt(nights) !== 1 ? 's' : ''} starting from Day {startDayNumber}
+                  {nightlyRate && ` ($${nightlyRate}/night)`}
                 </p>
               )}
 
@@ -242,9 +323,12 @@ export default function AddExpenseDialog({
               type="submit" 
               className="flex-1" 
               data-testid="button-save-expense"
-              disabled={isAccommodation && mode === "add" && !!checkInDate && !!checkOutDate && nightsCount <= 0}
+              disabled={isAccommodation && mode === "add" && tripHasDates && !!checkInDate && !!checkOutDate && nightsCountFromDates <= 0}
             >
-              {mode === "edit" ? "Save Changes" : isMultiNight && nightsCount > 0 ? `Add ${nightsCount} Night${nightsCount !== 1 ? 's' : ''}` : "Add Expense"}
+              {mode === "edit" ? "Save Changes" : 
+                (isMultiNightWithDates && nightsCountFromDates > 0) ? `Add ${nightsCountFromDates} Night${nightsCountFromDates !== 1 ? 's' : ''}` :
+                (isMultiNightWithoutDates && parseInt(nights) > 0) ? `Add ${nights} Night${parseInt(nights) !== 1 ? 's' : ''}` :
+                "Add Expense"}
             </Button>
           </div>
         </form>
