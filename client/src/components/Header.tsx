@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Menu, X, Plane, Compass, Users, User, Tag } from "lucide-react";
 
 const CompassLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -15,6 +18,16 @@ const CompassLogo = ({ className }: { className?: string }) => (
 export default function Header() {
   const { isSignedIn } = useUser();
   const { user: dbUser } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { label: "My Trips", href: "/my-trips", icon: Plane, requiresAuth: true },
+    { label: "Explore", href: "/explore", icon: Compass, requiresAuth: true },
+    { label: "Travel Deals", href: "/travel-deals", icon: Tag, requiresAuth: false },
+    { label: "Profile", href: dbUser ? `/profile/${dbUser.id}` : "/profile", icon: User, requiresAuth: true },
+  ];
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -25,33 +38,40 @@ export default function Header() {
             <span className="text-base sm:text-xl font-semibold whitespace-nowrap">Tripfolio</span>
           </Link>
           
-          <nav className="flex items-center gap-2 sm:gap-4 md:gap-6">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6">
             {isSignedIn && dbUser ? (
               <>
-                <Link href="/my-trips" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
+                <Link href="/my-trips" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
                   My Trips
                 </Link>
-                <Link href="/explore" className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
+                <Link href="/explore" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                   Explore
                 </Link>
-                <Link href={`/profile/${dbUser.id}`} className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                <Link href="/travel-deals" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-travel-deals">
+                  Travel Deals
+                </Link>
+                <Link href={`/profile/${dbUser.id}`} className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
                   Profile
                 </Link>
               </>
             ) : (
               <>
                 <SignInButton mode="modal">
-                  <button className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
+                  <button className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
                     My Trips
                   </button>
                 </SignInButton>
                 <SignInButton mode="modal">
-                  <button className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
+                  <button className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
                     Explore
                   </button>
                 </SignInButton>
+                <Link href="/travel-deals" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-travel-deals">
+                  Travel Deals
+                </Link>
                 <SignInButton mode="modal">
-                  <button className="text-xs sm:text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                  <button className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
                     Profile
                   </button>
                 </SignInButton>
@@ -72,7 +92,7 @@ export default function Header() {
                   variant="default"
                   size="sm"
                   data-testid="button-header-login"
-                  className="text-xs sm:text-sm px-2 sm:px-3"
+                  className="text-sm px-3"
                 >
                   Sign In
                 </Button>
@@ -80,6 +100,88 @@ export default function Header() {
             )}
             <ThemeToggle />
           </nav>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
+            {isSignedIn && (
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8"
+                  }
+                }}
+              />
+            )}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] sm:w-[320px]">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center justify-between mb-8 pt-2">
+                    <div className="flex items-center gap-2">
+                      <CompassLogo className="w-8 h-8" />
+                      <span className="text-lg font-semibold">Tripfolio</span>
+                    </div>
+                  </div>
+                  
+                  <nav className="flex flex-col gap-2">
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      
+                      if (item.requiresAuth && (!isSignedIn || !dbUser)) {
+                        return (
+                          <SignInButton key={item.label} mode="modal">
+                            <button 
+                              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-left w-full"
+                              onClick={closeMobileMenu}
+                              data-testid={`mobile-link-${item.label.toLowerCase().replace(' ', '-')}`}
+                            >
+                              <Icon className="h-5 w-5 text-muted-foreground" />
+                              <span className="font-medium">{item.label}</span>
+                            </button>
+                          </SignInButton>
+                        );
+                      }
+                      
+                      return (
+                        <Link 
+                          key={item.label}
+                          href={item.href}
+                          onClick={closeMobileMenu}
+                          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                          data-testid={`mobile-link-${item.label.toLowerCase().replace(' ', '-')}`}
+                        >
+                          <Icon className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium">{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                  
+                  {!isSignedIn && (
+                    <div className="mt-auto pb-4">
+                      <SignInButton mode="modal">
+                        <Button 
+                          className="w-full" 
+                          size="lg"
+                          onClick={closeMobileMenu}
+                          data-testid="mobile-button-signin"
+                        >
+                          Sign In
+                        </Button>
+                      </SignInButton>
+                    </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
