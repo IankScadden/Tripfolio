@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, MapPin, Calendar, Plus, ArrowRight } from "lucide-react";
+import { DollarSign, MapPin, Calendar, Plus, ArrowRight, Tag } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import CreateTripDialog from "@/components/CreateTripDialog";
@@ -135,7 +135,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Feature 1 - Smart Budgeting */}
           {isAuthenticated ? (
             <Card 
@@ -279,6 +279,30 @@ export default function Home() {
               </Card>
             </SignInButton>
           )}
+
+          {/* Feature 4 - Travel Deals */}
+          <Card 
+            className="relative overflow-hidden h-[400px] hover-elevate transition-all cursor-pointer group"
+            onClick={() => setLocation("/travel-deals")}
+            data-testid="card-travel-deals"
+          >
+            <div 
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+              style={{
+                backgroundImage: `url(https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=800&fit=crop)`,
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+              <div className="bg-green-500 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <Tag className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Travel Deals</h3>
+              <p className="text-gray-200 leading-relaxed">
+                Find the best prices on flights, hotels, and activities. Curated resources to save money on your trip.
+              </p>
+            </div>
+          </Card>
         </div>
       </div>
 

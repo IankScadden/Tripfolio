@@ -15,6 +15,7 @@ import ExploreTripDetail from "@/pages/ExploreTripDetail";
 import ProfileSettings from "@/pages/ProfileSettings";
 import PublicProfile from "@/pages/PublicProfile";
 import MyMap from "@/pages/MyMap";
+import TravelDeals from "@/pages/TravelDeals";
 import NotFound from "@/pages/not-found";
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/share/:shareId" component={SharedTrip} />
       <Route path="/explore" component={Explore} />
       <Route path="/explore/:id" component={ExploreTripDetail} />
+      <Route path="/travel-deals" component={TravelDeals} />
       <Route path="/profile-settings" component={ProfileSettings} />
       <Route path="/profile/:userId" component={PublicProfile} />
       <Route path="/map/:userId" component={MyMap} />
