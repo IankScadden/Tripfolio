@@ -294,6 +294,43 @@ export default function TripDetail() {
     },
   });
 
+  const bulkLodgingMutation = useMutation({
+    mutationFn: async (data: {
+      checkInDate: string;
+      checkOutDate: string;
+      lodgingName: string;
+      totalCost: string;
+      url?: string;
+    }) => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/lodging/bulk`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      toast({
+        title: "Success",
+        description: "Lodging added for multiple nights",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add lodging. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
   const shareTripMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/trips/${tripId}/share`);
@@ -502,6 +539,16 @@ export default function TripDetail() {
       // Create new expense
       createExpenseMutation.mutate({ ...expense, category: selectedCategory });
     }
+  };
+
+  const handleSaveMultiNightLodging = (data: {
+    lodgingName: string;
+    totalCost: string;
+    url?: string;
+    checkInDate: string;
+    checkOutDate: string;
+  }) => {
+    bulkLodgingMutation.mutate(data);
   };
 
   const handleEditExpense = (expense: Expense) => {
@@ -1722,7 +1769,9 @@ export default function TripDetail() {
         categoryTitle={
           CATEGORIES.find((c) => c.id === selectedCategory)?.title || ""
         }
+        category={selectedCategory || undefined}
         onAdd={handleSaveExpense}
+        onAddMultiNightLodging={handleSaveMultiNightLodging}
         initialData={editingExpense ? {
           description: editingExpense.description,
           cost: editingExpense.cost,
