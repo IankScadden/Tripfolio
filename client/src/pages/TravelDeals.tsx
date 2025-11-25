@@ -9,9 +9,10 @@ import {
   Plane, 
   Hotel, 
   Ticket,
-  Backpack,
-  Users,
-  BadgePercent
+  Car,
+  BadgePercent,
+  Search,
+  Bell
 } from "lucide-react";
 import Header from "@/components/Header";
 
@@ -52,7 +53,7 @@ export default function TravelDeals() {
             Travel Deals
           </h1>
           <p className="text-xl text-white/80 max-w-2xl">
-            Your one-stop destination for incredible travel savings and gear exchange
+            Your hub for finding the best travel deals and saving money on your adventures
           </p>
         </div>
       </div>
@@ -68,8 +69,8 @@ export default function TravelDeals() {
             We're Building Something Special
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            The Travel Deals Marketplace is coming soon! Get ready for the best travel 
-            discounts and a community-driven platform to buy and sell travel gear.
+            Travel Deals is coming soon! Get ready for the best curated travel discounts 
+            on flights, hotels, transportation, and activities all in one place.
           </p>
         </div>
 
@@ -80,65 +81,49 @@ export default function TravelDeals() {
             <p className="text-muted-foreground">Here's what we're building for you</p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Exclusive Travel Deals Card */}
-            <Card className="p-6 sm:p-8">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <BadgePercent className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-1">Exclusive Travel Deals</h3>
-                  <p className="text-muted-foreground">
-                    Browse discounted offers from trusted travel partners
-                  </p>
-                </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Flights */}
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Plane className="h-6 w-6 text-primary" />
               </div>
-              
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Plane className="h-4 w-4 text-muted-foreground" />
-                  <span>Flight discounts from airlines</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Hotel className="h-4 w-4 text-muted-foreground" />
-                  <span>Special rates on hostels & hotels</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Ticket className="h-4 w-4 text-muted-foreground" />
-                  <span>Activity & tour packages</span>
-                </div>
-              </div>
+              <h3 className="font-semibold mb-2">Flights</h3>
+              <p className="text-sm text-muted-foreground">
+                Compare prices from top airlines and find the cheapest routes
+              </p>
             </Card>
 
-            {/* Travel Gear Marketplace Card */}
-            <Card className="p-6 sm:p-8">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Backpack className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-1">Travel Gear Marketplace</h3>
-                  <p className="text-muted-foreground">
-                    Buy and sell used travel equipment from fellow travelers
-                  </p>
-                </div>
+            {/* Hotels */}
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Hotel className="h-6 w-6 text-primary" />
               </div>
-              
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Backpack className="h-4 w-4 text-muted-foreground" />
-                  <span>Backpacks, sleeping bags, and camping gear</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>Peer-to-peer marketplace</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  <span>Great prices on quality pre-owned items</span>
-                </div>
+              <h3 className="font-semibold mb-2">Accommodation</h3>
+              <p className="text-sm text-muted-foreground">
+                Special rates on hostels, hotels, and unique stays
+              </p>
+            </Card>
+
+            {/* Transportation */}
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Car className="h-6 w-6 text-primary" />
               </div>
+              <h3 className="font-semibold mb-2">Transportation</h3>
+              <p className="text-sm text-muted-foreground">
+                Buses, trains, and car rentals at great prices
+              </p>
+            </Card>
+
+            {/* Activities */}
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Ticket className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Activities</h3>
+              <p className="text-sm text-muted-foreground">
+                Tours, experiences, and attraction tickets
+              </p>
             </Card>
           </div>
         </div>
@@ -157,7 +142,7 @@ export default function TravelDeals() {
               </div>
               <h3 className="font-semibold mb-2">Browse Deals</h3>
               <p className="text-sm text-muted-foreground">
-                Discover curated travel deals from verified partners and community members selling gear
+                Discover curated travel deals from verified partners across all categories
               </p>
             </div>
 
@@ -168,7 +153,7 @@ export default function TravelDeals() {
               </div>
               <h3 className="font-semibold mb-2">Compare & Save</h3>
               <p className="text-sm text-muted-foreground">
-                Compare prices, read reviews, and find the best deals for your next adventure
+                Compare prices and find the best deals for your next adventure
               </p>
             </div>
 
@@ -177,9 +162,9 @@ export default function TravelDeals() {
               <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground font-bold text-lg">
                 3
               </div>
-              <h3 className="font-semibold mb-2">Book or Purchase</h3>
+              <h3 className="font-semibold mb-2">Book & Go</h3>
               <p className="text-sm text-muted-foreground">
-                Secure your deal or connect with sellers directly through our platform
+                Secure your deal and add expenses directly to your trip budget
               </p>
             </div>
           </div>
@@ -188,7 +173,7 @@ export default function TravelDeals() {
         {/* CTA */}
         <div className="text-center mt-16">
           <p className="text-muted-foreground mb-6">
-            Want to be notified when we launch?
+            Ready to start planning your next adventure?
           </p>
           <Button 
             size="lg" 
