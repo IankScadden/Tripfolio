@@ -177,12 +177,36 @@ export default function TripDetail() {
       const response = await apiRequest("POST", "/api/expenses", { ...expenseData, tripId });
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] }); // Invalidate trips list
+    onMutate: async (newExpense) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      
+      // Snapshot previous value
+      const previousExpenses = queryClient.getQueryData(["/api/trips", tripId, "expenses"]);
+      
+      // Optimistically add the new expense
+      queryClient.setQueryData(["/api/trips", tripId, "expenses"], (old: any[] | undefined) => {
+        const optimisticExpense = {
+          ...newExpense,
+          id: `temp-${Date.now()}`,
+          tripId,
+          purchased: 0,
+          createdAt: new Date().toISOString(),
+        };
+        return old ? [...old, optimisticExpense] : [optimisticExpense];
+      });
+      
+      return { previousExpenses };
     },
-    onError: (error) => {
+    onSuccess: () => {
+      // Only invalidate expenses - no need to refetch all trips
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+    },
+    onError: (error, _newExpense, context) => {
+      // Rollback on error
+      if (context?.previousExpenses) {
+        queryClient.setQueryData(["/api/trips", tripId, "expenses"], context.previousExpenses);
+      }
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -207,16 +231,30 @@ export default function TripDetail() {
       const response = await apiRequest("PATCH", `/api/expenses/${expenseId}`, data);
       return await response.json();
     },
+    onMutate: async ({ expenseId, data }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      const previousExpenses = queryClient.getQueryData(["/api/trips", tripId, "expenses"]);
+      
+      // Optimistically update the expense
+      queryClient.setQueryData(["/api/trips", tripId, "expenses"], (old: any[] | undefined) => {
+        return old?.map(expense => 
+          expense.id === expenseId ? { ...expense, ...data } : expense
+        ) || [];
+      });
+      
+      return { previousExpenses };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       toast({
         title: "Success",
         description: "Expense updated successfully",
       });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context?.previousExpenses) {
+        queryClient.setQueryData(["/api/trips", tripId, "expenses"], context.previousExpenses);
+      }
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -241,12 +279,24 @@ export default function TripDetail() {
       const response = await apiRequest("DELETE", `/api/expenses/${expenseId}`);
       return await response.json();
     },
+    onMutate: async (expenseId) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      const previousExpenses = queryClient.getQueryData(["/api/trips", tripId, "expenses"]);
+      
+      // Optimistically remove the expense
+      queryClient.setQueryData(["/api/trips", tripId, "expenses"], (old: any[] | undefined) => {
+        return old?.filter(expense => expense.id !== expenseId) || [];
+      });
+      
+      return { previousExpenses };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] }); // Invalidate trips list
     },
-    onError: (error) => {
+    onError: (error, _expenseId, context) => {
+      if (context?.previousExpenses) {
+        queryClient.setQueryData(["/api/trips", tripId, "expenses"], context.previousExpenses);
+      }
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -271,10 +321,26 @@ export default function TripDetail() {
       const response = await apiRequest("PATCH", `/api/expenses/${expenseId}`, { purchased });
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+    onMutate: async ({ expenseId, purchased }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+      const previousExpenses = queryClient.getQueryData(["/api/trips", tripId, "expenses"]);
+      
+      // Optimistically toggle the purchased status
+      queryClient.setQueryData(["/api/trips", tripId, "expenses"], (old: any[] | undefined) => {
+        return old?.map(expense => 
+          expense.id === expenseId ? { ...expense, purchased } : expense
+        ) || [];
+      });
+      
+      return { previousExpenses };
     },
-    onError: (error) => {
+    onSuccess: () => {
+      // Silent success - no need to refetch since we already updated optimistically
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousExpenses) {
+        queryClient.setQueryData(["/api/trips", tripId, "expenses"], context.previousExpenses);
+      }
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -308,9 +374,8 @@ export default function TripDetail() {
       return await response.json();
     },
     onSuccess: () => {
+      // Only invalidate expenses - no need to refetch all trips
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       toast({
         title: "Success",
         description: "Lodging added for multiple nights",
