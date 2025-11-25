@@ -66,8 +66,17 @@ export default function Explore() {
     setCurrentPage(1);
   };
 
+  // Build URL with query params
+  const buildExploreUrl = () => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+    params.set('page', currentPage.toString());
+    params.set('limit', TRIPS_PER_PAGE.toString());
+    return `/api/explore/trips?${params.toString()}`;
+  };
+
   const { data, isLoading } = useQuery<PaginatedResponse>({
-    queryKey: ["/api/explore/trips", { search: searchQuery, page: currentPage, limit: TRIPS_PER_PAGE }],
+    queryKey: [buildExploreUrl()],
   });
 
   const trips = data?.trips || [];
@@ -78,7 +87,12 @@ export default function Explore() {
       await apiRequest("PATCH", `/api/trips/${tripId}/hide`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/explore/trips"], exact: false });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/explore/trips');
+        }
+      });
       toast({
         title: "Trip hidden",
         description: "The trip has been removed from Explore. It remains in the owner's My Trips.",
