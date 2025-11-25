@@ -710,12 +710,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Get user's public trips (user data is sanitized in storage layer)
-      const publicTrips = await storage.getPublicTrips();
-      const userPublicTrips = publicTrips.filter(t => t.user.id === userId);
+      // Get user's public trips (fetch all with high limit, then filter by user)
+      const { trips: allPublicTrips } = await storage.getPublicTrips(undefined, 1000, 0);
+      const userPublicTrips = allPublicTrips.filter((t: any) => t.user.id === userId);
       
       // Get expenses for all trips to calculate totals
-      const tripIds = userPublicTrips.map(t => t.id);
+      const tripIds = userPublicTrips.map((t: any) => t.id);
       const allExpenses = await storage.getExpensesByTripIds(tripIds);
       
       // Group expenses by trip ID
@@ -728,7 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, {} as Record<string, typeof allExpenses>);
       
       // Calculate totals for each trip
-      const tripsWithTotals = userPublicTrips.map((trip) => {
+      const tripsWithTotals = userPublicTrips.map((trip: any) => {
         const tripExpenses = expensesByTripId[trip.id] || [];
         const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
         
@@ -752,7 +752,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/explore/trips", async (req: any, res) => {
     try {
       const searchQuery = req.query.search as string | undefined;
-      const publicTrips = await storage.getPublicTrips(searchQuery);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 12;
+      const offset = (page - 1) * limit;
+      
+      const { trips: publicTrips, total } = await storage.getPublicTrips(searchQuery, limit, offset);
       
       // Get trip IDs for batch queries
       const tripIds = publicTrips.map(t => t.id);
@@ -808,7 +812,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
       
-      res.json(tripsWithDetails);
+      res.json({
+        trips: tripsWithDetails,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     } catch (error) {
       console.error("Error fetching public trips:", error);
       res.status(500).json({ error: "Failed to fetch public trips" });

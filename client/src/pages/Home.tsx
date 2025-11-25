@@ -17,7 +17,7 @@ type FeaturedTrip = {
   name: string;
   headerImageUrl?: string;
   totalCost: number;
-  owner: {
+  user: {
     displayName?: string;
     firstName?: string;
   };
@@ -304,7 +304,7 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                     <h3 className="text-xl font-bold mb-2 line-clamp-2">{trip.name}</h3>
                     <p className="text-sm text-gray-300">
-                      by {trip.owner.displayName || trip.owner.firstName || "Traveler"}
+                      by {trip.user?.displayName || trip.user?.firstName || "Traveler"}
                     </p>
                   </div>
                 </Card>

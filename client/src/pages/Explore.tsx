@@ -1,7 +1,7 @@
-import { useState, memo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle, Trash2 } from "lucide-react";
+import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,19 +38,40 @@ type User = {
 
 type TripWithUser = Trip & { user: User };
 
+type PaginatedResponse = {
+  trips: TripWithUser[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 const DEFAULT_HEADER_IMAGE = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=400&fit=crop";
+const TRIPS_PER_PAGE = 12;
 
 export default function Explore() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const isAdmin = user && user.isAdmin === 1;
 
-  const { data: trips = [], isLoading } = useQuery<TripWithUser[]>({
-    queryKey: ["/api/explore/trips", searchQuery],
+  // Reset page when search query changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const { data, isLoading } = useQuery<PaginatedResponse>({
+    queryKey: ["/api/explore/trips", { search: searchQuery, page: currentPage, limit: TRIPS_PER_PAGE }],
   });
+
+  const trips = data?.trips || [];
+  const pagination = data?.pagination;
 
   const hideFromExploreMutation = useMutation({
     mutationFn: async (tripId: string) => {
@@ -116,7 +137,7 @@ export default function Explore() {
               type="text"
               placeholder="Search by destination or trip name..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-12 h-14 text-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white backdrop-blur"
               data-testid="input-search-trips"
             />
@@ -299,6 +320,41 @@ export default function Explore() {
                 </div>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8 pb-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              data-testid="button-prev-page"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Page</span>
+              <span className="font-medium text-foreground">{currentPage}</span>
+              <span>of</span>
+              <span className="font-medium text-foreground">{pagination.totalPages}</span>
+              <span className="ml-2">({pagination.total} trips)</span>
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+              disabled={currentPage === pagination.totalPages}
+              data-testid="button-next-page"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
           </div>
         )}
       </div>

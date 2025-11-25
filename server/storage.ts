@@ -32,7 +32,7 @@ export interface IStorage {
   createTrip(trip: InsertTrip, userId: string): Promise<Trip>;
   updateTrip(id: string, trip: Partial<InsertTrip> & { shareId?: string | null }): Promise<Trip | undefined>;
   deleteTrip(id: string): Promise<boolean>;
-  getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: PublicUser }>>;
+  getPublicTrips(searchQuery?: string, limit?: number, offset?: number): Promise<{ trips: Array<Trip & { user: PublicUser }>, total: number }>;
   cloneTripStructure(originalTripId: string, newUserId: string): Promise<Trip>;
   
   // Expense operations
@@ -175,7 +175,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  async getPublicTrips(searchQuery?: string): Promise<Array<Trip & { user: PublicUser }>> {
+  async getPublicTrips(searchQuery?: string, limit: number = 50, offset: number = 0): Promise<{ trips: Array<Trip & { user: PublicUser }>, total: number }> {
     if (searchQuery && searchQuery.trim()) {
       // Search in trip names and day detail destinations
       const searchPattern = `%${searchQuery.trim()}%`;
@@ -190,53 +190,89 @@ export class DatabaseStorage implements IStorage {
       
       // Build query with trip name OR trip ID in matching destinations
       let results;
+      let countResult;
+      
       if (matchingTripIds.length > 0) {
-        results = await db
-          .select()
-          .from(trips)
-          .innerJoin(users, eq(trips.userId, users.id))
-          .where(
-            and(
-              eq(trips.isPublic, 1),
-              or(
-                ilike(trips.name, searchPattern),
-                inArray(trips.id, matchingTripIds)
-              )
-            )
-          );
+        const whereCondition = and(
+          eq(trips.isPublic, 1),
+          or(
+            ilike(trips.name, searchPattern),
+            inArray(trips.id, matchingTripIds)
+          )
+        );
+        
+        [results, countResult] = await Promise.all([
+          db
+            .select()
+            .from(trips)
+            .innerJoin(users, eq(trips.userId, users.id))
+            .where(whereCondition)
+            .limit(limit)
+            .offset(offset),
+          db
+            .select({ count: sqlOperator<number>`count(*)::int` })
+            .from(trips)
+            .where(whereCondition),
+        ]);
       } else {
         // Only search in trip names if no destinations match
-        results = await db
-          .select()
-          .from(trips)
-          .innerJoin(users, eq(trips.userId, users.id))
-          .where(
-            and(
-              eq(trips.isPublic, 1),
-              ilike(trips.name, searchPattern)
-            )
-          );
+        const whereCondition = and(
+          eq(trips.isPublic, 1),
+          ilike(trips.name, searchPattern)
+        );
+        
+        [results, countResult] = await Promise.all([
+          db
+            .select()
+            .from(trips)
+            .innerJoin(users, eq(trips.userId, users.id))
+            .where(whereCondition)
+            .limit(limit)
+            .offset(offset),
+          db
+            .select({ count: sqlOperator<number>`count(*)::int` })
+            .from(trips)
+            .where(whereCondition),
+        ]);
       }
       
+      const total = countResult[0]?.count || 0;
+      
       // Transform results to include sanitized user data with trip
-      return results.map(result => ({
-        ...result.trips,
-        user: sanitizeUserForPublic(result.users),
-      } as Trip & { user: PublicUser }));
+      return {
+        trips: results.map(result => ({
+          ...result.trips,
+          user: sanitizeUserForPublic(result.users),
+        } as Trip & { user: PublicUser })),
+        total,
+      };
     }
 
-    // No search query - return all public trips
-    const results = await db
-      .select()
-      .from(trips)
-      .innerJoin(users, eq(trips.userId, users.id))
-      .where(eq(trips.isPublic, 1));
+    // No search query - return all public trips with pagination
+    const [results, countResult] = await Promise.all([
+      db
+        .select()
+        .from(trips)
+        .innerJoin(users, eq(trips.userId, users.id))
+        .where(eq(trips.isPublic, 1))
+        .limit(limit)
+        .offset(offset),
+      db
+        .select({ count: sqlOperator<number>`count(*)::int` })
+        .from(trips)
+        .where(eq(trips.isPublic, 1)),
+    ]);
+    
+    const total = countResult[0]?.count || 0;
     
     // Transform results to include sanitized user data with trip
-    return results.map(result => ({
-      ...result.trips,
-      user: sanitizeUserForPublic(result.users),
-    } as Trip & { user: PublicUser }));
+    return {
+      trips: results.map(result => ({
+        ...result.trips,
+        user: sanitizeUserForPublic(result.users),
+      } as Trip & { user: PublicUser })),
+      total,
+    };
   }
 
   async cloneTripStructure(originalTripId: string, newUserId: string): Promise<Trip> {
