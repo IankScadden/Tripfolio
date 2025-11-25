@@ -1,6 +1,6 @@
 import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, type TravelPin, type InsertTravelPin, trips, expenses, users, dayDetails, likes, comments, travelPins } from "@shared/schema";
 import { db } from "./db";
-import { eq, inArray, and, or, ilike, sql as sqlOperator } from "drizzle-orm";
+import { eq, inArray, and, or, ilike, isNotNull, ne, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 // Public user type - only includes fields safe for public endpoints
@@ -195,6 +195,8 @@ export class DatabaseStorage implements IStorage {
       if (matchingTripIds.length > 0) {
         const whereCondition = and(
           eq(trips.isPublic, 1),
+          isNotNull(trips.description),
+          ne(trips.description, ''),
           or(
             ilike(trips.name, searchPattern),
             inArray(trips.id, matchingTripIds)
@@ -218,6 +220,8 @@ export class DatabaseStorage implements IStorage {
         // Only search in trip names if no destinations match
         const whereCondition = and(
           eq(trips.isPublic, 1),
+          isNotNull(trips.description),
+          ne(trips.description, ''),
           ilike(trips.name, searchPattern)
         );
         
@@ -249,18 +253,25 @@ export class DatabaseStorage implements IStorage {
     }
 
     // No search query - return all public trips with pagination
+    // Only include trips that have been properly "posted" (have a description)
+    const publicPostedCondition = and(
+      eq(trips.isPublic, 1),
+      isNotNull(trips.description),
+      ne(trips.description, '')
+    );
+    
     const [results, countResult] = await Promise.all([
       db
         .select()
         .from(trips)
         .innerJoin(users, eq(trips.userId, users.id))
-        .where(eq(trips.isPublic, 1))
+        .where(publicPostedCondition)
         .limit(limit)
         .offset(offset),
       db
         .select({ count: sqlOperator<number>`count(*)::int` })
         .from(trips)
-        .where(eq(trips.isPublic, 1)),
+        .where(publicPostedCondition),
     ]);
     
     const total = countResult[0]?.count || 0;
