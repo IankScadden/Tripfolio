@@ -135,7 +135,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           {/* Feature 1 - Smart Budgeting */}
           {isAuthenticated ? (
             <Card 
@@ -280,29 +280,49 @@ export default function Home() {
             </SignInButton>
           )}
 
-          {/* Feature 4 - Travel Deals */}
-          <Card 
-            className="relative overflow-hidden h-[400px] hover-elevate transition-all cursor-pointer group"
-            onClick={() => setLocation("/travel-deals")}
-            data-testid="card-travel-deals"
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-              style={{
-                backgroundImage: `url(https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=800&fit=crop)`,
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-              <div className="bg-green-500 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <Tag className="w-6 h-6" />
+        </div>
+
+        {/* Travel Deals Banner - Simple & Beautiful */}
+        <div 
+          className="mt-12 relative overflow-hidden rounded-2xl cursor-pointer group"
+          onClick={() => setLocation("/travel-deals")}
+          data-testid="banner-travel-deals"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 opacity-90" />
+          <div 
+            className="absolute inset-0 opacity-10 transition-transform duration-500 group-hover:scale-105"
+            style={{
+              backgroundImage: `url(https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&h=400&fit=crop)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              mixBlendMode: 'overlay',
+            }}
+          />
+          <div className="relative z-10 p-8 sm:p-12 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                <Tag className="h-7 w-7 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Travel Deals</h3>
-              <p className="text-gray-200 leading-relaxed">
-                Find the best prices on flights, hotels, and activities. Curated resources to save money on your trip.
-              </p>
+              <div className="text-center sm:text-left">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white">Travel Deals</h3>
+                  <Badge className="bg-orange-500 hover:bg-orange-500 text-white border-0 text-xs">
+                    Coming Soon
+                  </Badge>
+                </div>
+                <p className="text-white/80 text-sm sm:text-base">
+                  Exclusive discounts & a marketplace for travel gear
+                </p>
+              </div>
             </div>
-          </Card>
+            <Button 
+              variant="outline" 
+              className="bg-white/10 text-white border-white/40 hover:bg-white hover:text-foreground backdrop-blur whitespace-nowrap"
+            >
+              Learn More
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
 
