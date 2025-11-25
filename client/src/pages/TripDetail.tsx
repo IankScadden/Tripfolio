@@ -1089,28 +1089,28 @@ export default function TripDetail() {
             </CardContent>
           </Card>
 
-          {/* City to City Transportation */}
+          {/* Lodging */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Train className="h-4 w-4" style={{ color: CATEGORIES[1].color }} />
-                City to City Transportation
+                <Hotel className="h-4 w-4" style={{ color: CATEGORIES[3].color }} />
+                Lodging
               </CardTitle>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="gap-1" 
-                onClick={() => handleAddExpense("intercity")}
-                data-testid="button-add-transportation"
+                onClick={() => handleAddExpense("accommodation")}
+                data-testid="button-add-lodging"
               >
-                <span className="text-2xl leading-none">+</span> Add Route
+                <span className="text-2xl leading-none">+</span> Add Lodging
               </Button>
             </CardHeader>
             <CardContent>
-              {getExpensesByCategory("intercity").length > 0 ? (
+              {getExpensesByCategory("accommodation").length > 0 ? (
                 <>
                   <div className="space-y-2">
-                    {getVisibleExpenses("intercity").map((expense) => (
+                    {getVisibleExpenses("accommodation").map((expense) => (
                       <div 
                         key={expense.id} 
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
@@ -1183,20 +1183,20 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("intercity").length > 1 && (
+                  {getExpensesByCategory("accommodation").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="w-full mt-2"
-                      onClick={() => toggleCategoryExpanded("intercity")}
-                      data-testid="button-toggle-intercity"
+                      onClick={() => toggleCategoryExpanded("accommodation")}
+                      data-testid="button-toggle-accommodation"
                     >
-                      {expandedCategories.has("intercity") ? "Show Less" : `Show More (${getExpensesByCategory("intercity").length - 1} more)`}
+                      {expandedCategories.has("accommodation") ? "Show Less" : `Show More (${getExpensesByCategory("accommodation").length - 1} more)`}
                     </Button>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">No transportation added</p>
+                <p className="text-sm text-muted-foreground">No lodging added</p>
               )}
             </CardContent>
           </Card>
@@ -1313,28 +1313,28 @@ export default function TripDetail() {
             </CardContent>
           </Card>
 
-          {/* Lodging */}
+          {/* City to City Transportation */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Hotel className="h-4 w-4" style={{ color: CATEGORIES[3].color }} />
-                Lodging
+                <Train className="h-4 w-4" style={{ color: CATEGORIES[1].color }} />
+                City to City Transportation
               </CardTitle>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="gap-1" 
-                onClick={() => handleAddExpense("accommodation")}
-                data-testid="button-add-lodging"
+                onClick={() => handleAddExpense("intercity")}
+                data-testid="button-add-transportation"
               >
-                <span className="text-2xl leading-none">+</span> Add Lodging
+                <span className="text-2xl leading-none">+</span> Add Route
               </Button>
             </CardHeader>
             <CardContent>
-              {getExpensesByCategory("accommodation").length > 0 ? (
+              {getExpensesByCategory("intercity").length > 0 ? (
                 <>
                   <div className="space-y-2">
-                    {getVisibleExpenses("accommodation").map((expense) => (
+                    {getVisibleExpenses("intercity").map((expense) => (
                       <div 
                         key={expense.id} 
                         className={`flex items-center justify-between py-2 border-b last:border-0 transition-opacity ${expense.purchased ? 'opacity-60' : 'opacity-100'}`}
@@ -1407,20 +1407,20 @@ export default function TripDetail() {
                       </div>
                     ))}
                   </div>
-                  {getExpensesByCategory("accommodation").length > 1 && (
+                  {getExpensesByCategory("intercity").length > 1 && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="w-full mt-2"
-                      onClick={() => toggleCategoryExpanded("accommodation")}
-                      data-testid="button-toggle-accommodation"
+                      onClick={() => toggleCategoryExpanded("intercity")}
+                      data-testid="button-toggle-intercity"
                     >
-                      {expandedCategories.has("accommodation") ? "Show Less" : `Show More (${getExpensesByCategory("accommodation").length - 1} more)`}
+                      {expandedCategories.has("intercity") ? "Show Less" : `Show More (${getExpensesByCategory("intercity").length - 1} more)`}
                     </Button>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">No lodging added</p>
+                <p className="text-sm text-muted-foreground">No transportation added</p>
               )}
             </CardContent>
           </Card>
