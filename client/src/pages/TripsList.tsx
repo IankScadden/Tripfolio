@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 import heroImage from "@assets/stock_images/world_map_travel_pin_4de3b461.jpg";
 
 type Trip = {
@@ -232,7 +233,7 @@ export default function TripsList() {
                 <div 
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
                   style={{
-                    backgroundImage: `url(${trip.headerImageUrl || DEFAULT_HERO_IMAGE})`,
+                    backgroundImage: `url(${getOptimizedImageUrl(trip.headerImageUrl || DEFAULT_HERO_IMAGE, 'card')})`,
                   }}
                 />
                 
