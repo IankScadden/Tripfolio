@@ -784,6 +784,9 @@ export default function TripDetail() {
   const foodBudget = getCategoryTotal("food");
   const dailyFoodBudget = trip.days && trip.days > 0 ? Math.round(foodBudget / trip.days) : 0;
 
+  // Calculate total cost from live expenses data (updates immediately with optimistic updates)
+  const calculatedTotalCost = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -871,7 +874,7 @@ export default function TripDetail() {
               <div className="text-center py-3">
                 <div className="text-sm text-muted-foreground mb-2">Total Trip Cost</div>
                 <div className="text-5xl font-bold" data-testid="text-total-cost">
-                  ${trip.totalCost.toFixed(0)}
+                  ${calculatedTotalCost.toFixed(0)}
                 </div>
               </div>
 
@@ -902,17 +905,17 @@ export default function TripDetail() {
               {trip.budget && parseFloat(trip.budget) > 0 && (
                 <div className="text-center py-2">
                   <div className="text-xs text-muted-foreground mb-1">
-                    {parseFloat(trip.budget) - trip.totalCost >= 0 ? "Under Budget" : "Over Budget"}
+                    {parseFloat(trip.budget) - calculatedTotalCost >= 0 ? "Under Budget" : "Over Budget"}
                   </div>
                   <div 
                     className={`text-2xl font-bold ${
-                      parseFloat(trip.budget) - trip.totalCost >= 0 
+                      parseFloat(trip.budget) - calculatedTotalCost >= 0 
                         ? "text-green-600 dark:text-green-400" 
                         : "text-red-600 dark:text-red-400"
                     }`}
                     data-testid="text-remaining-budget"
                   >
-                    ${Math.abs(parseFloat(trip.budget) - trip.totalCost).toFixed(0)}
+                    ${Math.abs(parseFloat(trip.budget) - calculatedTotalCost).toFixed(0)}
                   </div>
                 </div>
               )}
