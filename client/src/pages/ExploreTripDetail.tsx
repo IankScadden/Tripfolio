@@ -427,7 +427,36 @@ export default function ExploreTripDetail() {
                   <span className="text-sm">({commentsData.length})</span>
                 )}
               </button>
-              <button className="flex items-center gap-2 hover:text-foreground transition-colors">
+              <button 
+                onClick={async () => {
+                  try {
+                    const response = await apiRequest("POST", `/api/trips/${trip.id}/share`, {});
+                    const { shareId } = await response.json();
+                    const shareUrl = `${window.location.origin}/share/${shareId}`;
+                    
+                    try {
+                      await navigator.clipboard.writeText(shareUrl);
+                      toast({
+                        title: "Share link copied!",
+                        description: "Link copied to clipboard.",
+                      });
+                    } catch (clipboardError) {
+                      toast({
+                        title: "Share link ready",
+                        description: shareUrl,
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to generate share link.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
+                data-testid="button-share-trip"
+              >
                 <Share2 className="h-5 w-5" />
               </button>
             </div>

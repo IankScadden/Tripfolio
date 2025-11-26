@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle, Trash2, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { Search, TrendingUp, MapPin, CheckCircle2, Heart, MessageCircle, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,33 +107,6 @@ export default function Explore() {
     },
   });
 
-  const shareTrip = async (tripId: string, tripName: string) => {
-    try {
-      const response = await apiRequest("POST", `/api/trips/${tripId}/share`, {});
-      const { shareId } = await response.json();
-      const shareUrl = `${window.location.origin}/share/${shareId}`;
-      
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({
-          title: "Share link copied!",
-          description: `Link for "${tripName}" copied to clipboard.`,
-        });
-      } catch (clipboardError) {
-        toast({
-          title: "Share link ready",
-          description: shareUrl,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate share link. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const getUserDisplayName = (user: User) => {
     if (user.displayName) return user.displayName;
     if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
@@ -236,24 +209,9 @@ export default function Explore() {
                     )}
                   </div>
 
-                  {/* Top Left Actions */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    {/* Share Button */}
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8 backdrop-blur bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        shareTrip(trip.id, trip.name);
-                      }}
-                      data-testid={`button-share-trip-${trip.id}`}
-                    >
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                    
-                    {/* Admin Hide from Explore Button */}
-                    {isAdmin && (
+                  {/* Admin Hide from Explore Button */}
+                  {isAdmin && (
+                    <div className="absolute top-4 left-4">
                       <Button
                         size="icon"
                         variant="destructive"
@@ -268,8 +226,8 @@ export default function Explore() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Badges */}
                   <div className="absolute top-4 right-4 flex flex-row gap-2 items-start">
