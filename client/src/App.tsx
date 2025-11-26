@@ -10,7 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 
-// Lazy load less frequently accessed pages for smaller initial bundle
+// Lazy load pages - preloading handled by @/lib/preload.ts
 const TripsList = lazy(() => import("@/pages/TripsList"));
 const TripDetail = lazy(() => import("@/pages/TripDetail"));
 const PostTrip = lazy(() => import("@/pages/PostTrip"));

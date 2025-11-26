@@ -6,6 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Menu, X, Plane, Compass, Users, User, Tag } from "lucide-react";
+import { preloadPage } from "@/lib/preload";
 
 const CompassLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -42,16 +43,36 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-4 lg:gap-6">
             {isSignedIn && dbUser ? (
               <>
-                <Link href="/my-trips" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-my-trips">
+                <Link 
+                  href="/my-trips" 
+                  className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
+                  data-testid="link-my-trips"
+                  onMouseEnter={preloadPage.myTrips}
+                >
                   My Trips
                 </Link>
-                <Link href="/explore" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
+                <Link 
+                  href="/explore" 
+                  className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
+                  data-testid="link-explore"
+                  onMouseEnter={preloadPage.explore}
+                >
                   Explore
                 </Link>
-                <Link href="/travel-deals" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-travel-deals">
+                <Link 
+                  href="/travel-deals" 
+                  className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
+                  data-testid="link-travel-deals"
+                  onMouseEnter={preloadPage.travelDeals}
+                >
                   Travel Deals
                 </Link>
-                <Link href={`/profile/${dbUser.id}`} className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-profile">
+                <Link 
+                  href={`/profile/${dbUser.id}`} 
+                  className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
+                  data-testid="link-profile"
+                  onMouseEnter={preloadPage.publicProfile}
+                >
                   Profile
                 </Link>
               </>
