@@ -1509,9 +1509,16 @@ Example response:
       });
 
       res.json({ url: session.url });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating checkout session:", error);
-      res.status(500).json({ error: "Failed to create checkout session" });
+      // Return more specific error message for debugging
+      const errorMessage = error.message || "Failed to create checkout session";
+      const errorCode = error.code || error.type || "unknown";
+      console.error("Stripe error details:", { message: errorMessage, code: errorCode });
+      res.status(500).json({ 
+        error: `Checkout failed: ${errorMessage}`,
+        code: errorCode 
+      });
     }
   });
 
