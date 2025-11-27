@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Minus, Send, Loader2, Plus, PlusCircle, Compass, Crown, Sparkles, Zap } from "lucide-react";
+import { MessageCircle, Minus, Send, Loader2, Plus, PlusCircle, Compass, Crown, Sparkles, Zap, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/contexts/ChatContext";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, SignInButton } from "@clerk/clerk-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type ExpenseData = {
@@ -111,9 +111,19 @@ function extractDestinationFromMessage(content: string): string | null {
 
 export default function TripAssistant() {
   const { tripContext, onAddExpense } = useChatContext();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { isSignedIn } = useUser();
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Hide chatbot on shared trip links and explore trip detail pages
+  const isSharedPage = location.startsWith('/share/');
+  const isExploreTripPage = location.startsWith('/explore/') && location !== '/explore';
+  const shouldHide = isSharedPage || isExploreTripPage;
+  
+  // Don't render anything on shared/explore detail pages
+  if (shouldHide) {
+    return null;
+  }
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
@@ -415,6 +425,25 @@ export default function TripAssistant() {
             </Button>
           </div>
 
+          {/* Sign-in Required Message for Non-Authenticated Users */}
+          {!isSignedIn ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <LogIn className="h-8 w-8 text-primary" />
+              </div>
+              <h4 className="font-semibold text-lg mb-2">Sign In Required</h4>
+              <p className="text-muted-foreground text-sm mb-6">
+                Sign in to use the AI Travel Budget Assistant and get personalized cost estimates for your trips.
+              </p>
+              <SignInButton mode="modal">
+                <Button data-testid="button-signin-chat">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In to Continue
+                </Button>
+              </SignInButton>
+            </div>
+          ) : (
+          <>
           {/* Messages */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
@@ -555,6 +584,8 @@ export default function TripAssistant() {
               </Button>
             </div>
           </div>
+          </>
+          )}
         </Card>
       )}
 
