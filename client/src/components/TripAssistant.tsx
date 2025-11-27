@@ -209,9 +209,10 @@ export default function TripAssistant() {
         onClick={() => setIsOpen(!isOpen)}
         size="icon"
         className={cn(
-          "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg",
+          "!fixed !bottom-6 !right-6 !left-auto z-50 h-14 w-14 rounded-full shadow-lg",
           isOpen && "bg-muted text-muted-foreground"
         )}
+        style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', left: 'auto' }}
         data-testid="button-trip-assistant"
       >
         {isOpen ? <Minus className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
