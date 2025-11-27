@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,11 +10,29 @@ import CreateTripDialog from "@/components/CreateTripDialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import heroImage from "@assets/stock_images/rome_colosseum_sunse_19223d23.jpg";
 import { SignInButton } from "@clerk/clerk-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { isAuthenticated } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { toast } = useToast();
+
+  // Check for successful upgrade
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get('upgraded') === 'true') {
+      toast({
+        title: "Welcome to Premium!",
+        description: "You now have unlimited AI assistant access and trip creation.",
+      });
+      // Clear the query param from URL
+      window.history.replaceState({}, '', '/');
+      // Invalidate subscription data to refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription'] });
+    }
+  }, [search, toast]);
 
   const createTripMutation = useMutation({
     mutationFn: async (tripData: any) => {

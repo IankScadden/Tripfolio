@@ -1515,8 +1515,8 @@ Example response:
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
-        success_url: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/billing/cancel`,
+        success_url: `${baseUrl}/?upgraded=true`,
+        cancel_url: `${baseUrl}/`,
         allow_promotion_codes: true,
       });
 
