@@ -393,7 +393,7 @@ export default function TripAssistant() {
                     data-testid="button-cta-explore"
                   >
                     <Compass className="h-3.5 w-3.5" />
-                    {lastMentionedDestination ? `Explore ${lastMentionedDestination} Trips` : "Explore Trips"}
+                    Explore Trips
                   </Button>
                 </div>
               )}
