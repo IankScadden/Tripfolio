@@ -13,11 +13,11 @@ import { Webhook } from "svix";
 import { CloudinaryStorageService, shouldUseCloudinary } from "./cloudinaryStorage";
 import OpenAI from "openai";
 
-// OpenAI client using Replit AI Integrations (no API key required)
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025
+// OpenAI client - supports both direct API key (for Railway/production) 
+// and Replit AI Integrations (for development on Replit)
 const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined,
+  apiKey: process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
 // Helper function to sanitize user data for public endpoints
