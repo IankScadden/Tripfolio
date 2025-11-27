@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { DollarSign, MapPin, Calendar, Plus, ArrowRight, Tag } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,32 +11,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import heroImage from "@assets/stock_images/rome_colosseum_sunse_19223d23.jpg";
 import { SignInButton } from "@clerk/clerk-react";
 
-type FeaturedTrip = {
-  id: string;
-  name: string;
-  headerImageUrl?: string;
-  totalCost: number;
-  user: {
-    displayName?: string;
-    firstName?: string;
-  };
-};
-
-const DEFAULT_HERO_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=600&fit=crop";
-
 export default function Home() {
   const [, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-  const { data: featuredTrips } = useQuery<{ trips: FeaturedTrip[] }>({
-    queryKey: ["/api/explore/trips"],
-    queryFn: async () => {
-      const response = await fetch("/api/explore/trips");
-      if (!response.ok) return { trips: [] };
-      return response.json();
-    },
-  });
 
   const createTripMutation = useMutation({
     mutationFn: async (tripData: any) => {
@@ -267,64 +244,6 @@ export default function Home() {
           </Card>
         </div>
       </div>
-
-      {/* Featured Community Trips */}
-      {featuredTrips && featuredTrips.trips && featuredTrips.trips.length > 0 && (
-        <div className="bg-muted/30 py-20">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">Discover Inspiring Trips</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Real budgets from real travelers. Get inspired and start planning your own adventure.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {featuredTrips.trips.slice(0, 4).map((trip) => (
-                <Card 
-                  key={trip.id}
-                  className="relative overflow-hidden h-[350px] hover-elevate transition-all cursor-pointer group"
-                  onClick={() => setLocation(`/explore/${trip.id}`)}
-                >
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                    style={{
-                      backgroundImage: `url(${trip.headerImageUrl && trip.headerImageUrl.trim() ? trip.headerImageUrl : DEFAULT_HERO_IMAGE})`,
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                  
-                  {/* Cost Badge */}
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-white text-foreground font-semibold px-3 py-1">
-                      ${trip.totalCost.toFixed(0)}
-                    </Badge>
-                  </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <h3 className="text-xl font-bold mb-2 line-clamp-2">{trip.name}</h3>
-                    <p className="text-sm text-gray-300">
-                      by {trip.user?.displayName || trip.user?.firstName || "Traveler"}
-                    </p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            <div className="text-center">
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setLocation("/explore")}
-                className="gap-2"
-              >
-                View All Trips
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Final CTA */}
       <div className="pt-8 pb-16">
