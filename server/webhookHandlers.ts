@@ -39,7 +39,8 @@ export class WebhookHandlers {
         subscriptionStatus: status,
         subscriptionPlan: isPremium ? 'premium' : 'free',
         subscriptionEndsAt: currentPeriodEnd,
-        aiUsesRemaining: isPremium ? 999999 : 0,
+        // When downgrading, restore 1 free AI use instead of 0
+        aiUsesRemaining: isPremium ? 999999 : 1,
         updatedAt: new Date(),
       }).where(eq(users.id, user.id));
     }
@@ -52,7 +53,8 @@ export class WebhookHandlers {
         subscriptionStatus: 'canceled',
         subscriptionPlan: 'free',
         stripeSubscriptionId: null,
-        aiUsesRemaining: 0,
+        // Restore 1 free AI use when subscription is canceled
+        aiUsesRemaining: 1,
         updatedAt: new Date(),
       }).where(eq(users.id, user.id));
     }

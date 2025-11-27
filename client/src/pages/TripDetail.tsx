@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, ExternalLink, DollarSign, Pencil, MoreVertical, Check, Settings, Link2, Share2, PieChart, List, FileText, Save, X } from "lucide-react";
@@ -672,8 +672,12 @@ export default function TripDetail() {
     togglePurchasedMutation.mutate({ expenseId: expense.id, purchased: newPurchasedValue });
   };
 
-  // Handle adding expense from AI assistant
-  const handleAddExpenseFromAssistant = (expenseData: { category: string; cost: number; description: string }) => {
+  // Use a ref to store the mutation function to avoid re-running the effect
+  const mutateRef = useRef(createExpenseMutation.mutate);
+  mutateRef.current = createExpenseMutation.mutate;
+
+  // Handle adding expense from AI assistant - stable callback
+  const handleAddExpenseFromAssistant = useCallback((expenseData: { category: string; cost: number; description: string }) => {
     // Map category names from AI to our category IDs
     const categoryMap: Record<string, string> = {
       'flights': 'flights',
@@ -687,8 +691,8 @@ export default function TripDetail() {
     
     const mappedCategory = categoryMap[expenseData.category] || 'other';
     
-    // Create the expense directly
-    createExpenseMutation.mutate({
+    // Create the expense directly using the ref to get the latest mutate function
+    mutateRef.current({
       description: expenseData.description,
       cost: expenseData.cost.toString(),
       category: mappedCategory,
@@ -698,9 +702,9 @@ export default function TripDetail() {
       title: "Expense Added",
       description: `Added $${expenseData.cost} to ${CATEGORIES.find(c => c.id === mappedCategory)?.title || 'expenses'}`,
     });
-  };
+  }, [toast]);
 
-  // Set the expense handler for the global chat assistant
+  // Set the expense handler for the global chat assistant - runs only once on mount
   useEffect(() => {
     setExpenseHandler(handleAddExpenseFromAssistant);
     
@@ -708,7 +712,7 @@ export default function TripDetail() {
     return () => {
       setExpenseHandler(null);
     };
-  }, [setExpenseHandler, createExpenseMutation]);
+  }, [setExpenseHandler, handleAddExpenseFromAssistant]);
 
   const handleDayClick = (dayNumber: number, date?: string) => {
     setSelectedDay({ dayNumber, date });

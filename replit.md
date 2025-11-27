@@ -48,19 +48,22 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Admin Moderation**: Designated admin users can hide any public trip from the Explore page. Hide button appears only for admins in the top-left corner of trip cards. Hidden trips remain in the owner's My Trips but are removed from public view. Authorization enforced at both UI and API levels.
 - **My Map**: Interactive 2D map embedded directly on profile pages showing user's traveled locations via pins. Users can click anywhere on their own map to drop pins marking places they've visited. All maps are publicly viewable (read-only for others) for travel inspiration. Features Leaflet integration with CartoDB Voyager tiles (English labels), reverse geocoding via LocationIQ API, simplified location names (US: "City, State, USA", International: "City, Country"), no infinite horizontal wrapping, and full CRUD operations with ownership verification.
 - **Travel Deals**: Curated resource page with links to external travel services (Skyscanner, Google Flights, Hostelworld, Booking.com, FlixBus, GetYourGuide, Viator, etc.) organized by category (flights, hotels, transportation, activities). Accessible to all visitors without login. Includes search, category filtering, and pro tips for finding deals.
-- **AI Travel Assistant**: Context-aware chatbot powered by OpenAI that helps users estimate travel costs. Appears as a floating button on Trip Detail pages. Users can ask questions like "What does a meal cost in Madrid?" and receive specific price estimates. When the AI suggests a cost, users can click "Add to Budget" to instantly add that expense to their trip. Uses streaming responses for real-time interaction.
+- **AI Travel Assistant**: Context-aware chatbot powered by OpenAI that helps users estimate travel costs. Appears as a floating button on Trip Detail pages. Users can ask questions like "What does a meal cost in Madrid?" and receive specific price estimates. When the AI suggests a cost, users can click "Add to Budget" to instantly add that expense to their trip. Uses streaming responses for real-time interaction. AI usage is tracked per user with tier-based limits.
+- **Subscription Tiers**: Two-tier system for AI access - Free tier (1 AI use) and Premium tier ($2/month for unlimited AI and trips). Integrated with Stripe for payment processing, including checkout sessions and customer portal for subscription management. Promo codes can be redeemed for premium access. Users see remaining AI uses and can upgrade via modal with promo code support.
 - **File Upload**: Comprehensive file upload system for profile pictures and trip images. Users can upload images from their local drive using the Uppy file uploader interface. Upload buttons appear next to URL inputs in Profile Settings (for profile pictures) and Post Trip page (for header images and photo gallery). Backend uses Replit App Storage with ACL policies for secure, authenticated file storage. Uploaded files are stored as object paths (/objects/<uuid>) and served via dedicated API routes.
 - **Dark Mode**: Full support for light and dark themes.
 - **Responsive Navigation**: Mobile hamburger menu for smaller screens, inline navigation for desktop. Clean, uncluttered header experience.
 
 ### Data Model
-- **Users**: Stores essential user information with Clerk ID linkage for authentication and personalization.
+- **Users**: Stores essential user information with Clerk ID linkage, subscription details (plan, status, AI uses remaining), and Stripe customer/subscription IDs.
 - **Trips**: Manages trip details, associated user, dates, shareable IDs, and budget (optional, private).
 - **Expenses**: Records individual expenses with category, cost, description, and linkage to specific trip days.
 - **DayDetails**: Captures daily itinerary specifics, destinations, local transport notes, and daily notes for personal reminders.
 - **Likes**: Tracks user likes on public trips with unique constraint preventing duplicate likes (tripId, userId).
 - **Comments**: Stores user comments on public trips with content, timestamps, and user attribution.
 - **TravelPins**: Stores user-dropped map pins with latitude/longitude (decimal precision), location names (via reverse geocoding), and user attribution. Publicly viewable for all users.
+- **PromoCodes**: Admin-manageable promo codes for premium access with usage limits, expiry dates, and activation status.
+- **PromoRedemptions**: Tracks promo code usage by users with timestamps for audit and prevention of duplicate redemptions.
 
 ### Categories
 - Flights
@@ -82,3 +85,4 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **LocationIQ API**: Reverse geocoding service to convert coordinates into location names.
 - **Uppy**: File uploader library for client-side file selection and upload with progress tracking.
 - **OpenAI (via Replit AI Integrations)**: Powers the AI Travel Assistant chatbot for travel cost estimation. Uses streaming responses for real-time interaction.
+- **Stripe**: Payment processing for subscription management. Handles checkout sessions, customer portal, and webhook events for subscription lifecycle (creation, updates, cancellation).
