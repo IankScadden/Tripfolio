@@ -14,6 +14,7 @@ import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
+import TripAssistant from "@/components/TripAssistant";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -650,6 +651,34 @@ export default function TripDetail() {
   const handleTogglePurchased = (expense: Expense) => {
     const newPurchasedValue = expense.purchased ? 0 : 1;
     togglePurchasedMutation.mutate({ expenseId: expense.id, purchased: newPurchasedValue });
+  };
+
+  // Handle adding expense from AI assistant
+  const handleAddExpenseFromAssistant = (expenseData: { category: string; cost: number; description: string }) => {
+    // Map category names from AI to our category IDs
+    const categoryMap: Record<string, string> = {
+      'flights': 'flights',
+      'accommodation': 'accommodation',
+      'food': 'food',
+      'activities': 'activities',
+      'localTransportation': 'local',
+      'cityTransportation': 'intercity',
+      'other': 'other',
+    };
+    
+    const mappedCategory = categoryMap[expenseData.category] || 'other';
+    
+    // Create the expense directly
+    createExpenseMutation.mutate({
+      description: expenseData.description,
+      cost: expenseData.cost.toString(),
+      category: mappedCategory,
+    });
+    
+    toast({
+      title: "Expense Added",
+      description: `Added $${expenseData.cost} to ${CATEGORIES.find(c => c.id === mappedCategory)?.title || 'expenses'}`,
+    });
   };
 
   const handleDayClick = (dayNumber: number, date?: string) => {
@@ -1893,6 +1922,20 @@ export default function TripDetail() {
         onSave={(data) => updateTripMutation.mutate(data)}
         isPending={updateTripMutation.isPending}
       />
+
+      {/* AI Travel Assistant */}
+      {trip && (
+        <TripAssistant
+          tripContext={{
+            name: trip.name,
+            destination: trip.name, // Use trip name as destination context
+            startDate: trip.startDate,
+            endDate: trip.endDate,
+            budget: trip.budget ? parseFloat(trip.budget) : undefined,
+          }}
+          onAddExpense={handleAddExpenseFromAssistant}
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,14 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { Webhook } from "svix";
 import { CloudinaryStorageService, shouldUseCloudinary } from "./cloudinaryStorage";
+import OpenAI from "openai";
+
+// OpenAI client using Replit AI Integrations (no API key required)
+// the newest OpenAI model is "gpt-5" which was released August 7, 2025
+const openai = new OpenAI({
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+});
 
 // Helper function to sanitize user data for public endpoints
 // Only returns public profile information, filtering out sensitive data
@@ -1228,6 +1236,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding photo:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Travel Assistant Chat API - Context-aware AI for trip budgeting
+  app.post("/api/chat", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const { message, tripContext } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Build context-aware system prompt
+      let systemPrompt = `You are a helpful travel budgeting assistant for Tripfolio, a backpacking trip budget planner. You help users estimate costs for trips, especially to European cities.
+
+Your role is to provide practical, realistic cost estimates for:
+- Flights (economy class, typical booking windows)
+- Accommodation (hostels, budget hotels, Airbnbs)
+- Meals (street food, casual restaurants, grocery stores)
+- Activities (museums, tours, attractions)
+- Local transportation (metro, buses, trains between cities)
+
+Guidelines:
+1. Always provide specific price ranges (e.g., "$15-25 per meal" not "moderate prices")
+2. Mention that prices vary by season, booking time, and preferences
+3. For flights, acknowledge you're giving typical ranges, not live prices
+4. Be concise and helpful - travelers need quick, actionable info
+5. When giving a cost estimate, always format it clearly
+
+IMPORTANT: When you provide a cost estimate that could be added as an expense, include a JSON block at the end of your response in this exact format:
+\`\`\`expense
+{"category": "flights|accommodation|food|activities|local_transportation|city_transportation|other", "cost": <number>, "description": "<brief description>"}
+\`\`\`
+
+Categories must be one of: flights, accommodation, food, activities, local_transportation, city_transportation, other
+
+Example response:
+"A flight from Las Vegas to Madrid typically costs between $600-900 for economy class, depending on the season and how far in advance you book. May is shoulder season, so you might find deals around $700-750 if you book 2-3 months ahead.
+
+\`\`\`expense
+{"category": "flights", "cost": 750, "description": "Flight from Las Vegas to Madrid"}
+\`\`\`"`;
+
+      // Add trip-specific context if provided
+      if (tripContext) {
+        systemPrompt += `\n\nThe user is currently planning a trip called "${tripContext.name}"`;
+        if (tripContext.destination) {
+          systemPrompt += ` to ${tripContext.destination}`;
+        }
+        if (tripContext.startDate && tripContext.endDate) {
+          systemPrompt += ` from ${tripContext.startDate} to ${tripContext.endDate}`;
+        }
+        if (tripContext.budget) {
+          systemPrompt += `. Their budget is $${tripContext.budget}`;
+        }
+        systemPrompt += `. Tailor your responses to be relevant to this trip.`;
+      }
+
+      // Set headers for streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Using efficient model for quick responses
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message }
+        ],
+        stream: true,
+        max_tokens: 1000,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (error: any) {
+      console.error("Chat API error:", error);
+      // If headers haven't been sent yet, send error response
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to process chat request" });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`);
+        res.end();
+      }
     }
   });
 
