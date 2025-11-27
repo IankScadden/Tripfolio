@@ -3,10 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Minus, Send, Loader2, Plus, PlusCircle, Compass } from "lucide-react";
+import { MessageCircle, Minus, Send, Loader2, Plus, PlusCircle, Compass, Crown, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/contexts/ChatContext";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useUser } from "@clerk/clerk-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type ExpenseData = {
   category: string;
@@ -108,7 +112,12 @@ function extractDestinationFromMessage(content: string): string | null {
 export default function TripAssistant() {
   const { tripContext, onAddExpense } = useChatContext();
   const [, setLocation] = useLocation();
+  const { isSignedIn } = useUser();
   const [isOpen, setIsOpen] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+  const [promoSuccess, setPromoSuccess] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -123,6 +132,73 @@ export default function TripAssistant() {
   const [showCTA, setShowCTA] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch subscription status
+  const { data: subscription, refetch: refetchSubscription } = useQuery<{
+    plan: string;
+    aiUsesRemaining: number;
+    status: string | null;
+    endsAt: string | null;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: isSignedIn,
+  });
+
+  // Track AI usage mutation
+  const trackUsageMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/ai/use");
+      return await response.json();
+    },
+    onSuccess: () => {
+      refetchSubscription();
+    },
+  });
+
+  // Checkout mutation
+  const checkoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/billing/checkout");
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+  });
+
+  // Promo code mutation
+  const redeemPromoMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await apiRequest("POST", "/api/promo-codes/redeem", { code });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setPromoSuccess(data.message || "Promo code applied successfully!");
+      setPromoError("");
+      setPromoCode("");
+      refetchSubscription();
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
+    },
+    onError: (error: any) => {
+      setPromoError(error.message || "Invalid promo code");
+      setPromoSuccess("");
+    },
+  });
+
+  const canUseAI = () => {
+    if (!isSignedIn) return false;
+    if (!subscription) return true; // Loading state, allow
+    if (subscription.plan === 'premium') return true;
+    return (subscription.aiUsesRemaining || 0) > 0;
+  };
+
+  const getRemainingUses = () => {
+    if (!subscription) return null;
+    if (subscription.plan === 'premium') return 'unlimited';
+    return subscription.aiUsesRemaining || 0;
+  };
 
   useEffect(() => {
     setMessages([{
@@ -144,6 +220,31 @@ export default function TripAssistant() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+
+    // Check if user is signed in
+    if (!isSignedIn) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "user",
+          content: input.trim(),
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "Please sign in to use the AI Travel Assistant. Your first use is free!",
+        },
+      ]);
+      setInput("");
+      return;
+    }
+
+    // Check AI usage limits
+    if (!canUseAI()) {
+      setShowUpgradeModal(true);
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -217,6 +318,9 @@ export default function TripAssistant() {
           }
         }
       }
+
+      // Track AI usage after successful response
+      trackUsageMutation.mutate();
 
       // Try to extract destination from response too
       const responseDestination = extractDestinationFromMessage(fullContent);
@@ -404,6 +508,32 @@ export default function TripAssistant() {
 
           {/* Input */}
           <div className="p-3 border-t">
+            {/* Usage indicator for signed-in users */}
+            {isSignedIn && subscription && (
+              <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                {subscription.plan === 'premium' ? (
+                  <>
+                    <Crown className="h-3 w-3 text-yellow-500" />
+                    <span>Premium - Unlimited uses</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3" />
+                    <span>{getRemainingUses()} AI use{getRemainingUses() !== 1 ? 's' : ''} remaining</span>
+                    {(getRemainingUses() as number) === 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-auto p-0 text-xs text-primary underline"
+                        onClick={() => setShowUpgradeModal(true)}
+                      >
+                        Upgrade
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -427,6 +557,88 @@ export default function TripAssistant() {
           </div>
         </Card>
       )}
+
+      {/* Upgrade Modal */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-yellow-500" />
+              Upgrade to Premium
+            </DialogTitle>
+            <DialogDescription>
+              You've used your free AI assistant query. Upgrade to Premium for unlimited access!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Benefits */}
+            <div className="bg-muted rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                Premium Benefits - $2/month
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-yellow-500" />
+                  Unlimited AI Travel Assistant usage
+                </li>
+                <li className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4 text-green-500" />
+                  Unlimited trip creation
+                </li>
+              </ul>
+            </div>
+
+            {/* Upgrade Button */}
+            <Button 
+              className="w-full" 
+              onClick={() => checkoutMutation.mutate()}
+              disabled={checkoutMutation.isPending}
+              data-testid="button-upgrade-premium"
+            >
+              {checkoutMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Crown className="h-4 w-4 mr-2" />
+              )}
+              Upgrade for $2/month
+            </Button>
+
+            {/* Promo Code Section */}
+            <div className="border-t pt-4">
+              <p className="text-sm text-muted-foreground mb-2">Have a promo code?</p>
+              <div className="flex gap-2">
+                <Input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="Enter code"
+                  className="flex-1"
+                  data-testid="input-promo-code"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => redeemPromoMutation.mutate(promoCode)}
+                  disabled={!promoCode.trim() || redeemPromoMutation.isPending}
+                  data-testid="button-apply-promo"
+                >
+                  {redeemPromoMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </Button>
+              </div>
+              {promoError && (
+                <p className="text-xs text-destructive mt-1">{promoError}</p>
+              )}
+              {promoSuccess && (
+                <p className="text-xs text-green-600 mt-1">{promoSuccess}</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
