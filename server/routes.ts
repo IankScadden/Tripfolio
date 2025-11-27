@@ -1462,16 +1462,37 @@ Example response:
         await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
       }
 
-      // Find the premium price
-      const prices = await stripe.prices.search({
-        query: "active:'true' metadata['plan']:'premium_monthly'",
-      });
+      // Find the premium price - use known price ID or search by metadata
+      const KNOWN_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID || 'price_1SYDRGIKucH7KYYrhnqVFwcR';
+      let priceId = KNOWN_PRICE_ID;
       
-      if (prices.data.length === 0) {
-        return res.status(500).json({ error: "Premium plan not configured" });
+      // Verify the price exists
+      try {
+        const price = await stripe.prices.retrieve(priceId);
+        if (!price.active) {
+          // Try searching for an active price with metadata
+          const prices = await stripe.prices.search({
+            query: "active:'true' metadata['plan']:'premium_monthly'",
+          });
+          if (prices.data.length > 0) {
+            priceId = prices.data[0].id;
+          } else {
+            console.error("No active premium price found");
+            return res.status(500).json({ error: "Premium plan not configured" });
+          }
+        }
+      } catch (priceError) {
+        console.error("Error fetching price, trying search:", priceError);
+        // Fallback to search
+        const prices = await stripe.prices.search({
+          query: "active:'true' metadata['plan']:'premium_monthly'",
+        });
+        if (prices.data.length > 0) {
+          priceId = prices.data[0].id;
+        } else {
+          return res.status(500).json({ error: "Premium plan not configured" });
+        }
       }
-
-      const priceId = prices.data[0].id;
 
       // Get the base URL for redirects
       const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}`;

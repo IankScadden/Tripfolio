@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser, SignInButton } from "@clerk/clerk-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type ExpenseData = {
   category: string;
@@ -113,6 +114,7 @@ export default function TripAssistant() {
   const { tripContext, onAddExpense } = useChatContext();
   const [location, setLocation] = useLocation();
   const { isSignedIn } = useUser();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   
   // Hide chatbot on shared trip links and explore trip detail pages
@@ -169,12 +171,30 @@ export default function TripAssistant() {
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/billing/checkout");
-      return await response.json();
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      return data;
     },
     onSuccess: (data) => {
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        toast({
+          title: "Error",
+          description: "No checkout URL received. Please try again.",
+          variant: "destructive",
+        });
       }
+    },
+    onError: (error: any) => {
+      console.error("Checkout error:", error);
+      toast({
+        title: "Checkout Failed",
+        description: error.message || "Unable to start checkout. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
