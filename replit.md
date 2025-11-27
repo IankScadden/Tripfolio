@@ -86,3 +86,8 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Uppy**: File uploader library for client-side file selection and upload with progress tracking.
 - **OpenAI (via Replit AI Integrations)**: Powers the AI Travel Assistant chatbot for travel cost estimation. Uses streaming responses for real-time interaction.
 - **Stripe**: Payment processing for subscription management. Handles checkout sessions, customer portal, and webhook events for subscription lifecycle (creation, updates, cancellation).
+  - Account: ian@tripfolio.ai
+  - Product ID: prod_TVDt8e7oFj7UEo (Tripfolio Premium)
+  - Price ID: price_1SYDRGIKucH7KYYrhnqVFwcR ($2/month)
+  - Webhook endpoint: https://tripfolio.ai/api/stripe/webhook
+  - Required events: checkout.session.completed, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted
