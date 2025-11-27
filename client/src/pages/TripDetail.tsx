@@ -189,9 +189,8 @@ export default function TripDetail() {
     // Cleanup: clear context when leaving the page
     return () => {
       setTripContext(null);
-      setExpenseHandler(null);
     };
-  }, [trip, setTripContext, setExpenseHandler]);
+  }, [trip, setTripContext]);
 
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
@@ -704,7 +703,12 @@ export default function TripDetail() {
   // Set the expense handler for the global chat assistant
   useEffect(() => {
     setExpenseHandler(handleAddExpenseFromAssistant);
-  }, [setExpenseHandler]);
+    
+    // Cleanup when leaving the page
+    return () => {
+      setExpenseHandler(null);
+    };
+  }, [setExpenseHandler, createExpenseMutation]);
 
   const handleDayClick = (dayNumber: number, date?: string) => {
     setSelectedDay({ dayNumber, date });
