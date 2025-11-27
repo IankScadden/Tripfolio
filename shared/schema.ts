@@ -14,6 +14,13 @@ export const users = pgTable("users", {
   displayName: varchar("display_name"),
   bio: text("bio"),
   isAdmin: integer("is_admin").default(0).notNull(),
+  // Subscription fields for tier system
+  subscriptionPlan: varchar("subscription_plan").default("free").notNull(), // 'free' or 'premium'
+  aiUsesRemaining: integer("ai_uses_remaining").default(1).notNull(), // Free tier gets 1 use
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status"), // 'active', 'canceled', 'past_due', etc.
+  subscriptionEndsAt: timestamp("subscription_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -98,6 +105,30 @@ export const travelPins = pgTable("travel_pins", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Promo codes for free AI usage or premium access
+export const promoCodes = pgTable("promo_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").unique().notNull(),
+  description: text("description"),
+  benefitType: varchar("benefit_type").notNull(), // 'ai_uses' or 'premium_days'
+  benefitValue: integer("benefit_value").notNull(), // Number of AI uses or days of premium
+  maxRedemptions: integer("max_redemptions"), // null = unlimited
+  currentRedemptions: integer("current_redemptions").default(0).notNull(),
+  expiresAt: timestamp("expires_at"),
+  isActive: integer("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Track which users have redeemed which promo codes
+export const promoRedemptions = pgTable("promo_redemptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promoCodeId: varchar("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  redeemedAt: timestamp("redeemed_at").defaultNow(),
+}, (table) => ({
+  uniqueRedemption: uniqueIndex("unique_redemption_idx").on(table.promoCodeId, table.userId),
+}));
+
 export const insertTripSchema = createInsertSchema(trips).omit({
   id: true,
   shareId: true,
@@ -127,6 +158,17 @@ export const insertTravelPinSchema = createInsertSchema(travelPins).omit({
   createdAt: true,
 });
 
+export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({
+  id: true,
+  currentRedemptions: true,
+  createdAt: true,
+});
+
+export const insertPromoRedemptionSchema = createInsertSchema(promoRedemptions).omit({
+  id: true,
+  redeemedAt: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
@@ -141,3 +183,7 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertTravelPin = z.infer<typeof insertTravelPinSchema>;
 export type TravelPin = typeof travelPins.$inferSelect;
+export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
+export type PromoCode = typeof promoCodes.$inferSelect;
+export type InsertPromoRedemption = z.infer<typeof insertPromoRedemptionSchema>;
+export type PromoRedemption = typeof promoRedemptions.$inferSelect;
