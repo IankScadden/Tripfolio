@@ -12,6 +12,7 @@ import { ObjectPermission } from "./objectAcl";
 import { Webhook } from "svix";
 import { CloudinaryStorageService, shouldUseCloudinary } from "./cloudinaryStorage";
 import OpenAI from "openai";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 
 // OpenAI client - supports both direct API key (for Railway/production) 
 // and Replit AI Integrations (for development on Replit)
@@ -1401,6 +1402,302 @@ Example response:
     }
 
     res.status(200).json({ success: true });
+  });
+
+  // ==================== BILLING & SUBSCRIPTION ROUTES ====================
+
+  // Get Stripe publishable key for frontend
+  app.get("/api/billing/publishable-key", async (req, res) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error) {
+      console.error("Error getting publishable key:", error);
+      res.status(500).json({ error: "Failed to get publishable key" });
+    }
+  });
+
+  // Get user subscription status
+  app.get("/api/subscription", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({
+        plan: user.subscriptionPlan || 'free',
+        aiUsesRemaining: user.aiUsesRemaining || 0,
+        status: user.subscriptionStatus,
+        endsAt: user.subscriptionEndsAt,
+      });
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      res.status(500).json({ error: "Failed to fetch subscription" });
+    }
+  });
+
+  // Create checkout session for premium subscription
+  app.post("/api/billing/checkout", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      
+      // Get or create Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email || undefined,
+          metadata: { userId: user.id },
+        });
+        customerId = customer.id;
+        await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
+      }
+
+      // Find the premium price
+      const prices = await stripe.prices.search({
+        query: "active:'true' metadata['plan']:'premium_monthly'",
+      });
+      
+      if (prices.data.length === 0) {
+        return res.status(500).json({ error: "Premium plan not configured" });
+      }
+
+      const priceId = prices.data[0].id;
+
+      // Get the base URL for redirects
+      const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+
+      // Create checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/billing/cancel`,
+        allow_promotion_codes: true,
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // Handle successful checkout - update user subscription
+  app.get("/api/billing/success", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { session_id } = req.query;
+      
+      if (!session_id) {
+        return res.status(400).json({ error: "Missing session ID" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id as string, {
+        expand: ['subscription'],
+      });
+
+      if (session.payment_status === 'paid') {
+        const subscription = session.subscription as any;
+        
+        await storage.updateUserSubscription(userId, {
+          subscriptionPlan: 'premium',
+          subscriptionStatus: subscription.status,
+          stripeSubscriptionId: subscription.id,
+          aiUsesRemaining: 999999, // Unlimited
+          subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error processing checkout success:", error);
+      res.status(500).json({ error: "Failed to process checkout" });
+    }
+  });
+
+  // Create customer portal session for managing subscription
+  app.post("/api/billing/portal", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.stripeCustomerId) {
+        return res.status(400).json({ error: "No subscription found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+      
+      const session = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${baseUrl}/my-trips`,
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating portal session:", error);
+      res.status(500).json({ error: "Failed to create portal session" });
+    }
+  });
+
+  // Track AI usage - called before each AI request
+  app.post("/api/ai/check-usage", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isPremium = user.subscriptionPlan === 'premium' && 
+                        user.subscriptionStatus === 'active';
+      
+      // Premium users have unlimited access
+      if (isPremium) {
+        return res.json({ 
+          canUse: true, 
+          remaining: 'unlimited',
+          plan: 'premium' 
+        });
+      }
+
+      // Free users check remaining uses
+      const remaining = user.aiUsesRemaining || 0;
+      
+      res.json({ 
+        canUse: remaining > 0, 
+        remaining,
+        plan: 'free' 
+      });
+    } catch (error) {
+      console.error("Error checking AI usage:", error);
+      res.status(500).json({ error: "Failed to check AI usage" });
+    }
+  });
+
+  // Decrement AI usage after successful use
+  app.post("/api/ai/use", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isPremium = user.subscriptionPlan === 'premium' && 
+                        user.subscriptionStatus === 'active';
+      
+      // Premium users don't decrement
+      if (isPremium) {
+        return res.json({ success: true, remaining: 'unlimited' });
+      }
+
+      // Decrement for free users
+      const newRemaining = Math.max(0, (user.aiUsesRemaining || 0) - 1);
+      await storage.updateUserAiUses(userId, newRemaining);
+      
+      res.json({ success: true, remaining: newRemaining });
+    } catch (error) {
+      console.error("Error tracking AI usage:", error);
+      res.status(500).json({ error: "Failed to track AI usage" });
+    }
+  });
+
+  // ==================== PROMO CODE ROUTES ====================
+
+  // Redeem a promo code
+  app.post("/api/promo-codes/redeem", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { code } = req.body;
+      
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ error: "Promo code required" });
+      }
+
+      const result = await storage.redeemPromoCode(userId, code.toUpperCase().trim());
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({ 
+        success: true, 
+        message: result.message,
+        aiUsesRemaining: result.aiUsesRemaining 
+      });
+    } catch (error) {
+      console.error("Error redeeming promo code:", error);
+      res.status(500).json({ error: "Failed to redeem promo code" });
+    }
+  });
+
+  // Admin: Create a promo code
+  app.post("/api/admin/promo-codes", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { code, description, benefitType, benefitValue, maxRedemptions, expiresAt } = req.body;
+      
+      if (!code || !benefitType || !benefitValue) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const promoCode = await storage.createPromoCode({
+        code: code.toUpperCase().trim(),
+        description,
+        benefitType,
+        benefitValue,
+        maxRedemptions: maxRedemptions || null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      });
+
+      res.json(promoCode);
+    } catch (error: any) {
+      if (error.code === '23505') { // Unique violation
+        return res.status(400).json({ error: "Promo code already exists" });
+      }
+      console.error("Error creating promo code:", error);
+      res.status(500).json({ error: "Failed to create promo code" });
+    }
+  });
+
+  // Admin: List all promo codes
+  app.get("/api/admin/promo-codes", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const promoCodes = await storage.getAllPromoCodes();
+      res.json(promoCodes);
+    } catch (error) {
+      console.error("Error fetching promo codes:", error);
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
   });
 
   const httpServer = createServer(app);

@@ -1,4 +1,4 @@
-import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, type TravelPin, type InsertTravelPin, trips, expenses, users, dayDetails, likes, comments, travelPins } from "@shared/schema";
+import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, type TravelPin, type InsertTravelPin, type PromoCode, type InsertPromoCode, type PromoRedemption, trips, expenses, users, dayDetails, likes, comments, travelPins, promoCodes, promoRedemptions } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, or, ilike, isNotNull, ne, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -603,6 +603,141 @@ export class DatabaseStorage implements IStorage {
   async deleteTravelPin(id: string): Promise<boolean> {
     const result = await db.delete(travelPins).where(eq(travelPins.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // ==================== SUBSCRIPTION & BILLING OPERATIONS ====================
+
+  async updateUserStripeInfo(userId: string, updates: { stripeCustomerId?: string; stripeSubscriptionId?: string }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserSubscription(userId: string, updates: {
+    subscriptionPlan?: string;
+    subscriptionStatus?: string;
+    stripeSubscriptionId?: string | null;
+    aiUsesRemaining?: number;
+    subscriptionEndsAt?: Date | null;
+  }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserAiUses(userId: string, aiUsesRemaining: number): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ aiUsesRemaining, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  // ==================== PROMO CODE OPERATIONS ====================
+
+  async createPromoCode(data: InsertPromoCode): Promise<PromoCode> {
+    const [promoCode] = await db
+      .insert(promoCodes)
+      .values(data)
+      .returning();
+    return promoCode;
+  }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | undefined> {
+    const [promoCode] = await db
+      .select()
+      .from(promoCodes)
+      .where(eq(promoCodes.code, code));
+    return promoCode;
+  }
+
+  async getAllPromoCodes(): Promise<PromoCode[]> {
+    return await db
+      .select()
+      .from(promoCodes)
+      .orderBy(promoCodes.createdAt);
+  }
+
+  async redeemPromoCode(userId: string, code: string): Promise<{
+    success: boolean;
+    error?: string;
+    message?: string;
+    aiUsesRemaining?: number;
+  }> {
+    const promoCode = await this.getPromoCodeByCode(code);
+    
+    if (!promoCode) {
+      return { success: false, error: "Invalid promo code" };
+    }
+
+    if (!promoCode.isActive) {
+      return { success: false, error: "This promo code is no longer active" };
+    }
+
+    if (promoCode.expiresAt && promoCode.expiresAt < new Date()) {
+      return { success: false, error: "This promo code has expired" };
+    }
+
+    if (promoCode.maxRedemptions !== null && promoCode.currentRedemptions >= promoCode.maxRedemptions) {
+      return { success: false, error: "This promo code has reached its maximum redemptions" };
+    }
+
+    const [existingRedemption] = await db
+      .select()
+      .from(promoRedemptions)
+      .where(and(
+        eq(promoRedemptions.promoCodeId, promoCode.id),
+        eq(promoRedemptions.userId, userId)
+      ));
+
+    if (existingRedemption) {
+      return { success: false, error: "You have already redeemed this promo code" };
+    }
+
+    const user = await this.getUser(userId);
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    await db.insert(promoRedemptions).values({
+      promoCodeId: promoCode.id,
+      userId,
+    });
+
+    await db
+      .update(promoCodes)
+      .set({ currentRedemptions: promoCode.currentRedemptions + 1 })
+      .where(eq(promoCodes.id, promoCode.id));
+
+    let newAiUses = user.aiUsesRemaining;
+    let message = "";
+
+    if (promoCode.benefitType === 'ai_uses') {
+      newAiUses = (user.aiUsesRemaining || 0) + promoCode.benefitValue;
+      await this.updateUserAiUses(userId, newAiUses);
+      message = `Added ${promoCode.benefitValue} AI assistant uses to your account!`;
+    } else if (promoCode.benefitType === 'premium_days') {
+      const currentEnd = user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : new Date();
+      const newEnd = new Date(currentEnd.getTime() + promoCode.benefitValue * 24 * 60 * 60 * 1000);
+      
+      await this.updateUserSubscription(userId, {
+        subscriptionPlan: 'premium',
+        subscriptionStatus: 'active',
+        aiUsesRemaining: 999999,
+        subscriptionEndsAt: newEnd,
+      });
+      newAiUses = 999999;
+      message = `Activated ${promoCode.benefitValue} days of premium access!`;
+    }
+
+    return { success: true, message, aiUsesRemaining: newAiUses };
   }
 }
 
