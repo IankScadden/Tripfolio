@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Minus, Send, Loader2, Plus } from "lucide-react";
+import { MessageCircle, Minus, Send, Loader2, Plus, PlusCircle, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/contexts/ChatContext";
+import { useLocation } from "wouter";
 
 type ExpenseData = {
   category: string;
@@ -55,11 +56,32 @@ function getWelcomeMessage(destination?: string): string {
   if (destination) {
     return `Hi! I'm your travel budgeting assistant. I can help you estimate costs for ${destination}. Ask me things like:\n\n• "What does a typical meal cost in ${destination}?"\n• "How much should I budget for hostels?"\n• "What's the average flight price?"`;
   }
-  return `Hi! I'm your travel budgeting assistant. I can help you estimate costs for any destination. Ask me things like:\n\n• "What does a meal cost in Madrid?"\n• "How much should I budget for hostels in Barcelona?"\n• "What's the average flight price to Paris?"`;
+  return `Hi! I'm your travel budgeting assistant. I can help you estimate costs for any destination.\n\nAsk me things like:\n\n• "Where is the cheapest place to travel but have the most amount of fun?"\n\n• "How much would a 5-day trip to Barcelona cost in July?"\n\n• "Can you estimate daily food, hostel, and activity costs for Thailand?"`;
+}
+
+function extractDestinationFromMessage(content: string): string | null {
+  const patterns = [
+    /(?:trip to|travel to|visit|visiting|going to|in|for)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/gi,
+    /([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(?:trip|travel|costs?|budget)/gi,
+  ];
+  
+  const excludedWords = ['The', 'How', 'What', 'Can', 'Would', 'Should', 'Where', 'When', 'Daily', 'Food', 'Hotel', 'Hostel', 'Here', 'This', 'That', 'There', 'Some', 'Most', 'Many', 'Much', 'Very', 'Just', 'Also', 'Even', 'Only', 'Well', 'Good', 'Great', 'Nice', 'Fine', 'Sure', 'Yes', 'No'];
+  
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const destination = match[1]?.trim();
+      if (destination && destination.length > 2 && !excludedWords.includes(destination)) {
+        return destination;
+      }
+    }
+  }
+  return null;
 }
 
 export default function TripAssistant() {
   const { tripContext, onAddExpense } = useChatContext();
+  const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -71,6 +93,8 @@ export default function TripAssistant() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [addedExpenses, setAddedExpenses] = useState<Set<string>>(new Set());
+  const [lastMentionedDestination, setLastMentionedDestination] = useState<string | null>(null);
+  const [showCTA, setShowCTA] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -101,9 +125,16 @@ export default function TripAssistant() {
       content: input.trim(),
     };
 
+    // Try to extract destination from user's question
+    const destination = extractDestinationFromMessage(userMessage.content);
+    if (destination) {
+      setLastMentionedDestination(destination);
+    }
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setShowCTA(false);
 
     const assistantId = (Date.now() + 1).toString();
     setMessages((prev) => [
@@ -161,6 +192,12 @@ export default function TripAssistant() {
         }
       }
 
+      // Try to extract destination from response too
+      const responseDestination = extractDestinationFromMessage(fullContent);
+      if (responseDestination && !lastMentionedDestination) {
+        setLastMentionedDestination(responseDestination);
+      }
+
       const expenseData = parseExpenseFromResponse(fullContent);
       if (expenseData) {
         setMessages((prev) =>
@@ -170,6 +207,11 @@ export default function TripAssistant() {
               : msg
           )
         );
+      }
+
+      // Show CTA buttons after response completes (only if not on a trip detail page with expense handler)
+      if (!onAddExpense) {
+        setShowCTA(true);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -295,6 +337,46 @@ export default function TripAssistant() {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-xs">Thinking...</span>
+                </div>
+              )}
+
+              {/* CTA Buttons - show after assistant responds */}
+              {showCTA && !isLoading && (
+                <div className="flex flex-col gap-2 mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    {lastMentionedDestination 
+                      ? `Would you like to see what other people spend on trips to ${lastMentionedDestination}?`
+                      : "Would you like to start a trip budget?"
+                    }
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="gap-1.5 text-xs"
+                      onClick={() => {
+                        setLocation("/my-trips");
+                        setIsOpen(false);
+                      }}
+                      data-testid="button-cta-create-trip"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5" />
+                      Create Trip
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs"
+                      onClick={() => {
+                        setLocation("/explore");
+                        setIsOpen(false);
+                      }}
+                      data-testid="button-cta-explore"
+                    >
+                      <Compass className="h-3.5 w-3.5" />
+                      {lastMentionedDestination ? `Explore ${lastMentionedDestination}` : "Explore Trips"}
+                    </Button>
+                  </div>
                 </div>
               )}
 
