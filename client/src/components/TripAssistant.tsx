@@ -39,6 +39,24 @@ function cleanMessageContent(content: string): string {
   return content.replace(/```expense\n[\s\S]*?\n```/g, '').trim();
 }
 
+function formatMarkdown(content: string): string {
+  let formatted = content;
+  
+  // Remove ### headers and make them bold
+  formatted = formatted.replace(/^###\s*(.+)$/gm, '$1');
+  
+  // Remove ** bold markers
+  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '$1');
+  
+  // Convert markdown lists with - to bullet points
+  formatted = formatted.replace(/^-\s+/gm, '• ');
+  
+  // Clean up extra newlines
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+  
+  return formatted.trim();
+}
+
 function mapCategory(category: string): string {
   const categoryMap: Record<string, string> = {
     'flights': 'flights',
@@ -60,22 +78,30 @@ function getWelcomeMessage(destination?: string): string {
 }
 
 function extractDestinationFromMessage(content: string): string | null {
-  const patterns = [
-    /(?:trip to|travel to|visit|visiting|going to|in|for)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/gi,
-    /([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(?:trip|travel|costs?|budget)/gi,
+  // Common travel destinations - cities and countries
+  const destinations = [
+    'Paris', 'London', 'Rome', 'Barcelona', 'Madrid', 'Berlin', 'Amsterdam', 'Prague', 'Vienna', 'Budapest',
+    'Lisbon', 'Dublin', 'Edinburgh', 'Brussels', 'Copenhagen', 'Stockholm', 'Oslo', 'Helsinki', 'Athens', 'Istanbul',
+    'Venice', 'Florence', 'Milan', 'Munich', 'Zurich', 'Geneva', 'Nice', 'Lyon', 'Marseille', 'Seville',
+    'Tokyo', 'Kyoto', 'Osaka', 'Seoul', 'Bangkok', 'Singapore', 'Hong Kong', 'Taipei', 'Hanoi', 'Ho Chi Minh',
+    'Bali', 'Phuket', 'Chiang Mai', 'Kuala Lumpur', 'Manila', 'Jakarta', 'Mumbai', 'Delhi', 'Goa',
+    'New York', 'Los Angeles', 'San Francisco', 'Chicago', 'Miami', 'Las Vegas', 'Seattle', 'Boston', 'Denver',
+    'Mexico City', 'Cancun', 'Cabo', 'Buenos Aires', 'Rio', 'Lima', 'Bogota', 'Cartagena', 'Medellin',
+    'Sydney', 'Melbourne', 'Auckland', 'Queenstown', 'Cape Town', 'Marrakech', 'Cairo', 'Dubai', 'Abu Dhabi',
+    'France', 'Italy', 'Spain', 'Germany', 'Portugal', 'Greece', 'Croatia', 'Netherlands', 'Belgium', 'Switzerland',
+    'Japan', 'Thailand', 'Vietnam', 'Indonesia', 'Philippines', 'Malaysia', 'India', 'China', 'South Korea',
+    'Australia', 'New Zealand', 'Morocco', 'Egypt', 'South Africa', 'Mexico', 'Brazil', 'Argentina', 'Colombia', 'Peru',
+    'Europe', 'Asia', 'Southeast Asia', 'Central America', 'South America'
   ];
   
-  const excludedWords = ['The', 'How', 'What', 'Can', 'Would', 'Should', 'Where', 'When', 'Daily', 'Food', 'Hotel', 'Hostel', 'Here', 'This', 'That', 'There', 'Some', 'Most', 'Many', 'Much', 'Very', 'Just', 'Also', 'Even', 'Only', 'Well', 'Good', 'Great', 'Nice', 'Fine', 'Sure', 'Yes', 'No'];
+  const contentLower = content.toLowerCase();
   
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(content)) !== null) {
-      const destination = match[1]?.trim();
-      if (destination && destination.length > 2 && !excludedWords.includes(destination)) {
-        return destination;
-      }
+  for (const dest of destinations) {
+    if (contentLower.includes(dest.toLowerCase())) {
+      return dest;
     }
   }
+  
   return null;
 }
 
@@ -305,7 +331,7 @@ export default function TripAssistant() {
                     )}
                   >
                     <p className="whitespace-pre-wrap">
-                      {cleanMessageContent(message.content)}
+                      {formatMarkdown(cleanMessageContent(message.content))}
                     </p>
                   </div>
 
@@ -342,41 +368,33 @@ export default function TripAssistant() {
 
               {/* CTA Buttons - show after assistant responds */}
               {showCTA && !isLoading && (
-                <div className="flex flex-col gap-2 mt-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    {lastMentionedDestination 
-                      ? `Would you like to see what other people spend on trips to ${lastMentionedDestination}?`
-                      : "Would you like to start a trip budget?"
-                    }
-                  </p>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="gap-1.5 text-xs"
-                      onClick={() => {
-                        setLocation("/my-trips");
-                        setIsOpen(false);
-                      }}
-                      data-testid="button-cta-create-trip"
-                    >
-                      <PlusCircle className="h-3.5 w-3.5" />
-                      Create Trip
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 text-xs"
-                      onClick={() => {
-                        setLocation("/explore");
-                        setIsOpen(false);
-                      }}
-                      data-testid="button-cta-explore"
-                    >
-                      <Compass className="h-3.5 w-3.5" />
-                      {lastMentionedDestination ? `Explore ${lastMentionedDestination}` : "Explore Trips"}
-                    </Button>
-                  </div>
+                <div className="flex gap-2 flex-wrap mt-3">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="gap-1.5 text-xs"
+                    onClick={() => {
+                      setLocation("/my-trips");
+                      setIsOpen(false);
+                    }}
+                    data-testid="button-cta-create-trip"
+                  >
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    Create Trip
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs"
+                    onClick={() => {
+                      setLocation("/explore");
+                      setIsOpen(false);
+                    }}
+                    data-testid="button-cta-explore"
+                  >
+                    <Compass className="h-3.5 w-3.5" />
+                    {lastMentionedDestination ? `Explore ${lastMentionedDestination} Trips` : "Explore Trips"}
+                  </Button>
                 </div>
               )}
 
