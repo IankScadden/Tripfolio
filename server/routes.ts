@@ -1553,6 +1553,23 @@ Example response:
     }
   });
 
+  // Helper to get today's date string in YYYY-MM-DD format
+  const getTodayString = () => new Date().toISOString().split('T')[0];
+  
+  // Helper to check and reset daily AI uses if needed
+  const checkAndResetDailyUses = async (userId: string, user: any) => {
+    const today = getTodayString();
+    const lastResetDate = user.aiDailyResetDate;
+    
+    // If it's a new day, reset the uses to 3
+    if (lastResetDate !== today) {
+      await storage.updateUserAiUsesWithDate(userId, 3, today);
+      return { remaining: 3, wasReset: true };
+    }
+    
+    return { remaining: user.aiUsesRemaining || 0, wasReset: false };
+  };
+
   // Track AI usage - called before each AI request
   app.post("/api/ai/check-usage", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
@@ -1575,12 +1592,13 @@ Example response:
         });
       }
 
-      // Free users check remaining uses
-      const remaining = user.aiUsesRemaining || 0;
+      // Free users: check if we need to reset daily uses
+      const { remaining } = await checkAndResetDailyUses(userId, user);
       
       res.json({ 
         canUse: remaining > 0, 
         remaining,
+        dailyLimit: 3,
         plan: 'free' 
       });
     } catch (error) {
@@ -1607,11 +1625,15 @@ Example response:
         return res.json({ success: true, remaining: 'unlimited' });
       }
 
-      // Decrement for free users
-      const newRemaining = Math.max(0, (user.aiUsesRemaining || 0) - 1);
-      await storage.updateUserAiUses(userId, newRemaining);
+      // Free users: check if we need to reset daily uses first
+      const { remaining: currentRemaining } = await checkAndResetDailyUses(userId, user);
       
-      res.json({ success: true, remaining: newRemaining });
+      // Decrement for free users
+      const newRemaining = Math.max(0, currentRemaining - 1);
+      const today = getTodayString();
+      await storage.updateUserAiUsesWithDate(userId, newRemaining, today);
+      
+      res.json({ success: true, remaining: newRemaining, dailyLimit: 3 });
     } catch (error) {
       console.error("Error tracking AI usage:", error);
       res.status(500).json({ error: "Failed to track AI usage" });

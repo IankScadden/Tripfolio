@@ -233,7 +233,7 @@ export default function TripAssistant() {
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: "Please sign in to use the AI Travel Assistant. Your first use is free!",
+          content: "Please sign in to use the AI Travel Assistant. You get 3 free uses every day!",
         },
       ]);
       setInput("");
@@ -519,7 +519,7 @@ export default function TripAssistant() {
                 ) : (
                   <>
                     <Sparkles className="h-3 w-3" />
-                    <span>{getRemainingUses()} AI use{getRemainingUses() !== 1 ? 's' : ''} remaining</span>
+                    <span>{getRemainingUses()} of 3 uses left today</span>
                     {(getRemainingUses() as number) === 0 && (
                       <Button 
                         variant="ghost" 
@@ -567,7 +567,7 @@ export default function TripAssistant() {
               Upgrade to Premium
             </DialogTitle>
             <DialogDescription>
-              You've used your free AI assistant query. Upgrade to Premium for unlimited access!
+              You've used all 3 of your daily AI assistant messages. Upgrade to Premium for unlimited access!
             </DialogDescription>
           </DialogHeader>
           

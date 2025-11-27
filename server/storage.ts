@@ -640,6 +640,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserAiUsesWithDate(userId: string, aiUsesRemaining: number, aiDailyResetDate: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ aiUsesRemaining, aiDailyResetDate, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   // ==================== PROMO CODE OPERATIONS ====================
 
   async createPromoCode(data: InsertPromoCode): Promise<PromoCode> {

@@ -16,7 +16,8 @@ export const users = pgTable("users", {
   isAdmin: integer("is_admin").default(0).notNull(),
   // Subscription fields for tier system
   subscriptionPlan: varchar("subscription_plan").default("free").notNull(), // 'free' or 'premium'
-  aiUsesRemaining: integer("ai_uses_remaining").default(1).notNull(), // Free tier gets 1 use
+  aiUsesRemaining: integer("ai_uses_remaining").default(3).notNull(), // Free tier gets 3 uses per day
+  aiDailyResetDate: varchar("ai_daily_reset_date"), // Date string (YYYY-MM-DD) when daily uses were last reset
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: varchar("subscription_status"), // 'active', 'canceled', 'past_due', etc.
