@@ -1453,6 +1453,18 @@ Example response:
       
       // Get or create Stripe customer
       let customerId = user.stripeCustomerId;
+      
+      // Verify existing customer exists, or create a new one
+      if (customerId) {
+        try {
+          await stripe.customers.retrieve(customerId);
+        } catch (customerError: any) {
+          // Customer doesn't exist (maybe from test mode), create new one
+          console.log("Existing customer not found, creating new one:", customerError.message);
+          customerId = null;
+        }
+      }
+      
       if (!customerId) {
         const customer = await stripe.customers.create({
           email: user.email || undefined,
