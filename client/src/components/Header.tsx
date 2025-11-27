@@ -6,7 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Menu, X, Plane, Compass, Users, User, Tag } from "lucide-react";
-import { preloadPage } from "@/lib/preload";
+import { preloadPage, prefetchTripsListData, prefetchExploreData } from "@/lib/preload";
 
 const CompassLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -47,7 +47,7 @@ export default function Header() {
                   href="/my-trips" 
                   className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
                   data-testid="link-my-trips"
-                  onMouseEnter={preloadPage.myTrips}
+                  onMouseEnter={() => { preloadPage.myTrips(); prefetchTripsListData(); }}
                 >
                   My Trips
                 </Link>
@@ -55,7 +55,7 @@ export default function Header() {
                   href="/explore" 
                   className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
                   data-testid="link-explore"
-                  onMouseEnter={preloadPage.explore}
+                  onMouseEnter={() => { preloadPage.explore(); prefetchExploreData(); }}
                 >
                   Explore
                 </Link>

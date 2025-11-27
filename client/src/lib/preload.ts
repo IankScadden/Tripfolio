@@ -1,3 +1,5 @@
+import { queryClient } from "./queryClient";
+
 // Preload functions for lazy-loaded pages
 // Call these on hover to load pages before navigation
 
@@ -17,6 +19,30 @@ const imports = {
 
 // Cache to prevent duplicate imports
 const preloaded = new Set<string>();
+
+// Prefetch trip data for faster navigation
+export const prefetchTripData = (tripId: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ["/api/trips", tripId],
+  });
+  queryClient.prefetchQuery({
+    queryKey: ["/api/trips", tripId, "expenses"],
+  });
+};
+
+// Prefetch trips list data
+export const prefetchTripsListData = () => {
+  queryClient.prefetchQuery({
+    queryKey: ["/api/trips"],
+  });
+};
+
+// Prefetch explore page data
+export const prefetchExploreData = () => {
+  queryClient.prefetchQuery({
+    queryKey: ["/api/explore/trips"],
+  });
+};
 
 export const preloadPage = {
   myTrips: () => {

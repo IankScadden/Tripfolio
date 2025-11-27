@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { preloadPage, prefetchTripData } from "@/lib/preload";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getOptimizedImageUrl } from "@/lib/imageOptimization";
@@ -227,6 +228,10 @@ export default function TripsList() {
                 key={trip.id}
                 className="relative overflow-hidden h-[320px] hover-elevate transition-all cursor-pointer group"
                 onClick={() => setLocation(`/trip/${trip.id}`)}
+                onMouseEnter={() => {
+                  prefetchTripData(trip.id);
+                  preloadPage.tripDetail();
+                }}
                 data-testid={`card-trip-${trip.id}`}
               >
                 {/* Hero Image Background */}

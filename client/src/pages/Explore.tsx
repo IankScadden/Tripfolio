@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { preloadPage, prefetchTripData } from "@/lib/preload";
 import { useToast } from "@/hooks/use-toast";
 import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
@@ -180,6 +181,10 @@ export default function Explore() {
                 key={trip.id}
                 className="overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all"
                 onClick={() => setLocation(`/explore/${trip.id}`)}
+                onMouseEnter={() => {
+                  prefetchTripData(trip.id);
+                  preloadPage.exploreTripDetail();
+                }}
                 data-testid={`trip-card-${trip.id}`}
               >
                 {/* Header Image */}

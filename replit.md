@@ -53,6 +53,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **File Upload**: Comprehensive file upload system for profile pictures and trip images. Users can upload images from their local drive using the Uppy file uploader interface. Upload buttons appear next to URL inputs in Profile Settings (for profile pictures) and Post Trip page (for header images and photo gallery). Backend uses Replit App Storage with ACL policies for secure, authenticated file storage. Uploaded files are stored as object paths (/objects/<uuid>) and served via dedicated API routes.
 - **Dark Mode**: Full support for light and dark themes.
 - **Responsive Navigation**: Mobile hamburger menu for smaller screens, inline navigation for desktop. Clean, uncluttered header experience.
+- **Performance Optimization**: Hover-based prefetching for instant-feeling page transitions. Component bundles and API data are prefetched when users hover over navigation links and trip cards using TanStack Query's prefetchQuery and dynamic imports.
 
 ### Data Model
 - **Users**: Stores essential user information with Clerk ID linkage, subscription details (plan, status, AI uses remaining), and Stripe customer/subscription IDs.
