@@ -5,6 +5,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ChatProvider } from "@/contexts/ChatContext";
+import TripAssistant from "@/components/TripAssistant";
 
 // Eager load critical pages for fast initial render
 import Home from "@/pages/Home";
@@ -68,8 +70,11 @@ function App() {
     <ClerkProvider publishableKey={publishableKey}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <ChatProvider>
+            <Toaster />
+            <Router />
+            <TripAssistant />
+          </ChatProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

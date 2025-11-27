@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2, Plus } from "lucide-react";
+import { MessageCircle, Minus, Send, Loader2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChatContext } from "@/contexts/ChatContext";
 
 type ExpenseData = {
   category: string;
@@ -19,20 +20,6 @@ type Message = {
   expenseData?: ExpenseData;
 };
 
-type TripContext = {
-  name: string;
-  destination?: string;
-  startDate?: string;
-  endDate?: string;
-  budget?: number;
-};
-
-type TripAssistantProps = {
-  tripContext: TripContext;
-  onAddExpense: (expense: ExpenseData) => void;
-};
-
-// Parse expense data from AI response
 function parseExpenseFromResponse(content: string): ExpenseData | null {
   const expenseMatch = content.match(/```expense\n([\s\S]*?)\n```/);
   if (expenseMatch) {
@@ -42,18 +29,15 @@ function parseExpenseFromResponse(content: string): ExpenseData | null {
         return data as ExpenseData;
       }
     } catch (e) {
-      // Failed to parse, return null
     }
   }
   return null;
 }
 
-// Remove expense code block from display text
 function cleanMessageContent(content: string): string {
   return content.replace(/```expense\n[\s\S]*?\n```/g, '').trim();
 }
 
-// Map AI category names to our category values
 function mapCategory(category: string): string {
   const categoryMap: Record<string, string> = {
     'flights': 'flights',
@@ -67,13 +51,21 @@ function mapCategory(category: string): string {
   return categoryMap[category] || 'other';
 }
 
-export default function TripAssistant({ tripContext, onAddExpense }: TripAssistantProps) {
+function getWelcomeMessage(destination?: string): string {
+  if (destination) {
+    return `Hi! I'm your travel budgeting assistant. I can help you estimate costs for ${destination}. Ask me things like:\n\n• "What does a typical meal cost in ${destination}?"\n• "How much should I budget for hostels?"\n• "What's the average flight price?"`;
+  }
+  return `Hi! I'm your travel budgeting assistant. I can help you estimate costs for any destination. Ask me things like:\n\n• "What does a meal cost in Madrid?"\n• "How much should I budget for hostels in Barcelona?"\n• "What's the average flight price to Paris?"`;
+}
+
+export default function TripAssistant() {
+  const { tripContext, onAddExpense } = useChatContext();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: `Hi! I'm your travel budgeting assistant. I can help you estimate costs for ${tripContext.destination || "your trip"}. Ask me things like:\n\n• "What does a typical meal cost in Madrid?"\n• "How much should I budget for hostels?"\n• "What's the average flight price to Barcelona?"`,
+      content: getWelcomeMessage(tripContext?.destination),
     },
   ]);
   const [input, setInput] = useState("");
@@ -82,12 +74,18 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    setMessages([{
+      id: "welcome",
+      role: "assistant",
+      content: getWelcomeMessage(tripContext?.destination),
+    }]);
+  }, [tripContext?.destination]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when chat opens
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -107,7 +105,6 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
     setInput("");
     setIsLoading(true);
 
-    // Create placeholder for assistant response
     const assistantId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
@@ -120,7 +117,7 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
-          tripContext,
+          tripContext: tripContext || { name: "General Travel" },
         }),
       });
 
@@ -158,14 +155,12 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
                   );
                 }
               } catch (e) {
-                // Skip invalid JSON
               }
             }
           }
         }
       }
 
-      // After streaming is complete, parse for expense data
       const expenseData = parseExpenseFromResponse(fullContent);
       if (expenseData) {
         setMessages((prev) =>
@@ -191,11 +186,13 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
   };
 
   const handleAddExpense = (messageId: string, expense: ExpenseData) => {
-    onAddExpense({
-      ...expense,
-      category: mapCategory(expense.category),
-    });
-    setAddedExpenses((prev) => new Set(prev).add(messageId));
+    if (onAddExpense) {
+      onAddExpense({
+        ...expense,
+        category: mapCategory(expense.category),
+      });
+      setAddedExpenses((prev) => new Set(prev).add(messageId));
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -217,18 +214,32 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
         )}
         data-testid="button-trip-assistant"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {isOpen ? <Minus className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </Button>
 
       {/* Chat Panel */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 z-50 w-[380px] h-[500px] flex flex-col shadow-xl border">
+        <Card className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-8rem)] flex flex-col shadow-xl border">
           {/* Header */}
-          <div className="p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
-            <h3 className="font-semibold">Travel Budget Assistant</h3>
-            <p className="text-xs opacity-90">
-              Ask me about costs for {tripContext.destination || "your trip"}
-            </p>
+          <div className="p-4 border-b bg-primary text-primary-foreground rounded-t-lg flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Travel Budget Assistant</h3>
+              <p className="text-xs opacity-90">
+                {tripContext?.destination 
+                  ? `Ask me about costs for ${tripContext.destination}`
+                  : "Ask me about travel costs anywhere"
+                }
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+              data-testid="button-minimize-chat"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Messages */}
@@ -255,8 +266,8 @@ export default function TripAssistant({ tripContext, onAddExpense }: TripAssista
                     </p>
                   </div>
 
-                  {/* Add to Budget Button */}
-                  {message.expenseData && !addedExpenses.has(message.id) && (
+                  {/* Add to Budget Button - only show if on a trip page with expense handler */}
+                  {message.expenseData && onAddExpense && !addedExpenses.has(message.id) && (
                     <Button
                       size="sm"
                       variant="outline"

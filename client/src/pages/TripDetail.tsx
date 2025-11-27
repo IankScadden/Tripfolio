@@ -14,7 +14,7 @@ import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
-import TripAssistant from "@/components/TripAssistant";
+import { useChatContext } from "@/contexts/ChatContext";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +111,7 @@ export default function TripDetail() {
   const [, setLocation] = useLocation();
   const tripId = params?.id;
   const { toast } = useToast();
+  const { setTripContext, setExpenseHandler } = useChatContext();
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showFoodBudgetDialog, setShowFoodBudgetDialog] = useState(false);
@@ -172,6 +173,25 @@ export default function TripDetail() {
       setNotesInput(trip.privateNotes || "");
     }
   }, [trip?.privateNotes]);
+
+  // Set up chat context for AI assistant when on trip detail page
+  useEffect(() => {
+    if (trip) {
+      setTripContext({
+        name: trip.name,
+        destination: trip.name,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        budget: trip.budget ? parseFloat(trip.budget) : undefined,
+      });
+    }
+    
+    // Cleanup: clear context when leaving the page
+    return () => {
+      setTripContext(null);
+      setExpenseHandler(null);
+    };
+  }, [trip, setTripContext, setExpenseHandler]);
 
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
@@ -680,6 +700,11 @@ export default function TripDetail() {
       description: `Added $${expenseData.cost} to ${CATEGORIES.find(c => c.id === mappedCategory)?.title || 'expenses'}`,
     });
   };
+
+  // Set the expense handler for the global chat assistant
+  useEffect(() => {
+    setExpenseHandler(handleAddExpenseFromAssistant);
+  }, [setExpenseHandler]);
 
   const handleDayClick = (dayNumber: number, date?: string) => {
     setSelectedDay({ dayNumber, date });
@@ -1922,20 +1947,6 @@ export default function TripDetail() {
         onSave={(data) => updateTripMutation.mutate(data)}
         isPending={updateTripMutation.isPending}
       />
-
-      {/* AI Travel Assistant */}
-      {trip && (
-        <TripAssistant
-          tripContext={{
-            name: trip.name,
-            destination: trip.name, // Use trip name as destination context
-            startDate: trip.startDate,
-            endDate: trip.endDate,
-            budget: trip.budget ? parseFloat(trip.budget) : undefined,
-          }}
-          onAddExpense={handleAddExpenseFromAssistant}
-        />
-      )}
     </div>
   );
 }
