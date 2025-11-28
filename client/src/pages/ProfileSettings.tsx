@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,6 +46,31 @@ export default function ProfileSettings() {
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/profile"],
+  });
+
+  const { data: subscription } = useQuery<{ plan: string; status?: string }>({
+    queryKey: ["/api/subscription"],
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/billing/portal");
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Unable to open billing portal.",
+        variant: "destructive",
+      });
+    },
   });
 
   const form = useForm<ProfileFormData>({
@@ -368,6 +394,37 @@ export default function ProfileSettings() {
                   {user.firstName && user.lastName && (
                     <div>
                       <span className="font-medium text-foreground">Name:</span> {user.firstName} {user.lastName}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">Subscription:</span>
+                    {subscription?.plan === 'premium' ? (
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Premium
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Free</Badge>
+                    )}
+                  </div>
+                  {subscription?.plan === 'premium' && (
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => portalMutation.mutate()}
+                        disabled={portalMutation.isPending}
+                        data-testid="button-manage-subscription"
+                      >
+                        {portalMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Manage Subscription"
+                        )}
+                      </Button>
                     </div>
                   )}
                 </div>
