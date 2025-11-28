@@ -1404,6 +1404,111 @@ Example response:
     res.status(200).json({ success: true });
   });
 
+  // Stripe webhook endpoint for subscription updates
+  // Note: This needs raw body, so it's registered here but body parsing is handled in index.ts
+  app.post("/api/stripe/webhook", async (req, res) => {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!webhookSecret) {
+      console.error("Missing STRIPE_WEBHOOK_SECRET");
+      return res.status(500).json({ error: "Webhook not configured" });
+    }
+
+    const sig = req.headers['stripe-signature'] as string;
+    
+    if (!sig) {
+      return res.status(400).json({ error: "Missing stripe-signature header" });
+    }
+
+    let event;
+
+    try {
+      const stripe = await getUncachableStripeClient();
+      // req.body should be raw buffer from express.raw() middleware
+      const rawBody = req.body;
+      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    } catch (err: any) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+
+    console.log("Stripe webhook received:", event.type);
+
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object as any;
+          console.log("Checkout completed for customer:", session.customer);
+          
+          // Get subscription details if this was a subscription checkout
+          if (session.subscription) {
+            const stripe = await getUncachableStripeClient();
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string) as any;
+            
+            // Find user by customer ID
+            const user = await storage.getUserByStripeCustomerId(session.customer as string);
+            if (user) {
+              await storage.updateUserSubscription(user.id, {
+                subscriptionPlan: 'premium',
+                subscriptionStatus: 'active',
+                stripeSubscriptionId: subscription.id,
+                aiUsesRemaining: 999999,
+                subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+              });
+              console.log("User upgraded to premium:", user.id);
+            } else {
+              console.log("User not found for customer:", session.customer);
+            }
+          }
+          break;
+        }
+
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as any;
+          const user = await storage.getUserByStripeCustomerId(subscription.customer as string);
+          
+          if (user) {
+            const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+            await storage.updateUserSubscription(user.id, {
+              subscriptionPlan: isActive ? 'premium' : 'free',
+              subscriptionStatus: subscription.status,
+              stripeSubscriptionId: subscription.id,
+              aiUsesRemaining: isActive ? 999999 : 3,
+              subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+            });
+            console.log("Subscription updated for user:", user.id, "Status:", subscription.status);
+          }
+          break;
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as any;
+          const user = await storage.getUserByStripeCustomerId(subscription.customer as string);
+          
+          if (user) {
+            await storage.updateUserSubscription(user.id, {
+              subscriptionPlan: 'free',
+              subscriptionStatus: 'canceled',
+              stripeSubscriptionId: null,
+              aiUsesRemaining: 3,
+            });
+            console.log("Subscription canceled for user:", user.id);
+          }
+          break;
+        }
+
+        default:
+          console.log("Unhandled webhook event type:", event.type);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Error processing webhook:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
   // ==================== BILLING & SUBSCRIPTION ROUTES ====================
 
   // Get Stripe publishable key for frontend

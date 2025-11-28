@@ -21,6 +21,7 @@ export interface IStorage {
   // User operations (required for Clerk Auth)
   getUser(id: string): Promise<User | undefined>;
   getUserByClerkId(clerkId: string): Promise<User | undefined>;
+  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   createUserFromClerk(data: { clerkId: string; email: string; firstName: string; lastName: string; profileImageUrl: string; isAdmin?: boolean }): Promise<User>;
   updateUserProfile(userId: string, updates: { displayName?: string; bio?: string; profileImageUrl?: string; isAdmin?: boolean }): Promise<User | undefined>;
@@ -82,6 +83,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByClerkId(clerkId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.clerkId, clerkId));
+    return user;
+  }
+
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
     return user;
   }
 

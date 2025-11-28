@@ -5,8 +5,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Menu, X, Plane, Compass, Users, User, Tag } from "lucide-react";
+import { Menu, X, Plane, Compass, Users, User, Tag, Crown } from "lucide-react";
 import { preloadPage, prefetchTripsListData, prefetchExploreData } from "@/lib/preload";
+import { useQuery } from "@tanstack/react-query";
 
 const CompassLogo = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -20,6 +21,14 @@ export default function Header() {
   const { isSignedIn } = useUser();
   const { user: dbUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fetch subscription status for premium badge
+  const { data: subscription } = useQuery<{ plan: string }>({
+    queryKey: ['/api/subscription'],
+    enabled: isSignedIn,
+  });
+
+  const isPremium = subscription?.plan === 'premium';
 
   const navItems = [
     { label: "My Trips", href: "/my-trips", icon: Plane, requiresAuth: true },
@@ -99,14 +108,19 @@ export default function Header() {
               </>
             )}
             {isSignedIn ? (
-              <UserButton 
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8"
-                  }
-                }}
-              />
+              <div className="flex items-center gap-1">
+                {isPremium && (
+                  <Crown className="h-4 w-4 text-yellow-500" data-testid="icon-premium-badge" />
+                )}
+                <UserButton 
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8"
+                    }
+                  }}
+                />
+              </div>
             ) : (
               <SignInButton mode="modal">
                 <Button
@@ -126,14 +140,19 @@ export default function Header() {
           <div className="flex md:hidden items-center gap-2">
             <ThemeToggle />
             {isSignedIn && (
-              <UserButton 
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8"
-                  }
-                }}
-              />
+              <div className="flex items-center gap-1">
+                {isPremium && (
+                  <Crown className="h-4 w-4 text-yellow-500" />
+                )}
+                <UserButton 
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8"
+                    }
+                  }}
+                />
+              </div>
             )}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
