@@ -217,28 +217,6 @@ export default function TripAssistant() {
     },
   });
 
-  // Billing portal mutation for managing subscription
-  const portalMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/billing/portal");
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Unable to open billing portal.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const canUseAI = () => {
     if (!isSignedIn) return false;
     if (!subscription) return true; // Loading state, allow
@@ -586,15 +564,6 @@ export default function TripAssistant() {
                   <>
                     <Crown className="h-3 w-3 text-yellow-500" />
                     <span>Premium - Unlimited uses</span>
-                    <span className="mx-1">·</span>
-                    <button 
-                      className="text-primary hover:underline"
-                      onClick={() => portalMutation.mutate()}
-                      disabled={portalMutation.isPending}
-                      data-testid="button-manage-subscription"
-                    >
-                      {portalMutation.isPending ? "Loading..." : "Manage"}
-                    </button>
                   </>
                 ) : (
                   <>
