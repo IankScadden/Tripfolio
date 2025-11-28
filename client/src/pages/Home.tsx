@@ -54,9 +54,9 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section - Larger and more immersive */}
+      {/* Hero Section - Full screen immersive */}
       <div 
-        className="relative h-[700px] flex items-center justify-center"
+        className="relative min-h-[calc(100vh-64px)] flex items-center justify-center"
         style={{
           backgroundImage: `url(${heroImage})`,
           backgroundSize: 'cover',
