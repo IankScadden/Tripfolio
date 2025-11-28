@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Menu, X, Plane, Compass, Users, User, Tag, Crown } from "lucide-react";
+import { Menu, X, Plane, Compass, Users, User, Tag, Crown, Shield } from "lucide-react";
 import { preloadPage, prefetchTripsListData, prefetchExploreData } from "@/lib/preload";
 import { useQuery } from "@tanstack/react-query";
 
@@ -84,6 +84,16 @@ export default function Header() {
                 >
                   Profile
                 </Link>
+                {dbUser.isAdmin === 1 && (
+                  <Link 
+                    href="/admin" 
+                    className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap flex items-center gap-1" 
+                    data-testid="link-admin"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                )}
               </>
             ) : (
               <>
@@ -202,6 +212,17 @@ export default function Header() {
                         </Link>
                       );
                     })}
+                    {isSignedIn && dbUser?.isAdmin === 1 && (
+                      <Link 
+                        href="/admin"
+                        onClick={closeMobileMenu}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                        data-testid="mobile-link-admin"
+                      >
+                        <Shield className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium">Admin</span>
+                      </Link>
+                    )}
                   </nav>
                   
                   {!isSignedIn && (

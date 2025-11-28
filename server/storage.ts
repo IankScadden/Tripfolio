@@ -680,6 +680,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(promoCodes.createdAt);
   }
 
+  async updatePromoCode(id: string, updates: { isActive?: number }): Promise<PromoCode | undefined> {
+    const [promoCode] = await db
+      .update(promoCodes)
+      .set(updates)
+      .where(eq(promoCodes.id, id))
+      .returning();
+    return promoCode;
+  }
+
   async redeemPromoCode(userId: string, code: string): Promise<{
     success: boolean;
     error?: string;

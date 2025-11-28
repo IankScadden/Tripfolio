@@ -22,6 +22,11 @@ The application is built with a modern web stack, emphasizing a rich user experi
 
 ### Admin Configuration
 - **Admin Email**: ian@tripfolio.ai is automatically granted admin privileges via Clerk webhook
+- **Admin Dashboard**: Accessible at /admin for admin users only. Features:
+  - Create promo codes with customizable benefits (premium days or AI uses)
+  - Set max redemptions and expiry dates
+  - Toggle codes active/inactive
+  - View redemption counts and code status
 - **Admin Moderation**: Admin users can hide trips from the Explore page using the "Remove from Explore" button
   - Hidden trips are removed from public view (Explore page) but remain in the owner's My Trips
   - Uses PATCH /api/trips/:id/hide endpoint (sets isPublic=0)

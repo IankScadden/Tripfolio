@@ -24,6 +24,7 @@ const ProfileSettings = lazy(() => import("@/pages/ProfileSettings"));
 const PublicProfile = lazy(() => import("@/pages/PublicProfile"));
 const MyMap = lazy(() => import("@/pages/MyMap"));
 const TravelDeals = lazy(() => import("@/pages/TravelDeals"));
+const Admin = lazy(() => import("@/pages/Admin"));
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -59,6 +60,7 @@ function Router() {
         <Route path="/profile-settings" component={ProfileSettings} />
         <Route path="/profile/:userId" component={PublicProfile} />
         <Route path="/map/:userId" component={MyMap} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

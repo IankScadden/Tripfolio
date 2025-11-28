@@ -1867,6 +1867,35 @@ Example response:
     }
   });
 
+  // Admin: Toggle promo code active status
+  app.patch("/api/admin/promo-codes/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const { isActive } = req.body;
+
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ error: "isActive must be a boolean" });
+      }
+
+      const updatedCode = await storage.updatePromoCode(id, { isActive: isActive ? 1 : 0 });
+      if (!updatedCode) {
+        return res.status(404).json({ error: "Promo code not found" });
+      }
+
+      res.json(updatedCode);
+    } catch (error) {
+      console.error("Error updating promo code:", error);
+      res.status(500).json({ error: "Failed to update promo code" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
