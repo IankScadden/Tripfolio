@@ -569,16 +569,14 @@ export default function TripAssistant() {
                   <>
                     <Sparkles className="h-3 w-3" />
                     <span>{getRemainingUses()} of 3 uses left today</span>
-                    {(getRemainingUses() as number) === 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-auto p-0 text-xs text-primary underline"
-                        onClick={() => setShowUpgradeModal(true)}
-                      >
-                        Upgrade
-                      </Button>
-                    )}
+                    <span className="mx-1">·</span>
+                    <button 
+                      className="text-primary hover:underline"
+                      onClick={() => setShowUpgradeModal(true)}
+                      data-testid="button-upgrade-link"
+                    >
+                      Upgrade
+                    </button>
                   </>
                 )}
               </div>
@@ -618,7 +616,7 @@ export default function TripAssistant() {
               Upgrade to Premium
             </DialogTitle>
             <DialogDescription>
-              You've used all 3 of your daily AI assistant messages. Upgrade to Premium for unlimited access!
+              Get unlimited AI travel assistant access and more with Premium!
             </DialogDescription>
           </DialogHeader>
           
