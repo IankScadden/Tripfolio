@@ -9,7 +9,7 @@ import { ArrowLeft, Calendar, Map } from "lucide-react";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
 import { JourneyMap } from "@/components/JourneyMap";
-import type { Trip, DayDetail as DayDetailType } from "@shared/schema";
+import type { Trip, DayDetail as DayDetailType, Expense } from "@shared/schema";
 
 export default function ItineraryPlanner() {
   const params = useParams();
@@ -42,6 +42,12 @@ export default function ItineraryPlanner() {
       if (!res.ok) throw new Error("Failed to fetch day details");
       return res.json();
     },
+    enabled: !!tripId,
+  });
+
+  // Fetch expenses to calculate daily food budget from main dashboard
+  const { data: expenses = [] } = useQuery<Expense[]>({
+    queryKey: ["/api/trips", tripId, "expenses"],
     enabled: !!tripId,
   });
 
@@ -97,10 +103,11 @@ export default function ItineraryPlanner() {
     queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "all-day-details"] });
   };
 
-  const foodBudget = dayDetails.reduce((total, detail) => {
-    return total + (detail.foodBudgetAdjustment ? parseFloat(detail.foodBudgetAdjustment) : 0);
-  }, 0);
-  const dailyFoodBudget = trip?.days && trip.days > 0 ? Math.round(foodBudget / trip.days) : 0;
+  // Calculate daily food budget from food expenses in main dashboard (same as TripDetail)
+  const foodExpensesTotal = expenses
+    .filter((e) => e.category === "food")
+    .reduce((sum, e) => sum + parseFloat(e.cost), 0);
+  const dailyFoodBudget = trip?.days && trip.days > 0 ? Math.round(foodExpensesTotal / trip.days) : 0;
 
   const locations = dayDetails
     .filter(detail => detail.destination && detail.latitude && detail.longitude)
