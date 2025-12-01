@@ -106,6 +106,13 @@ type Expense = {
   purchased?: number;
 };
 
+type DayDetailData = {
+  id: string;
+  tripId: string;
+  dayNumber: number;
+  foodBudgetAdjustment?: string;
+};
+
 export default function TripDetail() {
   const [, params] = useRoute("/trip/:id");
   const [, setLocation] = useLocation();
@@ -143,6 +150,17 @@ export default function TripDetail() {
     queryFn: async () => {
       const response = await fetch(`/api/trips/${tripId}/expenses`);
       if (!response.ok) throw new Error("Failed to fetch expenses");
+      return response.json();
+    },
+    enabled: !!tripId,
+  });
+
+  // Fetch day details to get extra food budget adjustments
+  const { data: dayDetails = [] } = useQuery<DayDetailData[]>({
+    queryKey: ["/api/trips", tripId, "all-day-details"],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips/${tripId}/all-day-details`);
+      if (!response.ok) throw new Error("Failed to fetch day details");
       return response.json();
     },
     enabled: !!tripId,
@@ -808,11 +826,18 @@ export default function TripDetail() {
     return isExpanded ? categoryExpenses : categoryExpenses.slice(0, 1);
   };
 
-  const chartData = CATEGORIES.map((cat) => ({
-    name: cat.title,
-    value: getCategoryTotal(cat.id),
-    color: cat.color,
-  })).filter((item) => item.value > 0);
+  // Chart data includes extra food budget in the food category
+  const chartData = CATEGORIES.map((cat) => {
+    let value = getCategoryTotal(cat.id);
+    // Add extra food budget to the food category in chart
+    if (cat.id === "food") {
+      const extraFoodTotal = dayDetails
+        .filter(d => d.foodBudgetAdjustment && parseFloat(d.foodBudgetAdjustment) > 0)
+        .reduce((sum, d) => sum + parseFloat(d.foodBudgetAdjustment || "0"), 0);
+      value += extraFoodTotal;
+    }
+    return { name: cat.title, value, color: cat.color };
+  }).filter((item) => item.value > 0);
 
   if (tripLoading || expensesLoading) {
     return (
@@ -846,8 +871,19 @@ export default function TripDetail() {
   const foodBudget = getCategoryTotal("food");
   const dailyFoodBudget = trip.days && trip.days > 0 ? Math.round(foodBudget / trip.days) : 0;
 
-  // Calculate total cost from live expenses data (updates immediately with optimistic updates)
-  const calculatedTotalCost = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
+  // Calculate extra food budget from day details (days with extra budget added in day-by-day view)
+  const daysWithExtraFoodBudget = dayDetails
+    .filter(d => d.foodBudgetAdjustment && parseFloat(d.foodBudgetAdjustment) > 0)
+    .map(d => ({
+      dayNumber: d.dayNumber,
+      extraBudget: parseFloat(d.foodBudgetAdjustment || "0"),
+    }))
+    .sort((a, b) => a.dayNumber - b.dayNumber);
+  
+  const totalExtraFoodBudget = daysWithExtraFoodBudget.reduce((sum, d) => sum + d.extraBudget, 0);
+
+  // Calculate total cost from live expenses data + extra food budget adjustments
+  const calculatedTotalCost = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0) + totalExtraFoodBudget;
 
   return (
     <div className="min-h-screen bg-background">
@@ -1796,26 +1832,73 @@ export default function TripDetail() {
               </Button>
             </CardHeader>
             <CardContent>
-              {foodBudget > 0 ? (
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="bg-muted/30 rounded-lg p-4 text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Daily Budget</div>
-                    <div className="text-2xl font-bold" data-testid="text-daily-budget">
-                      ${dailyFoodBudget}
+              {foodBudget > 0 || totalExtraFoodBudget > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="bg-muted/30 rounded-lg p-4 text-center">
+                      <div className="text-sm text-muted-foreground mb-1">Daily Budget</div>
+                      <div className="text-2xl font-bold" data-testid="text-daily-budget">
+                        ${dailyFoodBudget}
+                      </div>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-4 text-center">
+                      <div className="text-sm text-muted-foreground mb-1">Trip Days</div>
+                      <div className="text-2xl font-bold" data-testid="text-food-days">
+                        {trip.days || 0}
+                      </div>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-4 text-center">
+                      <div className="text-sm text-muted-foreground mb-1">Total Food Cost</div>
+                      <div className="text-2xl font-bold" data-testid="text-food-total">
+                        ${(foodBudget + totalExtraFoodBudget).toFixed(0)}
+                      </div>
+                      {totalExtraFoodBudget > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          (${foodBudget.toFixed(0)} base + ${totalExtraFoodBudget.toFixed(0)} extra)
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="bg-muted/30 rounded-lg p-4 text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Trip Days</div>
-                    <div className="text-2xl font-bold" data-testid="text-food-days">
-                      {trip.days || 0}
+                  
+                  {/* Expandable section for days with extra budget */}
+                  {daysWithExtraFoodBudget.length > 0 && (
+                    <div className="border-t pt-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-between"
+                        onClick={() => toggleCategoryExpanded("food-extras")}
+                        data-testid="button-toggle-food-extras"
+                      >
+                        <span className="text-sm">
+                          Extra Budget Added ({daysWithExtraFoodBudget.length} day{daysWithExtraFoodBudget.length > 1 ? "s" : ""})
+                        </span>
+                        <span className="text-sm font-medium">+${totalExtraFoodBudget.toFixed(0)}</span>
+                      </Button>
+                      {expandedCategories.has("food-extras") && (
+                        <div className="mt-3 space-y-2 pl-2">
+                          {daysWithExtraFoodBudget.map((day) => {
+                            let dateLabel = `Day ${day.dayNumber}`;
+                            if (trip.startDate) {
+                              const [year, month, dayNum] = trip.startDate.split('-').map(Number);
+                              const dayDate = new Date(year, month - 1, dayNum + day.dayNumber - 1);
+                              dateLabel = `Day ${day.dayNumber} (${dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
+                            }
+                            return (
+                              <div
+                                key={day.dayNumber}
+                                className="flex justify-between items-center text-sm py-1.5 px-3 rounded-md bg-muted/30"
+                                data-testid={`text-extra-budget-day-${day.dayNumber}`}
+                              >
+                                <span className="text-muted-foreground">{dateLabel}</span>
+                                <span className="font-medium">+${day.extraBudget.toFixed(0)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-4 text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Total Food Cost</div>
-                    <div className="text-2xl font-bold" data-testid="text-food-total">
-                      ${foodBudget.toFixed(0)}
-                    </div>
-                  </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No food budget set</p>
