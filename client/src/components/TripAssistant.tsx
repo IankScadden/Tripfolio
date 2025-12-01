@@ -116,16 +116,6 @@ export default function TripAssistant() {
   const { isSignedIn } = useUser();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  
-  // Hide chatbot on shared trip links and explore trip detail pages
-  const isSharedPage = location.startsWith('/share/');
-  const isExploreTripPage = location.startsWith('/explore/') && location !== '/explore';
-  const shouldHide = isSharedPage || isExploreTripPage;
-  
-  // Don't render anything on shared/explore detail pages
-  if (shouldHide) {
-    return null;
-  }
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
@@ -144,6 +134,11 @@ export default function TripAssistant() {
   const [showCTA, setShowCTA] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Hide chatbot on shared trip links and explore trip detail pages
+  const isSharedPage = location.startsWith('/share/');
+  const isExploreTripPage = location.startsWith('/explore/') && location !== '/explore';
+  const shouldHide = isSharedPage || isExploreTripPage;
 
   // Fetch subscription status
   const { data: subscription, refetch: refetchSubscription } = useQuery<{
@@ -403,6 +398,11 @@ export default function TripAssistant() {
       handleSend();
     }
   };
+
+  // Don't render anything on shared/explore detail pages (after all hooks)
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <>
