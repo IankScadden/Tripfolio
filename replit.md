@@ -59,6 +59,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Dark Mode**: Full support for light and dark themes.
 - **Responsive Navigation**: Mobile hamburger menu for smaller screens, inline navigation for desktop. Clean, uncluttered header experience.
 - **Performance Optimization**: Hover-based prefetching for instant-feeling page transitions. Component bundles and API data are prefetched when users hover over navigation links and trip cards using TanStack Query's prefetchQuery and dynamic imports.
+- **SEO & Sitemap**: Dynamic XML sitemap at /sitemap.xml for Google Search Console. Includes all static pages (/, /explore, /travel-deals) plus dynamically generated URLs for public trips (/explore/:id), shareable links (/share/:shareId), and public user profiles (/profile/:clerkId). Also serves robots.txt pointing to the sitemap.
 
 ### Data Model
 - **Users**: Stores essential user information with Clerk ID linkage, subscription details (plan, status, AI uses remaining), and Stripe customer/subscription IDs.

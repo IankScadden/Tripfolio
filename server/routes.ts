@@ -13,6 +13,7 @@ import { Webhook } from "svix";
 import { CloudinaryStorageService, shouldUseCloudinary } from "./cloudinaryStorage";
 import OpenAI from "openai";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { SitemapStream, streamToPromise } from "sitemap";
 
 // OpenAI client - supports both direct API key (for Railway/production) 
 // and Replit AI Integrations (for development on Replit)
@@ -1893,6 +1894,81 @@ Example response:
     } catch (error) {
       console.error("Error updating promo code:", error);
       res.status(500).json({ error: "Failed to update promo code" });
+    }
+  });
+
+  // Robots.txt for search engines
+  app.get("/robots.txt", (req, res) => {
+    const hostname = process.env.NODE_ENV === "production" 
+      ? "https://tripfolio.ai" 
+      : `${req.protocol}://${req.get("host")}`;
+    
+    res.header("Content-Type", "text/plain");
+    res.send(`User-agent: *
+Allow: /
+
+Sitemap: ${hostname}/sitemap.xml
+`);
+  });
+
+  // Sitemap for Google Search Console
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      res.header("Content-Type", "application/xml");
+      
+      const hostname = process.env.NODE_ENV === "production" 
+        ? "https://tripfolio.ai" 
+        : `${req.protocol}://${req.get("host")}`;
+      
+      const smStream = new SitemapStream({ hostname });
+      
+      // Static pages
+      smStream.write({ url: "/", changefreq: "daily", priority: 1.0 });
+      smStream.write({ url: "/explore", changefreq: "daily", priority: 0.9 });
+      smStream.write({ url: "/travel-deals", changefreq: "weekly", priority: 0.8 });
+      
+      // Get all public trips for dynamic URLs
+      const { trips: publicTrips } = await storage.getPublicTrips();
+      for (const trip of publicTrips) {
+        smStream.write({ 
+          url: `/explore/${trip.id}`, 
+          changefreq: "weekly", 
+          priority: 0.7 
+        });
+        // Also add shareable link if it exists
+        if (trip.shareId) {
+          smStream.write({ 
+            url: `/share/${trip.shareId}`, 
+            changefreq: "weekly", 
+            priority: 0.6 
+          });
+        }
+      }
+      
+      // Get all users with public profiles (users who have posted public trips)
+      const usersWithPublicTrips = new Set<string>();
+      for (const trip of publicTrips) {
+        if (trip.userId) {
+          usersWithPublicTrips.add(trip.userId);
+        }
+      }
+      
+      // Add public profile URLs
+      Array.from(usersWithPublicTrips).forEach((clerkId) => {
+        smStream.write({ 
+          url: `/profile/${clerkId}`, 
+          changefreq: "weekly", 
+          priority: 0.6 
+        });
+      });
+      
+      smStream.end();
+      
+      const sitemap = await streamToPromise(smStream);
+      res.send(sitemap.toString());
+    } catch (error) {
+      console.error("Error generating sitemap:", error);
+      res.status(500).send("Error generating sitemap");
     }
   });
 
