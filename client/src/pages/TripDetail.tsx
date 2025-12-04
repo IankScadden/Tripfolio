@@ -2076,6 +2076,10 @@ function EditTripDialog({
     },
   });
 
+  // Watch start and end dates to auto-calculate days
+  const watchedStartDate = form.watch("startDate");
+  const watchedEndDate = form.watch("endDate");
+
   useEffect(() => {
     if (trip && open) {
       form.reset({
@@ -2086,6 +2090,19 @@ function EditTripDialog({
       });
     }
   }, [trip, open, form]);
+
+  // Auto-calculate days when both dates are set
+  useEffect(() => {
+    if (watchedStartDate && watchedEndDate) {
+      const start = new Date(watchedStartDate);
+      const end = new Date(watchedEndDate);
+      if (end >= start) {
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+        form.setValue("days", diffDays);
+      }
+    }
+  }, [watchedStartDate, watchedEndDate, form]);
 
   const handleSubmit = (data: EditTripFormValues) => {
     onSave(data);
@@ -2162,7 +2179,12 @@ function EditTripDialog({
               name="days"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Number of Days</FormLabel>
+                  <FormLabel>
+                    Number of Days
+                    {watchedStartDate && watchedEndDate && (
+                      <span className="text-xs text-muted-foreground ml-2">(auto-calculated from dates)</span>
+                    )}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
