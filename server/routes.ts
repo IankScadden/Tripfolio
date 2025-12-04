@@ -211,6 +211,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Duplicate trip (for user's own trips)
+  app.post("/api/trips/:id/duplicate", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const trip = await storage.getTrip(req.params.id);
+      
+      if (!trip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      
+      // Verify ownership - only allow duplicating own trips
+      if (trip.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      
+      // Clone the trip structure
+      const newTrip = await storage.cloneTripStructure(req.params.id, userId);
+      
+      // Update the name to indicate it's a copy
+      const updatedTrip = await storage.updateTrip(newTrip.id, {
+        name: `${trip.name} (Copy)`,
+        isPublic: 0, // Duplicated trips start as private
+        shareId: null, // New trips get their own share ID when shared
+      });
+      
+      res.json(updatedTrip || newTrip);
+    } catch (error) {
+      console.error("Error duplicating trip:", error);
+      res.status(500).json({ error: "Failed to duplicate trip" });
+    }
+  });
+
   app.patch("/api/trips/:id/favorite", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const userId = (req as any).userId;

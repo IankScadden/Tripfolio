@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, MapPin, Calendar, Trash2, Share2, Star, ArrowRight } from "lucide-react";
+import { Plus, MapPin, Calendar, Trash2, Share2, Star, ArrowRight, MoreVertical, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import Header from "@/components/Header";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -90,6 +91,28 @@ export default function TripsList() {
     },
   });
 
+  const duplicateTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const response = await apiRequest("POST", `/api/trips/${tripId}/duplicate`, {});
+      return await response.json();
+    },
+    onSuccess: (newTrip) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      toast({
+        title: "Trip duplicated",
+        description: "A copy of your trip has been created.",
+      });
+      setLocation(`/trip/${newTrip.id}`);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate trip.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const shareTrip = async (tripId: string) => {
     try {
       const response = await apiRequest("POST", `/api/trips/${tripId}/share`, {});
@@ -127,11 +150,14 @@ export default function TripsList() {
     toggleFavoriteMutation.mutate(tripId);
   };
 
-  const handleDeleteTrip = (e: React.MouseEvent, tripId: string) => {
-    e.stopPropagation();
+  const handleDeleteTrip = (tripId: string) => {
     if (confirm("Are you sure you want to delete this trip?")) {
       deleteTripMutation.mutate(tripId);
     }
+  };
+
+  const handleDuplicateTrip = (tripId: string) => {
+    duplicateTripMutation.mutate(tripId);
   };
 
   const isUpcoming = (startDate?: string) => {
@@ -245,40 +271,57 @@ export default function TripsList() {
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/30" />
                 
-                {/* Action Buttons - Top Left */}
-                <div className="absolute top-3 left-3 flex gap-2 z-20">
-                  <button
-                    onClick={(e) => handleToggleFavorite(e, trip.id)}
-                    className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
-                    data-testid={`button-favorite-${trip.id}`}
-                  >
-                    <Star
-                      className={`h-3.5 w-3.5 ${
-                        trip.favorite
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-600 dark:text-gray-300"
-                      }`}
-                    />
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      shareTrip(trip.id);
-                    }}
-                    className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
-                    data-testid={`button-share-${trip.id}`}
-                  >
-                    <Share2 className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
-                  </button>
-
-                  <button
-                    onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
-                    data-testid={`button-delete-${trip.id}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
-                  </button>
+                {/* Action Menu - Top Left */}
+                <div className="absolute top-3 left-3 z-20">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-900 flex items-center justify-center shadow-lg transition-all hover-elevate"
+                        data-testid={`button-menu-${trip.id}`}
+                      >
+                        <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem
+                        onClick={() => handleToggleFavorite({ stopPropagation: () => {} } as React.MouseEvent, trip.id)}
+                        data-testid={`menu-favorite-${trip.id}`}
+                      >
+                        <Star
+                          className={`h-4 w-4 mr-2 ${
+                            trip.favorite
+                              ? "fill-yellow-400 text-yellow-400"
+                              : ""
+                          }`}
+                        />
+                        {trip.favorite ? "Remove from Favorites" : "Add to Favorites"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => shareTrip(trip.id)}
+                        data-testid={`menu-share-${trip.id}`}
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Copy Share Link
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDuplicateTrip(trip.id)}
+                        data-testid={`menu-duplicate-${trip.id}`}
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Duplicate Trip
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteTrip(trip.id)}
+                        className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                        data-testid={`menu-delete-${trip.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Trip
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Top Right Badges */}
