@@ -14,6 +14,7 @@ import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
+import { LinkifyText } from "@/components/LinkifyText";
 import { useChatContext } from "@/contexts/ChatContext";
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1962,7 +1963,7 @@ export default function TripDetail() {
               <div>
                 {trip?.privateNotes ? (
                   <p className="text-sm whitespace-pre-wrap" data-testid="text-private-notes">
-                    {trip.privateNotes}
+                    <LinkifyText text={trip.privateNotes} />
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground italic" data-testid="text-no-notes">

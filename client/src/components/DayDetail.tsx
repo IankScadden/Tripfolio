@@ -10,6 +10,7 @@ import { MapPin, Hotel, Ticket, Bus, Train, Plane, Utensils, ChevronLeft, Chevro
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { LinkifyText, hasLinks } from "@/components/LinkifyText";
 
 interface Activity {
   id?: string;
@@ -971,12 +972,20 @@ export default function DayDetail({
               <div>
                 <Label>Notes for the Day</Label>
                 <Textarea
-                  placeholder="Add any notes or reminders for this day..."
+                  placeholder="Add any notes or reminders for this day... (links will be clickable below)"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   data-testid="input-notes"
                 />
+                {hasLinks(notes) && (
+                  <div className="mt-2 p-3 bg-muted/30 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Click links:</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      <LinkifyText text={notes} />
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
