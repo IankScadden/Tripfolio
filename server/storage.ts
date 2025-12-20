@@ -79,6 +79,7 @@ export interface IStorage {
   createAffiliateLink(link: InsertAffiliateLink): Promise<AffiliateLink>;
   updateAffiliateLink(id: string, updates: Partial<InsertAffiliateLink>): Promise<AffiliateLink | undefined>;
   deleteAffiliateLink(id: string): Promise<boolean>;
+  getAllAffiliateLinksAdmin(): Promise<AffiliateLink[]>;
 }
 
 export class DatabaseStorage implements IStorage {
