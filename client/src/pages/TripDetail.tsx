@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/Header";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import FoodBudgetDialog from "@/components/FoodBudgetDialog";
+import FindDealsDialog from "@/components/FindDealsDialog";
 import TripCalendar from "@/components/TripCalendar";
 import DayDetail from "@/components/DayDetail";
 import { LinkifyText } from "@/components/LinkifyText";
@@ -135,6 +136,7 @@ export default function TripDetail() {
   const [breakdownView, setBreakdownView] = useState<"list" | "chart">("list");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesInput, setNotesInput] = useState<string>("");
+  const [findDealsCategory, setFindDealsCategory] = useState<string | null>(null);
 
   const { data: trip, isLoading: tripLoading, error: tripError } = useQuery<Trip>({
     queryKey: ["/api/trips", tripId],
@@ -1151,15 +1153,26 @@ export default function TripDetail() {
                 <Plane className="h-4 w-4" style={{ color: CATEGORIES[0].color }} />
                 Flights
               </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-1" 
-                onClick={() => handleAddExpense("flights")}
-                data-testid="button-add-flights"
-              >
-                <span className="text-2xl leading-none">+</span> Add Flight
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => setFindDealsCategory("flights")}
+                  data-testid="button-find-flights"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Find
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => handleAddExpense("flights")}
+                  data-testid="button-add-flights"
+                >
+                  <span className="text-2xl leading-none">+</span> Add Flight
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("flights").length > 0 ? (
@@ -1263,15 +1276,26 @@ export default function TripDetail() {
                 <Hotel className="h-4 w-4" style={{ color: CATEGORIES[3].color }} />
                 Lodging
               </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-1" 
-                onClick={() => handleAddExpense("accommodation")}
-                data-testid="button-add-lodging"
-              >
-                <span className="text-2xl leading-none">+</span> Add Lodging
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => setFindDealsCategory("lodging")}
+                  data-testid="button-find-lodging"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Find
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => handleAddExpense("accommodation")}
+                  data-testid="button-add-lodging"
+                >
+                  <span className="text-2xl leading-none">+</span> Add Lodging
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("accommodation").length > 0 ? (
@@ -1375,15 +1399,26 @@ export default function TripDetail() {
                 <Bus className="h-4 w-4" style={{ color: CATEGORIES[2].color }} />
                 Local Transportation
               </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-1" 
-                onClick={() => handleAddExpense("local")}
-                data-testid="button-add-local-transport"
-              >
-                <span className="text-2xl leading-none">+</span> Add Transport
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => setFindDealsCategory("localTransport")}
+                  data-testid="button-find-local-transport"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Find
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => handleAddExpense("local")}
+                  data-testid="button-add-local-transport"
+                >
+                  <span className="text-2xl leading-none">+</span> Add Transport
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("local").length > 0 ? (
@@ -1487,15 +1522,26 @@ export default function TripDetail() {
                 <Train className="h-4 w-4" style={{ color: CATEGORIES[1].color }} />
                 City to City Transportation
               </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-1" 
-                onClick={() => handleAddExpense("intercity")}
-                data-testid="button-add-transportation"
-              >
-                <span className="text-2xl leading-none">+</span> Add Route
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => setFindDealsCategory("cityToCity")}
+                  data-testid="button-find-transportation"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Find
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1" 
+                  onClick={() => handleAddExpense("intercity")}
+                  data-testid="button-add-transportation"
+                >
+                  <span className="text-2xl leading-none">+</span> Add Route
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {getExpensesByCategory("intercity").length > 0 ? (
@@ -2007,6 +2053,12 @@ export default function TripDetail() {
         tripDays={trip?.days || 1}
         currentDailyBudget={dailyFoodBudget}
         onSave={handleSaveFoodBudget}
+      />
+
+      <FindDealsDialog
+        categoryId={findDealsCategory}
+        open={!!findDealsCategory}
+        onOpenChange={(open) => !open && setFindDealsCategory(null)}
       />
 
       <TripCalendar
