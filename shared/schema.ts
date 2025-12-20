@@ -170,6 +170,25 @@ export const insertPromoRedemptionSchema = createInsertSchema(promoRedemptions).
   redeemedAt: true,
 });
 
+// Affiliate links for "My Trips" Find Deals feature (admin-managed)
+export const affiliateLinks = pgTable("affiliate_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: varchar("category").notNull(), // 'flights', 'lodging', 'localTransport', 'cityToCity'
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  description: text("description"),
+  displayOrder: integer("display_order").default(0).notNull(),
+  isActive: integer("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  categoryIdx: index("affiliate_links_category_idx").on(table.category),
+}));
+
+export const insertAffiliateLinkSchema = createInsertSchema(affiliateLinks).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
@@ -188,3 +207,5 @@ export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
 export type PromoCode = typeof promoCodes.$inferSelect;
 export type InsertPromoRedemption = z.infer<typeof insertPromoRedemptionSchema>;
 export type PromoRedemption = typeof promoRedemptions.$inferSelect;
+export type InsertAffiliateLink = z.infer<typeof insertAffiliateLinkSchema>;
+export type AffiliateLink = typeof affiliateLinks.$inferSelect;

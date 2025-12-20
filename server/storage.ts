@@ -1,4 +1,4 @@
-import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, type TravelPin, type InsertTravelPin, type PromoCode, type InsertPromoCode, type PromoRedemption, trips, expenses, users, dayDetails, likes, comments, travelPins, promoCodes, promoRedemptions } from "@shared/schema";
+import { type Trip, type InsertTrip, type Expense, type InsertExpense, type User, type UpsertUser, type DayDetail, type InsertDayDetail, type Like, type InsertLike, type Comment, type InsertComment, type TravelPin, type InsertTravelPin, type PromoCode, type InsertPromoCode, type PromoRedemption, type AffiliateLink, type InsertAffiliateLink, trips, expenses, users, dayDetails, likes, comments, travelPins, promoCodes, promoRedemptions, affiliateLinks } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, or, ilike, isNotNull, ne, sql as sqlOperator } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -72,6 +72,13 @@ export interface IStorage {
   getTravelPin(id: string): Promise<TravelPin | undefined>;
   addTravelPin(pin: InsertTravelPin): Promise<TravelPin>;
   deleteTravelPin(id: string): Promise<boolean>;
+  
+  // Affiliate link operations (admin-managed)
+  getAffiliateLinks(): Promise<AffiliateLink[]>;
+  getAffiliateLinksByCategory(category: string): Promise<AffiliateLink[]>;
+  createAffiliateLink(link: InsertAffiliateLink): Promise<AffiliateLink>;
+  updateAffiliateLink(id: string, updates: Partial<InsertAffiliateLink>): Promise<AffiliateLink | undefined>;
+  deleteAffiliateLink(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -762,6 +769,60 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { success: true, message, aiUsesRemaining: newAiUses };
+  }
+
+  // ==================== AFFILIATE LINK OPERATIONS ====================
+
+  async getAffiliateLinks(): Promise<AffiliateLink[]> {
+    return await db
+      .select()
+      .from(affiliateLinks)
+      .where(eq(affiliateLinks.isActive, 1))
+      .orderBy(affiliateLinks.category, affiliateLinks.displayOrder);
+  }
+
+  async getAffiliateLinksByCategory(category: string): Promise<AffiliateLink[]> {
+    return await db
+      .select()
+      .from(affiliateLinks)
+      .where(and(
+        eq(affiliateLinks.category, category),
+        eq(affiliateLinks.isActive, 1)
+      ))
+      .orderBy(affiliateLinks.displayOrder);
+  }
+
+  async createAffiliateLink(data: InsertAffiliateLink): Promise<AffiliateLink> {
+    const [link] = await db
+      .insert(affiliateLinks)
+      .values(data)
+      .returning();
+    return link;
+  }
+
+  async updateAffiliateLink(id: string, updates: Partial<InsertAffiliateLink>): Promise<AffiliateLink | undefined> {
+    const [link] = await db
+      .update(affiliateLinks)
+      .set(updates)
+      .where(eq(affiliateLinks.id, id))
+      .returning();
+    return link;
+  }
+
+  async deleteAffiliateLink(id: string): Promise<boolean> {
+    const result = await db
+      .delete(affiliateLinks)
+      .where(eq(affiliateLinks.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Get all affiliate links for admin (including inactive)
+  async getAllAffiliateLinksAdmin(): Promise<AffiliateLink[]> {
+    return await db
+      .select()
+      .from(affiliateLinks)
+      .orderBy(affiliateLinks.category, affiliateLinks.displayOrder);
   }
 }
 

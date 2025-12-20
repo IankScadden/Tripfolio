@@ -1929,6 +1929,150 @@ Example response:
     }
   });
 
+  // ==================== AFFILIATE LINKS ROUTES ====================
+
+  // Public: Get all active affiliate links (grouped by category)
+  app.get("/api/affiliate-links", async (req, res) => {
+    try {
+      const links = await storage.getAffiliateLinks();
+      
+      // Group by category
+      const grouped: Record<string, { title: string; description: string; links: any[] }> = {};
+      const categoryMeta: Record<string, { title: string; description: string }> = {
+        flights: { title: "Find Flights", description: "Compare prices and find the best deals on flights" },
+        lodging: { title: "Find Accommodation", description: "Find hostels, hotels, and unique places to stay" },
+        localTransport: { title: "Find Local Transport", description: "Get around your destination easily" },
+        cityToCity: { title: "Find Transportation", description: "Buses, trains, and intercity travel" },
+      };
+      
+      for (const link of links) {
+        if (!grouped[link.category]) {
+          grouped[link.category] = {
+            title: categoryMeta[link.category]?.title || link.category,
+            description: categoryMeta[link.category]?.description || "",
+            links: [],
+          };
+        }
+        grouped[link.category].links.push({
+          name: link.name,
+          url: link.url,
+          description: link.description,
+        });
+      }
+      
+      res.json(grouped);
+    } catch (error) {
+      console.error("Error fetching affiliate links:", error);
+      res.status(500).json({ error: "Failed to fetch affiliate links" });
+    }
+  });
+
+  // Admin: Get all affiliate links (including inactive)
+  app.get("/api/admin/affiliate-links", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const links = await storage.getAllAffiliateLinksAdmin();
+      res.json(links);
+    } catch (error) {
+      console.error("Error fetching affiliate links:", error);
+      res.status(500).json({ error: "Failed to fetch affiliate links" });
+    }
+  });
+
+  // Admin: Create affiliate link
+  app.post("/api/admin/affiliate-links", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { category, name, url, description, displayOrder } = req.body;
+      
+      if (!category || !name || !url) {
+        return res.status(400).json({ error: "Category, name, and URL are required" });
+      }
+
+      const link = await storage.createAffiliateLink({
+        category,
+        name,
+        url,
+        description: description || null,
+        displayOrder: displayOrder || 0,
+        isActive: 1,
+      });
+      
+      res.json(link);
+    } catch (error) {
+      console.error("Error creating affiliate link:", error);
+      res.status(500).json({ error: "Failed to create affiliate link" });
+    }
+  });
+
+  // Admin: Update affiliate link
+  app.patch("/api/admin/affiliate-links/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const updates: any = {};
+      
+      if (req.body.name !== undefined) updates.name = req.body.name;
+      if (req.body.url !== undefined) updates.url = req.body.url;
+      if (req.body.description !== undefined) updates.description = req.body.description;
+      if (req.body.displayOrder !== undefined) updates.displayOrder = req.body.displayOrder;
+      if (req.body.isActive !== undefined) updates.isActive = req.body.isActive ? 1 : 0;
+      if (req.body.category !== undefined) updates.category = req.body.category;
+
+      const link = await storage.updateAffiliateLink(id, updates);
+      if (!link) {
+        return res.status(404).json({ error: "Affiliate link not found" });
+      }
+
+      res.json(link);
+    } catch (error) {
+      console.error("Error updating affiliate link:", error);
+      res.status(500).json({ error: "Failed to update affiliate link" });
+    }
+  });
+
+  // Admin: Delete affiliate link
+  app.delete("/api/admin/affiliate-links/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const success = await storage.deleteAffiliateLink(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Affiliate link not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting affiliate link:", error);
+      res.status(500).json({ error: "Failed to delete affiliate link" });
+    }
+  });
+
   // Robots.txt for search engines
   app.get("/robots.txt", (req, res) => {
     const hostname = process.env.NODE_ENV === "production" 
