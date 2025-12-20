@@ -12,15 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Shield, Ticket, Copy, Check, ArrowLeft } from "lucide-react";
+import { Loader2, Plus, Shield, Ticket, Copy, Check, ArrowLeft, LinkIcon, Trash2, Edit2, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
-import type { PromoCode } from "@shared/schema";
+import type { PromoCode, AffiliateLink } from "@shared/schema";
 
 export default function Admin() {
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [editingLink, setEditingLink] = useState<AffiliateLink | null>(null);
 
   const [newCode, setNewCode] = useState({
     code: "",
@@ -31,8 +32,21 @@ export default function Admin() {
     expiresAt: "",
   });
 
+  const [newLink, setNewLink] = useState({
+    category: "flights",
+    name: "",
+    url: "",
+    description: "",
+    displayOrder: 0,
+  });
+
   const { data: promoCodes, isLoading: codesLoading } = useQuery<PromoCode[]>({
     queryKey: ["/api/admin/promo-codes"],
+    enabled: !!user?.isAdmin,
+  });
+
+  const { data: affiliateLinks, isLoading: linksLoading } = useQuery<AffiliateLink[]>({
+    queryKey: ["/api/admin/affiliate-links"],
     enabled: !!user?.isAdmin,
   });
 
@@ -77,6 +91,60 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/promo-codes"] });
+    },
+  });
+
+  // Affiliate link mutations
+  const createLinkMutation = useMutation({
+    mutationFn: async (data: typeof newLink) => {
+      const response = await apiRequest("POST", "/api/admin/affiliate-links", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create affiliate link");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Affiliate link created!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-links"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/affiliate-links"] });
+      setNewLink({ category: "flights", name: "", url: "", description: "", displayOrder: 0 });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateLinkMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<AffiliateLink> & { id: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/affiliate-links/${id}`, data);
+      if (!response.ok) throw new Error("Failed to update affiliate link");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Affiliate link updated!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-links"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/affiliate-links"] });
+      setEditingLink(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteLinkMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/admin/affiliate-links/${id}`);
+      if (!response.ok) throw new Error("Failed to delete affiliate link");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Affiliate link deleted!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-links"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/affiliate-links"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -333,6 +401,265 @@ export default function Admin() {
                             data-testid={`toggle-${code.code}`}
                           />
                         </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Affiliate Links Management Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5" />
+              Add New Affiliate Link
+            </CardTitle>
+            <CardDescription>
+              Add booking site links that appear in "Find" buttons across trip categories
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createLinkMutation.mutate(newLink);
+              }}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="linkCategory">Category</Label>
+                  <Select
+                    value={newLink.category}
+                    onValueChange={(value) => setNewLink({ ...newLink, category: value })}
+                  >
+                    <SelectTrigger data-testid="select-link-category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flights">Flights</SelectItem>
+                      <SelectItem value="lodging">Accommodation</SelectItem>
+                      <SelectItem value="localTransport">Local Transport</SelectItem>
+                      <SelectItem value="cityToCity">City to City</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkName">Link Name</Label>
+                  <Input
+                    id="linkName"
+                    value={newLink.name}
+                    onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
+                    placeholder="e.g., Skyscanner"
+                    required
+                    data-testid="input-link-name"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="linkUrl">URL</Label>
+                  <Input
+                    id="linkUrl"
+                    type="url"
+                    value={newLink.url}
+                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                    placeholder="https://example.com"
+                    required
+                    data-testid="input-link-url"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="linkDescription">Description (optional)</Label>
+                  <Input
+                    id="linkDescription"
+                    value={newLink.description}
+                    onChange={(e) => setNewLink({ ...newLink, description: e.target.value })}
+                    placeholder="e.g., Compare flight prices"
+                    data-testid="input-link-description"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkOrder">Display Order</Label>
+                  <Input
+                    id="linkOrder"
+                    type="number"
+                    min="0"
+                    value={newLink.displayOrder}
+                    onChange={(e) => setNewLink({ ...newLink, displayOrder: parseInt(e.target.value) || 0 })}
+                    data-testid="input-link-order"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={createLinkMutation.isPending || !newLink.name.trim() || !newLink.url.trim()}
+                data-testid="button-create-link"
+              >
+                {createLinkMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                Add Affiliate Link
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ExternalLink className="h-5 w-5" />
+              Existing Affiliate Links
+            </CardTitle>
+            <CardDescription>
+              {affiliateLinks?.length || 0} affiliate link{affiliateLinks?.length !== 1 ? "s" : ""} configured
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {linksLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : !affiliateLinks?.length ? (
+              <p className="text-center text-muted-foreground py-8">
+                No affiliate links yet. Add your first one above!
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {["flights", "lodging", "localTransport", "cityToCity"].map((category) => {
+                  const categoryLinks = affiliateLinks.filter((l) => l.category === category);
+                  if (categoryLinks.length === 0) return null;
+                  
+                  const categoryLabels: Record<string, string> = {
+                    flights: "Flights",
+                    lodging: "Accommodation",
+                    localTransport: "Local Transport",
+                    cityToCity: "City to City",
+                  };
+                  
+                  return (
+                    <div key={category} className="space-y-2">
+                      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                        {categoryLabels[category]}
+                      </h3>
+                      <div className="space-y-2">
+                        {categoryLinks.map((link) => (
+                          <div
+                            key={link.id}
+                            className={`border rounded-lg p-3 ${!link.isActive ? "opacity-60" : ""}`}
+                            data-testid={`link-card-${link.id}`}
+                          >
+                            {editingLink?.id === link.id ? (
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <Input
+                                    value={editingLink.name}
+                                    onChange={(e) => setEditingLink({ ...editingLink, name: e.target.value })}
+                                    placeholder="Name"
+                                    data-testid="input-edit-name"
+                                  />
+                                  <Input
+                                    value={editingLink.url}
+                                    onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
+                                    placeholder="URL"
+                                    data-testid="input-edit-url"
+                                  />
+                                  <Input
+                                    value={editingLink.description || ""}
+                                    onChange={(e) => setEditingLink({ ...editingLink, description: e.target.value })}
+                                    placeholder="Description"
+                                    className="md:col-span-2"
+                                    data-testid="input-edit-description"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateLinkMutation.mutate({
+                                      id: editingLink.id,
+                                      name: editingLink.name,
+                                      url: editingLink.url,
+                                      description: editingLink.description,
+                                    })}
+                                    disabled={updateLinkMutation.isPending}
+                                    data-testid="button-save-edit"
+                                  >
+                                    {updateLinkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingLink(null)}
+                                    data-testid="button-cancel-edit"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{link.name}</span>
+                                    {!link.isActive && <Badge variant="secondary">Inactive</Badge>}
+                                  </div>
+                                  <a
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    {link.url.substring(0, 50)}{link.url.length > 50 ? "..." : ""}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                  {link.description && (
+                                    <p className="text-sm text-muted-foreground">{link.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setEditingLink(link)}
+                                    data-testid={`button-edit-${link.id}`}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Switch
+                                    checked={link.isActive === 1}
+                                    onCheckedChange={(checked) =>
+                                      updateLinkMutation.mutate({ id: link.id, isActive: checked ? 1 : 0 })
+                                    }
+                                    disabled={updateLinkMutation.isPending}
+                                    data-testid={`toggle-link-${link.id}`}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                      if (confirm("Delete this affiliate link?")) {
+                                        deleteLinkMutation.mutate(link.id);
+                                      }
+                                    }}
+                                    disabled={deleteLinkMutation.isPending}
+                                    data-testid={`button-delete-${link.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   );
