@@ -38,34 +38,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve logo file for social media profile pictures
   app.get('/tripfolio-logo.svg', (req, res) => {
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.send(`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    res.send(`<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e3a5f"/>
-      <stop offset="100%" style="stop-color:#0d1b2a"/>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="50%" style="stop-color:#16213e"/>
+      <stop offset="100%" style="stop-color:#0f3460"/>
     </linearGradient>
-    <linearGradient id="compassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#42a5f5"/>
-      <stop offset="100%" style="stop-color:#1e88e5"/>
+    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b"/>
+      <stop offset="50%" style="stop-color:#ee5a24"/>
+      <stop offset="100%" style="stop-color:#f39c12"/>
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffd54f"/>
-      <stop offset="100%" style="stop-color:#ff9800"/>
+    <linearGradient id="mountainGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d3436"/>
+      <stop offset="100%" style="stop-color:#636e72"/>
+    </linearGradient>
+    <linearGradient id="mountainGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a69bd"/>
+      <stop offset="100%" style="stop-color:#1e3799"/>
+    </linearGradient>
+    <linearGradient id="planeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#dfe6e9"/>
     </linearGradient>
   </defs>
-  <circle cx="100" cy="100" r="98" fill="url(#bgGrad)"/>
-  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#compassGrad)" stroke-width="6" opacity="0.3"/>
-  <circle cx="100" cy="100" r="75" fill="none" stroke="url(#compassGrad)" stroke-width="3"/>
-  <circle cx="100" cy="100" r="12" fill="url(#compassGrad)"/>
-  <path d="M100 25 L108 85 L100 75 L92 85 Z" fill="url(#accentGrad)"/>
-  <path d="M175 100 L115 108 L125 100 L115 92 Z" fill="url(#compassGrad)"/>
-  <path d="M100 175 L92 115 L100 125 L108 115 Z" fill="url(#compassGrad)"/>
-  <path d="M25 100 L85 92 L75 100 L85 108 Z" fill="url(#compassGrad)"/>
-  <circle cx="100" cy="35" r="4" fill="#fff" opacity="0.8"/>
-  <circle cx="165" cy="100" r="3" fill="#fff" opacity="0.5"/>
-  <circle cx="100" cy="165" r="3" fill="#fff" opacity="0.5"/>
-  <circle cx="35" cy="100" r="3" fill="#fff" opacity="0.5"/>
-  <text x="100" y="195" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle" opacity="0">Tripfolio</text>
+  <circle cx="200" cy="200" r="195" fill="url(#skyGrad)"/>
+  <circle cx="200" cy="200" r="190" fill="none" stroke="#4a69bd" stroke-width="3" opacity="0.5"/>
+  <circle cx="200" cy="130" r="50" fill="url(#sunGrad)"/>
+  <circle cx="200" cy="130" r="60" fill="none" stroke="#f39c12" stroke-width="2" opacity="0.3"/>
+  <path d="M40 280 L140 180 L200 230 L280 160 L360 280 Z" fill="url(#mountainGrad1)" opacity="0.6"/>
+  <path d="M20 320 L100 220 L160 260 L240 190 L320 250 L380 320 Z" fill="url(#mountainGrad2)"/>
+  <path d="M60 320 L60 280 L80 280 L80 320" fill="#2d3436" opacity="0.4"/>
+  <path d="M300 300 L300 270 L320 270 L320 300" fill="#2d3436" opacity="0.4"/>
+  <g transform="translate(260, 90) rotate(25)">
+    <path d="M0 15 L50 15 L55 20 L50 25 L0 25 Z" fill="url(#planeGrad)"/>
+    <path d="M15 15 L25 0 L30 0 L25 15 Z" fill="url(#planeGrad)"/>
+    <path d="M15 25 L25 40 L30 40 L25 25 Z" fill="url(#planeGrad)"/>
+    <path d="M45 18 L55 10 L55 15 L48 18 Z" fill="url(#planeGrad)"/>
+    <path d="M45 22 L55 30 L55 25 L48 22 Z" fill="url(#planeGrad)"/>
+  </g>
+  <circle cx="100" cy="80" r="2" fill="#fff" opacity="0.8"/>
+  <circle cx="320" cy="60" r="1.5" fill="#fff" opacity="0.6"/>
+  <circle cx="80" cy="140" r="1" fill="#fff" opacity="0.5"/>
+  <circle cx="340" cy="120" r="1.5" fill="#fff" opacity="0.7"/>
+  <circle cx="150" cy="50" r="1" fill="#fff" opacity="0.4"/>
 </svg>`);
   });
 
