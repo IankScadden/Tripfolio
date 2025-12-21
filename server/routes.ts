@@ -38,11 +38,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve logo file for social media profile pictures
   app.get('/tripfolio-logo.svg', (req, res) => {
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.send(`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="48" fill="#1a1a2e"/>
-  <circle cx="50" cy="50" r="45" fill="none" stroke="#1e88e5" stroke-width="8"/>
-  <path d="M50 15 L55 40 L50 35 L45 40 Z M85 50 L60 55 L65 50 L60 45 Z M50 85 L45 60 L50 65 L55 60 Z M15 50 L40 45 L35 50 L40 55 Z" fill="#1e88e5"/>
-  <path d="M50 20 L57 45 L50 38 L43 45 Z M80 50 L55 57 L62 50 L55 43 Z M50 80 L43 55 L50 62 L57 55 Z M20 50 L45 43 L38 50 L45 57 Z" fill="#1e88e5" opacity="0.6"/>
+    res.send(`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="100%" style="stop-color:#0d1b2a"/>
+    </linearGradient>
+    <linearGradient id="compassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#42a5f5"/>
+      <stop offset="100%" style="stop-color:#1e88e5"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd54f"/>
+      <stop offset="100%" style="stop-color:#ff9800"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="98" fill="url(#bgGrad)"/>
+  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#compassGrad)" stroke-width="6" opacity="0.3"/>
+  <circle cx="100" cy="100" r="75" fill="none" stroke="url(#compassGrad)" stroke-width="3"/>
+  <circle cx="100" cy="100" r="12" fill="url(#compassGrad)"/>
+  <path d="M100 25 L108 85 L100 75 L92 85 Z" fill="url(#accentGrad)"/>
+  <path d="M175 100 L115 108 L125 100 L115 92 Z" fill="url(#compassGrad)"/>
+  <path d="M100 175 L92 115 L100 125 L108 115 Z" fill="url(#compassGrad)"/>
+  <path d="M25 100 L85 92 L75 100 L85 108 Z" fill="url(#compassGrad)"/>
+  <circle cx="100" cy="35" r="4" fill="#fff" opacity="0.8"/>
+  <circle cx="165" cy="100" r="3" fill="#fff" opacity="0.5"/>
+  <circle cx="100" cy="165" r="3" fill="#fff" opacity="0.5"/>
+  <circle cx="35" cy="100" r="3" fill="#fff" opacity="0.5"/>
+  <text x="100" y="195" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle" opacity="0">Tripfolio</text>
 </svg>`);
   });
 
