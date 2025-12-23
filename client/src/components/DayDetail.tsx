@@ -83,6 +83,9 @@ export default function DayDetail({
   const [multiDayLodgingName, setMultiDayLodgingName] = useState("");
   const [multiDayTotalCost, setMultiDayTotalCost] = useState("");
   const [multiDayLodgingUrl, setMultiDayLodgingUrl] = useState("");
+  
+  // Track whether we've initialized form values for this day
+  const [initializedForDay, setInitializedForDay] = useState<number | null>(null);
 
   // Fetch day detail data
   const { data: dayDetailData } = useQuery({
@@ -176,13 +179,28 @@ export default function DayDetail({
   }, [dayExpenses, allTripExpenses, dayNumber]);
 
   useEffect(() => {
-    // Always set values, clearing them if no data exists for this day
-    setDestination(dayDetailData?.destination || "");
-    setFoodBudgetAdjustment(dayDetailData?.foodBudgetAdjustment || "");
-    setNotes(dayDetailData?.notes || "");
-  }, [dayDetailData, dayNumber]);
+    // Only initialize values when switching to a new day, not on every data refetch
+    if (initializedForDay === dayNumber) return;
+    
+    // Wait for data to be available before initializing
+    if (dayDetailData !== undefined) {
+      setDestination(dayDetailData?.destination || "");
+      setFoodBudgetAdjustment(dayDetailData?.foodBudgetAdjustment || "");
+      setNotes(dayDetailData?.notes || "");
+      setInitializedForDay(dayNumber);
+    }
+  }, [dayDetailData, dayNumber, initializedForDay]);
+
+  // Track whether expenses have been initialized for this day
+  const [expensesInitializedForDay, setExpensesInitializedForDay] = useState<number | null>(null);
 
   useEffect(() => {
+    // Only initialize expenses when switching to a new day, not on every data refetch
+    if (expensesInitializedForDay === dayNumber) return;
+    
+    // Wait for expenses data to be available
+    if (dayExpenses.length === 0 && !dayDetailData) return;
+    
     // Load lodging
     const lodging = dayExpenses.find((e: any) => e.category === "accommodation");
     if (lodging) {
@@ -235,7 +253,16 @@ export default function DayDetail({
     }
     
     setTransportation(transportItems);
-  }, [dayExpenses, dayDetailData]);
+    setExpensesInitializedForDay(dayNumber);
+  }, [dayExpenses, dayDetailData, dayNumber, expensesInitializedForDay]);
+  
+  // Reset initialization flags when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setInitializedForDay(null);
+      setExpensesInitializedForDay(null);
+    }
+  }, [open]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
