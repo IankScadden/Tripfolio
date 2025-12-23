@@ -198,9 +198,6 @@ export default function DayDetail({
     // Only initialize expenses when switching to a new day, not on every data refetch
     if (expensesInitializedForDay === dayNumber) return;
     
-    // Wait for expenses data to be available
-    if (dayExpenses.length === 0 && !dayDetailData) return;
-    
     // Load lodging
     const lodging = dayExpenses.find((e: any) => e.category === "accommodation");
     if (lodging) {
@@ -324,6 +321,8 @@ export default function DayDetail({
       return await response.json();
     },
     onSuccess: () => {
+      // Reset initialization flag so updated data can be loaded
+      setInitializedForDay(null);
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "day-details", dayNumber] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
@@ -335,8 +334,10 @@ export default function DayDetail({
       const response = await apiRequest("POST", "/api/expenses", expenseData);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+    onSuccess: async () => {
+      // Reset initialization flag so new expense can be loaded
+      setExpensesInitializedForDay(null);
+      await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
     },
   });
@@ -346,8 +347,10 @@ export default function DayDetail({
       const response = await apiRequest("PATCH", `/api/expenses/${id}`, data);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+    onSuccess: async () => {
+      // Reset initialization flag so updated expense can be loaded
+      setExpensesInitializedForDay(null);
+      await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
     },
   });
@@ -357,8 +360,10 @@ export default function DayDetail({
       const response = await apiRequest("DELETE", `/api/expenses/${id}`, {});
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
+    onSuccess: async () => {
+      // Reset initialization flag so deleted expense reflects correctly
+      setExpensesInitializedForDay(null);
+      await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
     },
   });
@@ -378,6 +383,8 @@ export default function DayDetail({
       return await response.json();
     },
     onSuccess: async () => {
+      // Reset initialization flag so new data can be loaded
+      setExpensesInitializedForDay(null);
       // Force immediate refetch to ensure UI updates with latest data
       await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId, "expenses"] });
       await queryClient.refetchQueries({ queryKey: ["/api/trips", tripId] });
