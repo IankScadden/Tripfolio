@@ -437,6 +437,20 @@ export default function DayDetail({
       ? multiDayLodgingInfo.dayNumbers 
       : undefined;
     
+    // Calculate nightly rate to update single-day fields
+    let nightlyRate: string;
+    if (date) {
+      const [checkInYear, checkInMonth, checkInDay] = multiDayCheckIn.split('-').map(Number);
+      const [checkOutYear, checkOutMonth, checkOutDay] = multiDayCheckOut.split('-').map(Number);
+      const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
+      const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
+      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      nightlyRate = (parseFloat(multiDayTotalCost) / nights).toFixed(2);
+    } else {
+      const nights = parseInt(multiDayNights);
+      nightlyRate = (parseFloat(multiDayTotalCost) / nights).toFixed(2);
+    }
+    
     await bulkLodgingMutation.mutateAsync({
       checkInDate: date ? multiDayCheckIn : undefined,
       checkOutDate: date ? multiDayCheckOut : undefined,
@@ -448,7 +462,12 @@ export default function DayDetail({
       dayNumbersToDelete, // Pass specific days to delete when editing
     });
 
-    // Reset form and close dialog
+    // CRITICAL: Update single-day lodging fields so the main save doesn't delete this lodging
+    setLodgingName(multiDayLodgingName);
+    setLodgingCost(nightlyRate);
+    setLodgingUrl(multiDayLodgingUrl || "");
+
+    // Reset multi-day form and close dialog
     setIsEditingMultiDayLodging(false);
     setMultiDayCheckIn("");
     setMultiDayCheckOut("");
