@@ -104,7 +104,9 @@ export const travelPins = pgTable("travel_pins", {
   longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
   locationName: text("location_name"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("travel_pins_user_id_idx").on(table.userId),
+}));
 
 // Promo codes for free AI usage or premium access
 export const promoCodes = pgTable("promo_codes", {

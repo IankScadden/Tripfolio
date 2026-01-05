@@ -28,7 +28,9 @@ export interface IStorage {
   
   // Trip operations
   getAllTrips(userId: string): Promise<Trip[]>;
+  getAllTripsWithTotals(userId: string): Promise<Array<Trip & { totalCost: number; expenseCounts: { flights: number; accommodation: number; activities: number } }>>;
   getTrip(id: string): Promise<Trip | undefined>;
+  getTripWithTotal(id: string): Promise<(Trip & { totalCost: number }) | undefined>;
   getTripByShareId(shareId: string): Promise<Trip | undefined>;
   createTrip(trip: InsertTrip, userId: string): Promise<Trip>;
   updateTrip(id: string, trip: Partial<InsertTrip> & { shareId?: string | null }): Promise<Trip | undefined>;
@@ -155,9 +157,68 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(trips).where(eq(trips.userId, userId));
   }
 
+  async getAllTripsWithTotals(userId: string): Promise<Array<Trip & { totalCost: number; expenseCounts: { flights: number; accommodation: number; activities: number } }>> {
+    // Get all trips for the user with aggregated expense data in a single query
+    const tripsData = await db.select().from(trips).where(eq(trips.userId, userId));
+    
+    if (tripsData.length === 0) {
+      return [];
+    }
+    
+    const tripIds = tripsData.map(t => t.id);
+    
+    // Get aggregated expense data for all trips in one query
+    const expenseAggregates = await db
+      .select({
+        tripId: expenses.tripId,
+        totalCost: sqlOperator<number>`COALESCE(SUM(${expenses.cost}::numeric), 0)::float`,
+        flightsCount: sqlOperator<number>`COUNT(*) FILTER (WHERE ${expenses.category} = 'flights')::int`,
+        accommodationCount: sqlOperator<number>`COUNT(*) FILTER (WHERE ${expenses.category} = 'accommodation')::int`,
+        activitiesCount: sqlOperator<number>`COUNT(*) FILTER (WHERE ${expenses.category} = 'activities')::int`,
+      })
+      .from(expenses)
+      .where(inArray(expenses.tripId, tripIds))
+      .groupBy(expenses.tripId);
+    
+    // Create a map for quick lookup
+    const aggregateMap = new Map(expenseAggregates.map(a => [a.tripId, a]));
+    
+    // Combine trips with their aggregated data
+    return tripsData.map(trip => {
+      const agg = aggregateMap.get(trip.id);
+      return {
+        ...trip,
+        totalCost: agg?.totalCost || 0,
+        expenseCounts: {
+          flights: agg?.flightsCount || 0,
+          accommodation: agg?.accommodationCount || 0,
+          activities: agg?.activitiesCount || 0,
+        },
+      };
+    });
+  }
+
   async getTrip(id: string): Promise<Trip | undefined> {
     const [trip] = await db.select().from(trips).where(eq(trips.id, id));
     return trip;
+  }
+
+  async getTripWithTotal(id: string): Promise<(Trip & { totalCost: number }) | undefined> {
+    const [trip] = await db.select().from(trips).where(eq(trips.id, id));
+    if (!trip) return undefined;
+    
+    // Get total cost using SQL aggregation
+    const [result] = await db
+      .select({
+        totalCost: sqlOperator<number>`COALESCE(SUM(${expenses.cost}::numeric), 0)::float`,
+      })
+      .from(expenses)
+      .where(eq(expenses.tripId, id));
+    
+    return {
+      ...trip,
+      totalCost: result?.totalCost || 0,
+    };
   }
 
   async getTripByShareId(shareId: string): Promise<Trip | undefined> {

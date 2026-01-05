@@ -6,7 +6,9 @@ import { ClerkProvider } from "@clerk/clerk-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChatProvider } from "@/contexts/ChatContext";
-import TripAssistant from "@/components/TripAssistant";
+
+// Lazy load TripAssistant - it's not needed on initial page load
+const TripAssistant = lazy(() => import("@/components/TripAssistant"));
 
 // Eager load critical pages for fast initial render
 import Home from "@/pages/Home";
@@ -75,7 +77,9 @@ function App() {
           <ChatProvider>
             <Toaster />
             <Router />
-            <TripAssistant />
+            <Suspense fallback={null}>
+              <TripAssistant />
+            </Suspense>
           </ChatProvider>
         </TooltipProvider>
       </QueryClientProvider>

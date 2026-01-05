@@ -102,35 +102,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/trips", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const userId = (req as any).userId;
-      const trips = await storage.getAllTrips(userId);
-      
-      // Optimize: Get all expenses for all trips in a single query
-      const tripIds = trips.map(trip => trip.id);
-      const allExpenses = await storage.getExpensesByTripIds(tripIds);
-      
-      // Group expenses by trip ID
-      const expensesByTripId = allExpenses.reduce((acc, expense) => {
-        if (!acc[expense.tripId]) {
-          acc[expense.tripId] = [];
-        }
-        acc[expense.tripId].push(expense);
-        return acc;
-      }, {} as Record<string, typeof allExpenses>);
-      
-      // Calculate totals and counts for each trip
-      const tripsWithTotals = trips.map((trip) => {
-        const tripExpenses = expensesByTripId[trip.id] || [];
-        const total = tripExpenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-        
-        const expenseCounts = {
-          flights: tripExpenses.filter(e => e.category === 'flights').length,
-          accommodation: tripExpenses.filter(e => e.category === 'accommodation').length,
-          activities: tripExpenses.filter(e => e.category === 'activities').length,
-        };
-        
-        return { ...trip, totalCost: total, expenseCounts };
-      });
-      
+      // Use optimized method that calculates totals in SQL
+      const tripsWithTotals = await storage.getAllTripsWithTotals(userId);
       res.json(tripsWithTotals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch trips" });
@@ -140,7 +113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/trips/:id", requireClerkAuth, ensureUserInDb, async (req: any, res) => {
     try {
       const userId = (req as any).userId;
-      const trip = await storage.getTrip(req.params.id);
+      // Use optimized method that calculates total in SQL
+      const trip = await storage.getTripWithTotal(req.params.id);
       if (!trip) {
         return res.status(404).json({ error: "Trip not found" });
       }
@@ -148,9 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (trip.userId !== userId) {
         return res.status(403).json({ error: "Forbidden" });
       }
-      const expenses = await storage.getExpensesByTrip(trip.id);
-      const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-      res.json({ ...trip, totalCost: total });
+      res.json(trip);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch trip" });
     }
