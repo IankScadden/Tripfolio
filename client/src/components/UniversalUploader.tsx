@@ -61,14 +61,11 @@ export function UniversalUploader({
         folder: uploadParams.folder,
       };
       
-      console.log('[UniversalUploader] Applying Cloudinary metadata to ALL files:', metadata);
-      
       // Set global default for future files
       uppy.setMeta(metadata);
       
       // Backfill all existing queued files
       uppy.getFiles().forEach(file => {
-        console.log('[UniversalUploader] Backfilling metadata for file:', file.id);
         uppy.setFileMeta(file.id, metadata);
       });
     }
@@ -78,7 +75,6 @@ export function UniversalUploader({
     if (!uploadType || !uploadParams) return;
 
     const handleUploadSuccess = async (file: any, response: any) => {
-      console.log('[UniversalUploader] Upload success:', file, response);
       let finalUrl = '';
       
       if (uploadType === 'cloudinary') {
@@ -87,8 +83,6 @@ export function UniversalUploader({
         // For Replit/S3, the uploadURL is in the response
         finalUrl = response.uploadURL || file.uploadURL || '';
       }
-      
-      console.log('[UniversalUploader] Final URL:', finalUrl);
       if (finalUrl && onCompleteRef.current) {
         try {
           await onCompleteRef.current(finalUrl);
@@ -112,12 +106,8 @@ export function UniversalUploader({
     // handles both global meta AND per-file backfilling whenever params change
 
     const handleComplete = (result: any) => {
-      console.log('[UniversalUploader] All uploads complete:', result);
-      
       // Only close modal if there were no failures
       if (result.failed && result.failed.length > 0) {
-        console.error('[UniversalUploader] Some uploads failed:', result.failed);
-        // Keep modal open so user can retry
         return;
       }
       
@@ -139,12 +129,10 @@ export function UniversalUploader({
         fieldName: 'file',
         allowedMetaFields: ['timestamp', 'signature', 'api_key', 'public_id', 'folder'],
         getResponseData: (xhr: XMLHttpRequest) => {
-          console.log('[UniversalUploader] Cloudinary response:', xhr.responseText);
           const response = JSON.parse(xhr.responseText);
           
           // Check for Cloudinary errors
           if (response.error) {
-            console.error('[UniversalUploader] Cloudinary error:', response.error);
             throw new Error(response.error.message || 'Upload failed');
           }
           
@@ -193,7 +181,6 @@ export function UniversalUploader({
         credentials: "include",
       });
       const response = await res.json();
-      console.log('[UniversalUploader] Got upload params:', response);
       
       // Set state - this triggers the dedicated uploadParams effect
       // which will apply metadata to ALL files
