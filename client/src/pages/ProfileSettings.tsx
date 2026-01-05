@@ -317,7 +317,7 @@ export default function ProfileSettings() {
           <Button
             variant="ghost"
             className="gap-2"
-            onClick={() => setLocation("/my-trips")}
+            onClick={() => window.history.back()}
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />
