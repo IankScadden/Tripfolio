@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { JourneyMap } from "@/components/JourneyMap";
+import { TipButton } from "@/components/TipButton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -283,6 +284,11 @@ export default function SharedTrip() {
               <Copy className="h-4 w-4" />
               {cloneTripMutation.isPending ? "Creating..." : "Use as Template"}
             </Button>
+            
+            <TipButton 
+              tripId={trip.id} 
+              tripName={trip.name} 
+            />
             
             {trip.days && trip.days > 0 && (
               <Sheet>

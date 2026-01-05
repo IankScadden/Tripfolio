@@ -1754,6 +1754,57 @@ Example response:
     }
   });
 
+  // Create tip checkout session (Phase 1: tips go to platform owner)
+  const ALLOWED_TIP_AMOUNTS = [300, 500, 1000]; // $3, $5, $10 in cents
+  
+  app.post("/api/tips/checkout", async (req, res) => {
+    try {
+      const { tripId, tripName, amount, creatorName } = req.body;
+      
+      if (!tripId || !amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const tipAmount = parseInt(amount);
+      if (!ALLOWED_TIP_AMOUNTS.includes(tipAmount)) {
+        return res.status(400).json({ error: "Invalid tip amount. Allowed amounts: $3, $5, $10" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Tip for "${tripName || 'Trip'}"`,
+                description: creatorName ? `Support ${creatorName}'s travel content` : 'Support this travel creator',
+              },
+              unit_amount: tipAmount,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${baseUrl}/tip-success?tripId=${tripId}&amount=${tipAmount}`,
+        cancel_url: `${baseUrl}/explore/${tripId}`,
+        metadata: {
+          type: 'tip',
+          tripId,
+          amount: tipAmount.toString(),
+        },
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating tip checkout:", error);
+      res.status(500).json({ error: "Failed to create tip checkout" });
+    }
+  });
+
   // Helper to get today's date string in YYYY-MM-DD format
   const getTodayString = () => new Date().toISOString().split('T')[0];
   

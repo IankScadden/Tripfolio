@@ -13,6 +13,7 @@ import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Legend, Toolti
 import Header from "@/components/Header";
 import { JourneyMap } from "@/components/JourneyMap";
 import BudgetChart from "@/components/BudgetChart";
+import { TipButton } from "@/components/TipButton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Comment, User as SchemaUser } from "@shared/schema";
@@ -459,6 +460,11 @@ export default function ExploreTripDetail() {
               >
                 <Share2 className="h-5 w-5" />
               </button>
+              <TipButton 
+                tripId={trip.id} 
+                tripName={trip.name} 
+                creatorName={getUserDisplayName(owner)} 
+              />
             </div>
           </CardContent>
         </Card>
