@@ -494,6 +494,7 @@ export default function ExploreTripDetail() {
                     <img 
                       src={photo}
                       alt={`Gallery ${index + 1}`}
+                      loading="lazy"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
