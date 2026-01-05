@@ -22,6 +22,12 @@ export const users = pgTable("users", {
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: varchar("subscription_status"), // 'active', 'canceled', 'past_due', etc.
   subscriptionEndsAt: timestamp("subscription_ends_at"),
+  // Stripe Connect fields for creator payouts
+  stripeConnectAccountId: varchar("stripe_connect_account_id"),
+  stripeConnectStatus: varchar("stripe_connect_status").default("not_connected"), // 'not_connected', 'pending', 'complete', 'restricted'
+  stripeConnectChargesEnabled: integer("stripe_connect_charges_enabled").default(0),
+  stripeConnectPayoutsEnabled: integer("stripe_connect_payouts_enabled").default(0),
+  stripeConnectOnboardedAt: timestamp("stripe_connect_onboarded_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

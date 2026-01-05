@@ -686,7 +686,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expenses = await storage.getExpensesByTrip(trip.id);
       const dayDetails = await storage.getAllDayDetails(trip.id);
       const total = expenses.reduce((sum, e) => sum + parseFloat(e.cost), 0);
-      res.json({ trip: { ...trip, totalCost: total }, expenses, dayDetails });
+      // Get owner info for tip routing
+      const owner = await storage.getUser(trip.userId);
+      res.json({ trip: { ...trip, totalCost: total }, expenses, dayDetails, owner });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch shared trip" });
     }
@@ -1754,8 +1756,9 @@ Example response:
     }
   });
 
-  // Create tip checkout session (Phase 1: tips go to platform owner)
+  // Create tip checkout session with Stripe Connect support for creator payouts
   const ALLOWED_TIP_AMOUNTS = [300, 500, 1000]; // $3, $5, $10 in cents
+  const PLATFORM_FEE_PERCENT = 15; // Platform takes 15% of tips
   
   app.post("/api/tips/checkout", async (req, res) => {
     try {
@@ -1770,10 +1773,26 @@ Example response:
         return res.status(400).json({ error: "Invalid tip amount. Allowed amounts: $3, $5, $10" });
       }
 
+      // Look up the trip to find the creator
+      const trip = await storage.getTrip(tripId);
+      let creator = null;
+      let canTransferToCreator = false;
+
+      if (trip) {
+        creator = await storage.getUser(trip.userId);
+        // Check if creator has Stripe Connect enabled
+        if (creator?.stripeConnectAccountId && 
+            creator.stripeConnectChargesEnabled === 1 && 
+            creator.stripeConnectPayoutsEnabled === 1) {
+          canTransferToCreator = true;
+        }
+      }
+
       const stripe = await getUncachableStripeClient();
       const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}`;
 
-      const session = await stripe.checkout.sessions.create({
+      // Build checkout session config
+      const sessionConfig: any = {
         payment_method_types: ['card'],
         line_items: [
           {
@@ -1795,13 +1814,164 @@ Example response:
           type: 'tip',
           tripId,
           amount: tipAmount.toString(),
+          creatorId: creator?.id || '',
+          transferToCreator: canTransferToCreator ? 'true' : 'false',
         },
-      });
+      };
 
-      res.json({ url: session.url });
+      // If creator has Connect enabled, route payment to them with platform fee
+      if (canTransferToCreator && creator?.stripeConnectAccountId) {
+        const platformFee = Math.round(tipAmount * PLATFORM_FEE_PERCENT / 100);
+        sessionConfig.payment_intent_data = {
+          application_fee_amount: platformFee,
+          transfer_data: {
+            destination: creator.stripeConnectAccountId,
+          },
+        };
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionConfig);
+
+      res.json({ url: session.url, transferToCreator: canTransferToCreator });
     } catch (error) {
       console.error("Error creating tip checkout:", error);
       res.status(500).json({ error: "Failed to create tip checkout" });
+    }
+  });
+
+  // ==================== STRIPE CONNECT ENDPOINTS ====================
+
+  // Create or get Stripe Connect account and return onboarding link
+  app.post("/api/creators/stripe/connect-link", async (req, res) => {
+    try {
+      const auth = getAuth(req);
+      if (!auth?.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await storage.getUserByClerkId(auth.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+
+      let accountId = user.stripeConnectAccountId;
+
+      // Create Express account if user doesn't have one
+      if (!accountId) {
+        const account = await stripe.accounts.create({
+          type: 'express',
+          email: user.email || undefined,
+          metadata: {
+            userId: user.id,
+            clerkId: auth.userId,
+          },
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+        });
+        accountId = account.id;
+
+        // Save the account ID
+        await storage.updateUserStripeConnect(user.id, {
+          stripeConnectAccountId: accountId,
+          stripeConnectStatus: 'pending',
+        });
+      }
+
+      // Create account link for onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${baseUrl}/profile-settings?connect=refresh`,
+        return_url: `${baseUrl}/profile-settings?connect=complete`,
+        type: 'account_onboarding',
+      });
+
+      res.json({ url: accountLink.url });
+    } catch (error) {
+      console.error("Error creating Connect account link:", error);
+      res.status(500).json({ error: "Failed to create Connect account link" });
+    }
+  });
+
+  // Get Stripe Connect account status
+  app.get("/api/creators/stripe/account", async (req, res) => {
+    try {
+      const auth = getAuth(req);
+      if (!auth?.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await storage.getUserByClerkId(auth.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (!user.stripeConnectAccountId) {
+        return res.json({
+          connected: false,
+          status: 'not_connected',
+          chargesEnabled: false,
+          payoutsEnabled: false,
+        });
+      }
+
+      // Fetch latest status from Stripe
+      const stripe = await getUncachableStripeClient();
+      const account = await stripe.accounts.retrieve(user.stripeConnectAccountId);
+
+      // Update local status if changed
+      const newStatus = account.details_submitted ? 
+        (account.charges_enabled && account.payouts_enabled ? 'complete' : 'restricted') : 
+        'pending';
+
+      if (newStatus !== user.stripeConnectStatus || 
+          (account.charges_enabled ? 1 : 0) !== user.stripeConnectChargesEnabled ||
+          (account.payouts_enabled ? 1 : 0) !== user.stripeConnectPayoutsEnabled) {
+        await storage.updateUserStripeConnect(user.id, {
+          stripeConnectStatus: newStatus,
+          stripeConnectChargesEnabled: account.charges_enabled ? 1 : 0,
+          stripeConnectPayoutsEnabled: account.payouts_enabled ? 1 : 0,
+          stripeConnectOnboardedAt: account.details_submitted && account.charges_enabled ? new Date() : null,
+        });
+      }
+
+      res.json({
+        connected: true,
+        status: newStatus,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+      });
+    } catch (error) {
+      console.error("Error fetching Connect account:", error);
+      res.status(500).json({ error: "Failed to fetch Connect account status" });
+    }
+  });
+
+  // Get creator's Connect status for tip routing (public endpoint for tippers)
+  app.get("/api/creators/:clerkId/tip-status", async (req, res) => {
+    try {
+      const user = await storage.getUserByClerkId(req.params.clerkId);
+      if (!user) {
+        return res.status(404).json({ error: "Creator not found" });
+      }
+
+      // Return minimal info about whether tips go to creator
+      const canReceiveTips = user.stripeConnectAccountId && 
+        user.stripeConnectChargesEnabled === 1 && 
+        user.stripeConnectPayoutsEnabled === 1;
+
+      res.json({
+        canReceiveTips,
+        creatorName: user.displayName || user.firstName || 'Creator',
+      });
+    } catch (error) {
+      console.error("Error fetching creator tip status:", error);
+      res.status(500).json({ error: "Failed to fetch creator tip status" });
     }
   });
 

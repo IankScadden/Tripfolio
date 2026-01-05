@@ -93,10 +93,19 @@ type DayDetail = {
   notes?: string;
 };
 
+type Owner = {
+  id: string;
+  clerkId?: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
 type SharedTripData = {
   trip: Trip;
   expenses: Expense[];
   dayDetails: DayDetail[];
+  owner?: Owner;
 };
 
 export default function SharedTrip() {
@@ -148,9 +157,17 @@ export default function SharedTrip() {
   });
 
   const trip = data?.trip;
+  const owner = data?.owner;
 
   const expenses = data?.expenses || [];
   const dayDetails = data?.dayDetails || [];
+
+  const getOwnerDisplayName = () => {
+    if (!owner) return undefined;
+    return owner.displayName || 
+      (owner.firstName && owner.lastName ? `${owner.firstName} ${owner.lastName}`.trim() : undefined) ||
+      owner.firstName;
+  };
 
   const expensesByCategory = expenses.reduce((acc, expense) => {
     const category = expense.category;
@@ -287,7 +304,9 @@ export default function SharedTrip() {
             
             <TipButton 
               tripId={trip.id} 
-              tripName={trip.name} 
+              tripName={trip.name}
+              creatorName={getOwnerDisplayName()}
+              creatorClerkId={owner?.clerkId}
             />
             
             {trip.days && trip.days > 0 && (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { ArrowLeft, Upload, Crown, Loader2 } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { ArrowLeft, Upload, Crown, Loader2, CreditCard, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -37,8 +37,17 @@ type User = {
   bio?: string;
 };
 
+type ConnectStatus = {
+  connected: boolean;
+  status: 'not_connected' | 'pending' | 'complete' | 'restricted';
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted?: boolean;
+};
+
 export default function ProfileSettings() {
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { toast } = useToast();
   const [showCropper, setShowCropper] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -51,6 +60,33 @@ export default function ProfileSettings() {
   const { data: subscription } = useQuery<{ plan: string; status?: string }>({
     queryKey: ["/api/subscription"],
   });
+
+  // Stripe Connect status
+  const { data: connectStatus, refetch: refetchConnectStatus } = useQuery<ConnectStatus>({
+    queryKey: ["/api/creators/stripe/account"],
+  });
+
+  // Handle returning from Stripe Connect onboarding
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const connectParam = params.get('connect');
+    if (connectParam === 'complete') {
+      refetchConnectStatus();
+      toast({
+        title: "Stripe Connect",
+        description: "Your Stripe account setup is being processed. Status will update shortly.",
+      });
+      // Clean up URL
+      setLocation('/profile-settings', { replace: true });
+    } else if (connectParam === 'refresh') {
+      toast({
+        title: "Session Expired",
+        description: "Please try connecting your Stripe account again.",
+        variant: "destructive",
+      });
+      setLocation('/profile-settings', { replace: true });
+    }
+  }, [searchString, refetchConnectStatus, toast, setLocation]);
 
   const portalMutation = useMutation({
     mutationFn: async () => {
@@ -68,6 +104,27 @@ export default function ProfileSettings() {
       toast({
         title: "Error",
         description: error.message || "Unable to open billing portal.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/creators/stripe/connect-link");
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Unable to connect Stripe account.",
         variant: "destructive",
       });
     },
@@ -430,6 +487,73 @@ export default function ProfileSettings() {
                 </div>
               </div>
             )}
+
+            {/* Stripe Connect Section for Receiving Tips */}
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Receive Tips from Travelers
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Connect your Stripe account to receive tips directly from travelers who appreciate your trip content. You'll receive 85% of each tip, with 15% going to Tripfolio.
+              </p>
+              
+              {connectStatus?.status === 'complete' ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-green-600 font-medium">Stripe Connected</span>
+                  <span className="text-muted-foreground">- Tips will be sent directly to your account</span>
+                </div>
+              ) : connectStatus?.status === 'pending' || connectStatus?.status === 'restricted' ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <span className="text-yellow-600 font-medium">
+                      {connectStatus?.status === 'pending' ? 'Setup Incomplete' : 'Action Required'}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => connectMutation.mutate()}
+                    disabled={connectMutation.isPending}
+                    data-testid="button-complete-stripe-setup"
+                  >
+                    {connectMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Complete Setup
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => connectMutation.mutate()}
+                  disabled={connectMutation.isPending}
+                  data-testid="button-connect-stripe"
+                >
+                  {connectMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Connect Stripe Account
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

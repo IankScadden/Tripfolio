@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Coffee } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Coffee, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,12 @@ type TipButtonProps = {
   tripId: string;
   tripName: string;
   creatorName?: string;
+  creatorClerkId?: string;
+};
+
+type TipStatus = {
+  canReceiveTips: boolean;
+  creatorName: string;
 };
 
 const TIP_AMOUNTS = [
@@ -23,10 +30,16 @@ const TIP_AMOUNTS = [
   { value: 1000, label: "$10" },
 ];
 
-export function TipButton({ tripId, tripName, creatorName }: TipButtonProps) {
+export function TipButton({ tripId, tripName, creatorName, creatorClerkId }: TipButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Fetch creator's tip status when dialog is opened
+  const { data: tipStatus } = useQuery<TipStatus>({
+    queryKey: ["/api/creators", creatorClerkId, "tip-status"],
+    enabled: !!creatorClerkId && showDialog,
+  });
 
   const handleTip = async (amount: number) => {
     setIsLoading(true);
@@ -101,6 +114,20 @@ export function TipButton({ tripId, tripName, creatorName }: TipButtonProps) {
                   {isLoading ? "..." : tip.label}
                 </Button>
               ))}
+            </div>
+
+            {/* Tip destination messaging */}
+            <div className="mt-4 pt-4 border-t">
+              {tipStatus?.canReceiveTips ? (
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  Tips go directly to {tipStatus.creatorName || creatorName || 'the creator'}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">
+                  Tips support Tripfolio until {creatorName || 'the creator'} connects their Stripe account
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>

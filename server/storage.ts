@@ -724,6 +724,31 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  // ==================== STRIPE CONNECT OPERATIONS ====================
+
+  async updateUserStripeConnect(userId: string, updates: {
+    stripeConnectAccountId?: string;
+    stripeConnectStatus?: string;
+    stripeConnectChargesEnabled?: number;
+    stripeConnectPayoutsEnabled?: number;
+    stripeConnectOnboardedAt?: Date | null;
+  }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async getUserByStripeConnectAccountId(accountId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.stripeConnectAccountId, accountId));
+    return user;
+  }
+
   // ==================== PROMO CODE OPERATIONS ====================
 
   async createPromoCode(data: InsertPromoCode): Promise<PromoCode> {

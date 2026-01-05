@@ -66,6 +66,7 @@ type DayDetail = {
 
 type User = {
   id: string;
+  clerkId?: string;
   displayName?: string;
   firstName?: string;
   lastName?: string;
@@ -463,7 +464,8 @@ export default function ExploreTripDetail() {
               <TipButton 
                 tripId={trip.id} 
                 tripName={trip.name} 
-                creatorName={getUserDisplayName(owner)} 
+                creatorName={getUserDisplayName(owner)}
+                creatorClerkId={owner.clerkId}
               />
             </div>
           </CardContent>
