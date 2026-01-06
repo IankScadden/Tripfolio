@@ -1891,9 +1891,19 @@ Example response:
       });
 
       res.json({ url: accountLink.url });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating Connect account link:", error);
-      res.status(500).json({ error: "Failed to create Connect account link" });
+      
+      // Check for specific Stripe Connect not enabled error
+      if (error?.raw?.message?.includes("signed up for Connect") || 
+          error?.message?.includes("signed up for Connect")) {
+        return res.status(503).json({ 
+          error: "Creator payouts are coming soon! This feature is currently being set up.",
+          code: "CONNECT_NOT_ENABLED"
+        });
+      }
+      
+      res.status(500).json({ error: "Unable to connect your account. Please try again later." });
     }
   });
 
