@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
+import { useAuth } from "@clerk/clerk-react";
 import { ArrowLeft, Calendar, MapPin, Copy, ChevronDown, Heart, MessageCircle, Share2, Pencil, Check, MoreVertical, Plane, Train, Bus, Utensils, Hotel, Ticket, DollarSign, Settings, Link2, Map, PieChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +85,7 @@ type TripDetailResponse = {
 export default function ExploreTripDetail() {
   const [, params] = useRoute("/explore/:id");
   const [, setLocation] = useLocation();
+  const { isSignedIn } = useAuth();
   const tripId = params?.id;
   const { toast } = useToast();
   const [showBudget, setShowBudget] = useState(false);
@@ -1042,17 +1044,30 @@ export default function ExploreTripDetail() {
             <p className="text-sm text-muted-foreground mb-4">
               Inspired by this trip? Use it as a template for your own adventure.
             </p>
-            <Button
-              variant="default"
-              size="lg"
-              onClick={() => cloneTripMutation.mutate()}
-              disabled={cloneTripMutation.isPending}
-              data-testid="button-clone-trip"
-              className="gap-2"
-            >
-              <Copy className="h-4 w-4" />
-              {cloneTripMutation.isPending ? "Copying..." : "Use as Template"}
-            </Button>
+            {isSignedIn ? (
+              <Button
+                variant="default"
+                size="lg"
+                onClick={() => cloneTripMutation.mutate()}
+                disabled={cloneTripMutation.isPending}
+                data-testid="button-clone-trip"
+                className="gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                {cloneTripMutation.isPending ? "Copying..." : "Use as Template"}
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                size="lg"
+                onClick={() => setLocation("/sign-in")}
+                data-testid="button-clone-trip-signin"
+                className="gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                Sign In to Use as Template
+              </Button>
+            )}
           </CardContent>
         </Card>
 

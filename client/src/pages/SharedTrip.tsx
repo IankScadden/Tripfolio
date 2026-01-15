@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
+import { useAuth } from "@clerk/clerk-react";
 import { Plane, Train, Bus, Utensils, Hotel, Ticket, CalendarDays, Link2, MapPin, DollarSign, ChevronDown, ChevronUp, Copy, PieChart as PieChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export default function SharedTrip() {
   const shareId = params?.shareId;
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [, setLocation] = useLocation();
+  const { isSignedIn } = useAuth();
   const { toast } = useToast();
   const [breakdownView, setBreakdownView] = useState<"list" | "chart">("list");
 
@@ -291,16 +293,28 @@ export default function SharedTrip() {
           
           {/* Action Buttons */}
           <div className="flex items-center justify-center gap-3">
-            <Button
-              variant="default"
-              className="gap-2"
-              onClick={() => cloneTripMutation.mutate()}
-              disabled={cloneTripMutation.isPending}
-              data-testid="button-use-as-template"
-            >
-              <Copy className="h-4 w-4" />
-              {cloneTripMutation.isPending ? "Creating..." : "Use as Template"}
-            </Button>
+            {isSignedIn ? (
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={() => cloneTripMutation.mutate()}
+                disabled={cloneTripMutation.isPending}
+                data-testid="button-use-as-template"
+              >
+                <Copy className="h-4 w-4" />
+                {cloneTripMutation.isPending ? "Creating..." : "Use as Template"}
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={() => setLocation("/sign-in")}
+                data-testid="button-use-as-template-signin"
+              >
+                <Copy className="h-4 w-4" />
+                Sign In to Use as Template
+              </Button>
+            )}
             
             <TipButton 
               tripId={trip.id} 
