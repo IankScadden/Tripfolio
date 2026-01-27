@@ -32,7 +32,7 @@ export default function Header() {
 
   const navItems = [
     { label: "My Trips", href: "/my-trips", icon: Plane, requiresAuth: true },
-    { label: "Explore", href: "/explore", icon: Compass, requiresAuth: true },
+    { label: "Explore", href: "/explore", icon: Compass, requiresAuth: false },
     { label: "Travel Deals", href: "/travel-deals", icon: Tag, requiresAuth: false },
     { label: "Profile", href: dbUser ? `/profile/${dbUser.id}` : "/profile", icon: User, requiresAuth: true },
   ];
@@ -102,11 +102,14 @@ export default function Header() {
                     My Trips
                   </button>
                 </SignInButton>
-                <SignInButton mode="modal">
-                  <button className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-explore">
-                    Explore
-                  </button>
-                </SignInButton>
+                <Link 
+                  href="/explore" 
+                  className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" 
+                  data-testid="link-explore"
+                  onMouseEnter={() => { preloadPage.explore(); prefetchExploreData(); }}
+                >
+                  Explore
+                </Link>
                 <Link href="/travel-deals" className="text-sm font-medium hover:text-primary transition-colors whitespace-nowrap" data-testid="link-travel-deals">
                   Travel Deals
                 </Link>
