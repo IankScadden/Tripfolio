@@ -301,11 +301,11 @@ export default function Home() {
             <p>
               For bugs, recommendations, or concerns, reach out to{" "}
               <a 
-                href="mailto:Ian@tripfolio.ai" 
+                href="mailto:ian@traveltrue.co" 
                 className="text-primary hover:underline font-medium"
                 data-testid="link-contact-email"
               >
-                Ian@tripfolio.ai
+                ian@traveltrue.co
               </a>
             </p>
           </div>

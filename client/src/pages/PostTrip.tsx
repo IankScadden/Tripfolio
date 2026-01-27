@@ -220,7 +220,7 @@ export default function PostTrip() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Post to Community</h1>
           <p className="text-muted-foreground">
-            Share your <span className="font-semibold">{trip.name}</span> trip with the Tripfolio community
+            Share your <span className="font-semibold">{trip.name}</span> trip with the TravelTrue community
           </p>
         </div>
 

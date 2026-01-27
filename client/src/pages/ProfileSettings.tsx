@@ -210,7 +210,7 @@ export default function ProfileSettings() {
         formData.append('signature', uploadData.signature);
         formData.append('api_key', uploadData.apiKey);
         formData.append('public_id', uploadData.publicId);
-        formData.append('folder', 'tripfolio');
+        formData.append('folder', 'traveltrue');
 
         const uploadResult = await fetch(
           `https://api.cloudinary.com/v1_1/${uploadData.cloudName}/image/upload`,
@@ -495,7 +495,7 @@ export default function ProfileSettings() {
                 Receive Tips from Travelers
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Connect your Stripe account to receive tips directly from travelers who appreciate your trip content. You'll receive 85% of each tip, with 15% going to Tripfolio.
+                Connect your Stripe account to receive tips directly from travelers who appreciate your trip content. You'll receive 85% of each tip, with 15% going to TravelTrue.
               </p>
               
               {connectStatus?.status === 'complete' ? (

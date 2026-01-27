@@ -26,7 +26,7 @@ export class CloudinaryStorageService {
     folder: string;
   }> {
     const timestamp = Math.round(Date.now() / 1000);
-    const folder = 'tripfolio';
+    const folder = 'traveltrue';
     const publicId = `${folder}/${randomUUID()}`;
 
     // Sign the request with folder parameter

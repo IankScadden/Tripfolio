@@ -6,11 +6,11 @@ async function createProducts() {
   console.log('Checking for existing products...');
   
   const existingProducts = await stripe.products.search({ 
-    query: "name:'Tripfolio Premium'" 
+    query: "name:'TravelTrue Premium'" 
   });
   
   if (existingProducts.data.length > 0) {
-    console.log('Tripfolio Premium product already exists:', existingProducts.data[0].id);
+    console.log('TravelTrue Premium product already exists:', existingProducts.data[0].id);
     
     const prices = await stripe.prices.list({ 
       product: existingProducts.data[0].id,
@@ -23,9 +23,9 @@ async function createProducts() {
     }
   }
 
-  console.log('Creating Tripfolio Premium product...');
+  console.log('Creating TravelTrue Premium product...');
   const product = await stripe.products.create({
-    name: 'Tripfolio Premium',
+    name: 'TravelTrue Premium',
     description: 'Unlimited AI Travel Assistant usage and unlimited trips',
     metadata: {
       plan: 'premium',

@@ -263,10 +263,10 @@ export default function SharedTrip() {
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <Link href="/" data-testid="link-tripfolio-home">
+          <Link href="/" data-testid="link-traveltrue-home">
             <a className="flex items-center gap-2 hover-elevate transition-colors px-3 py-2 rounded-md w-fit">
               <MapPin className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold">Tripfolio</h1>
+              <h1 className="text-xl font-bold">TravelTrue</h1>
             </a>
           </Link>
         </div>

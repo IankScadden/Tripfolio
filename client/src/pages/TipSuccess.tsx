@@ -15,7 +15,7 @@ export default function TipSuccess() {
   const formattedAmount = amount ? `$${(parseInt(amount) / 100).toFixed(0)}` : "";
 
   useEffect(() => {
-    document.title = "Thank You! | Tripfolio";
+    document.title = "Thank You! | TravelTrue";
   }, []);
 
   return (

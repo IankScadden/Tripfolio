@@ -36,7 +36,7 @@ function sanitizeUserData(user: any) {
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve logo file for social media profile pictures
-  app.get('/tripfolio-logo.svg', (req, res) => {
+  app.get('/traveltrue-logo.svg', (req, res) => {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.send(`<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -1308,7 +1308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Build context-aware system prompt
-      let systemPrompt = `You are a helpful travel budgeting assistant for Tripfolio, a backpacking trip budget planner. You help users estimate costs for trips, especially to European cities.
+      let systemPrompt = `You are a helpful travel budgeting assistant for TravelTrue, a backpacking trip budget planner. You help users estimate costs for trips, especially to European cities.
 
 Your role is to provide practical, realistic cost estimates for:
 - Flights (economy class, typical booking windows)
@@ -1429,7 +1429,7 @@ Example response:
 
       try {
         const email = email_addresses?.[0]?.email_address || "";
-        const isAdminEmail = email.toLowerCase() === "ian@tripfolio.ai";
+        const isAdminEmail = email.toLowerCase() === "ian@traveltrue.co";
         
         const existingUser = await storage.getUserByClerkId(id);
 
@@ -2330,7 +2330,7 @@ Example response:
   // Robots.txt for search engines
   app.get("/robots.txt", (req, res) => {
     const hostname = process.env.NODE_ENV === "production" 
-      ? "https://tripfolio.ai" 
+      ? "https://traveltrue.co" 
       : `${req.protocol}://${req.get("host")}`;
     
     res.header("Content-Type", "text/plain");
@@ -2347,7 +2347,7 @@ Sitemap: ${hostname}/sitemap.xml
       res.header("Content-Type", "application/xml");
       
       const hostname = process.env.NODE_ENV === "production" 
-        ? "https://tripfolio.ai" 
+        ? "https://traveltrue.co" 
         : `${req.protocol}://${req.get("host")}`;
       
       const smStream = new SitemapStream({ hostname });

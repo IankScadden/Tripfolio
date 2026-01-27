@@ -45,7 +45,7 @@ export default function Header() {
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-home">
             <CompassLogo className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
-            <span className="text-base sm:text-xl font-semibold whitespace-nowrap">Tripfolio</span>
+            <span className="text-base sm:text-xl font-semibold whitespace-nowrap">TravelTrue</span>
           </Link>
           
           {/* Desktop Navigation */}
@@ -176,7 +176,7 @@ export default function Header() {
                   <div className="flex items-center justify-between mb-8 pt-2">
                     <div className="flex items-center gap-2">
                       <CompassLogo className="w-8 h-8" />
-                      <span className="text-lg font-semibold">Tripfolio</span>
+                      <span className="text-lg font-semibold">TravelTrue</span>
                     </div>
                   </div>
                   

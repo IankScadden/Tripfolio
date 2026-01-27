@@ -125,7 +125,7 @@ export function TipButton({ tripId, tripName, creatorName, creatorClerkId }: Tip
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground text-center">
-                  Tips support Tripfolio until {creatorName || 'the creator'} connects their Stripe account
+                  Tips support TravelTrue until {creatorName || 'the creator'} connects their Stripe account
                 </p>
               )}
             </div>

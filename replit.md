@@ -1,7 +1,7 @@
-# Tripfolio - Backpacking Budget Planner
+# TravelTrue - Backpacking Budget Planner
 
 ## Overview
-Tripfolio is a web application designed for planning and tracking backpacking trip budgets. It enables users to create detailed trip plans, itemize expenses across various categories like flights, accommodation, and activities, visualize spending patterns through interactive charts, and share their budget plans with others. The project aims to provide a comprehensive, user-friendly tool for travelers to manage their finances effectively, drawing inspiration from leading travel and productivity platforms.
+TravelTrue is a web application designed for planning and tracking backpacking trip budgets. It enables users to create detailed trip plans, itemize expenses across various categories like flights, accommodation, and activities, visualize spending patterns through interactive charts, and share their budget plans with others. The project aims to provide a comprehensive, user-friendly tool for travelers to manage their finances effectively, drawing inspiration from leading travel and productivity platforms.
 
 ## User Preferences
 - Home page design based on user's Figma mockup with travel-themed hero image and feature cards.
@@ -21,7 +21,7 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Database**: PostgreSQL (Neon)
 
 ### Admin Configuration
-- **Admin Email**: ian@tripfolio.ai is automatically granted admin privileges via Clerk webhook
+- **Admin Email**: ian@traveltrue.co is automatically granted admin privileges via Clerk webhook
 - **Admin Dashboard**: Accessible at /admin for admin users only. Features:
   - Create promo codes with customizable benefits (premium days or AI uses)
   - Set max redemptions and expiry dates
@@ -94,8 +94,8 @@ The application is built with a modern web stack, emphasizing a rich user experi
 - **Uppy**: File uploader library for client-side file selection and upload with progress tracking.
 - **OpenAI (via Replit AI Integrations)**: Powers the AI Travel Assistant chatbot for travel cost estimation. Uses streaming responses for real-time interaction.
 - **Stripe**: Payment processing for subscription management. Handles checkout sessions, customer portal, and webhook events for subscription lifecycle (creation, updates, cancellation).
-  - Account: ian@tripfolio.ai
-  - Product ID: prod_TVDt8e7oFj7UEo (Tripfolio Premium)
+  - Account: ian@traveltrue.co
+  - Product ID: prod_TVDt8e7oFj7UEo (TravelTrue Premium)
   - Price ID: price_1SYDRGIKucH7KYYrhnqVFwcR ($2/month)
-  - Webhook endpoint: https://tripfolio.ai/api/stripe/webhook
+  - Webhook endpoint: https://traveltrue.co/api/stripe/webhook
   - Required events: checkout.session.completed, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted
