@@ -1,0 +1,118 @@
+    at async file:///app/dist/server/index.js:1869:45 {
+  length: 88,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+}
+02:05:43 [express] GET /api/explore/trips 500 in 818ms :: {"error":"Failed to fetch public trips"}
+Error fetching public trips: error: The endpoint has been disabled. Enable it using Neon API and retry.
+    at file:///app/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (file:///app/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async Promise.all (index 1)
+    at async DatabaseStorage.getPublicTrips (file:///app/dist/server/index.js:401:36)
+    at async file:///app/dist/server/index.js:1869:45 {
+  length: 88,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+Error ensuring user in DB: error: The endpoint has been disabled. Enable it using Neon API and retry.
+    at file:///app/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (file:///app/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.getUserByClerkId (file:///app/dist/server/index.js:251:20)
+    at async ensureUserInDb (file:///app/dist/server/index.js:753:16) {
+  length: 88,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+}
+02:08:47 [express] GET /api/subscription 500 in 816ms :: {"error":"Internal server error"}
+Error ensuring user in DB: error: The endpoint has been disabled. Enable it using Neon API and retry.
+    at file:///app/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (file:///app/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async DatabaseStorage.getUserByClerkId (file:///app/dist/server/index.js:251:20)
+    at async ensureUserInDb (file:///app/dist/server/index.js:753:16) {
+  length: 88,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+}
+02:08:47 [express] GET /api/auth/user 500 in 807ms :: {"error":"Internal server error"}
+Error fetching public trips: error: The endpoint has been disabled. Enable it using Neon API and retry.
+    at file:///app/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (file:///app/node_modules/drizzle-orm/neon-serverless/session.js:76:20)
+    at async Promise.all (index 0)
+    at async DatabaseStorage.getPublicTrips (file:///app/dist/server/index.js:401:36)
+    at async file:///app/dist/server/index.js:1869:45 {
+  length: 88,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+}
+02:09:00 [express] GET /api/explore/trips 500 in 801ms :: {"error":"Failed to fetch public trips"}
